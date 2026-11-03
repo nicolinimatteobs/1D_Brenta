@@ -1,0 +1,87 @@
+Input/dx_70/h_01/struttura_output.txt
+4
+Input/dx_70/h_01/parametri_sezioni.txt
+Input/dx_70/h_01/localslope_xcoord.txt
+Input/idrogrammi/vaia/laghi.txt
+653
+2
+Input/idrogrammi/vaia/brenta1.txt
+Input/idrogrammi/vaia/brenta2.txt
+Input/idrogrammi/vaia/brenta3.txt
+Input/idrogrammi/vaia/brenta4.txt
+Input/idrogrammi/vaia/brenta5.txt
+Input/idrogrammi/vaia/brenta6.txt
+Input/idrogrammi/vaia/brenta7.txt
+Input/idrogrammi/vaia/brenta_.txt
+653
+2
+Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
+Output/VAIA/dx_70/affluenti/h_01/Q.csv
+70.00
+0
+60
+1e9
+
+
+FILE INPUT DEL CODICE
+- Nome del file contenente la struttura dei file da leggere
+- Numero righe del file struttura_output.txt
+- Nome del file contenente i valori tabulati da leggere durante il run
+- Nome del file contenente i valori univoci per l'intera sezione
+- Idrogramma a Ponte Cervia
+- Numero di righe idrogramma Ponte Cervia
+- Numero di colonne idrogramma Ponte Cervia
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Idrogramm affluenti
+- Numero di righe idrogrammi
+- Numero di colonne idrogrammi
+- File output condizioni iniziali portata
+- File output soluzione portata
+- Ks
+- tempo iniziale
+- time step massimo
+- max loop in time temporaneo (serve per definire Nmax come reale Nmax)
+
+Input/dx_70/h_01/struttura_output.txt
+4
+Input/dx_70/h_01/parametri_sezioni.txt
+Input/dx_70/h_01/localslope_xcoord.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_PonteCervia.txt
+653
+2
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_1.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_2.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_3.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_4.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_5.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_6.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_7.txt
+Input/Idrogrammi_Brenta/VAIA/VAIA_intbac_8.txt
+653
+2
+Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
+Output/VAIA/dx_70/affluenti/h_01/Q.csv
+33.000
+0
+60
+1e9
+
+Input/dx_70/h_01/struttura_output.txt
+4
+Input/dx_70/h_01/parametri_sezioni.txt
+Input/dx_70/h_01/localslope_xcoord.txt
+Input/Idrogrammi_Brenta/PonteCervia.txt
+75
+2
+Output/modello_ML/IC_Q.csv
+Output/modello_ML/Q.csv
+33.000
+0
+15
+1e9
