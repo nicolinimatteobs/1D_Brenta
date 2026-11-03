@@ -25,10 +25,6 @@
     A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff, smax, β_b,
     β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
-    # --- CARICAMENTO IDROGRAMMI ---
-    hydro = LOAD_ALL_HYDROGRAPHS!(params)
-    tend  = HYDROGRAPH_END_TIME(hydro)
-
     # --- CARICAMENTO DATI E INIZIALIZZAZIONE DOMINIO ---
     n_row_ifx = imax
     n_col_ifx = 4
@@ -47,7 +43,10 @@
     SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
 
     # ----- PARAMETRI PER RIEMPIMENTO ----
-
+        # --- CARICAMENTO IDROGRAMMI ---
+    hydro = LOAD_ALL_HYDROGRAPHS!(params)
+    tend  = HYDROGRAPH_END_TIME(hydro)
+    
     Qin_idro      = Qk_PC[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
 
