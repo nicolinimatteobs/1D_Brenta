@@ -4,7 +4,7 @@ module RUN_SIMULATION
     include("subroutines.jl")
     #include("module.jl")
     #include("struct.jl")
-    include("Semi_Implicit.jl")
+    include("Semi_Implicit_Brenta_2D_1D.jl")
     include("writing.jl")
 
     export SEMI_IMPLICIT!
