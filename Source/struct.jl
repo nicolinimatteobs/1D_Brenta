@@ -3,9 +3,6 @@ struct Parametri
     nr_strut           ::Int
     parametri_sezioni  ::String
     local_slope        ::String
-    hydro_Brenta       ::String
-    nr_PC              ::Int
-    nc_PC              ::Int
     hydro_brenta1      ::String
     hydro_brenta2      ::String
     hydro_brenta3      ::String
@@ -17,15 +14,15 @@ struct Parametri
     hydro_brenta_v1    ::String
     hydro_brenta_v2    ::String
     hydro_brenta_v3    ::String
+    hydro_brenta_v4    ::String
+    hydro_caldonazzo   ::String
     hydro_ceggio       ::String
-    hydro_maso         ::String
+    hydro_levico       ::String
+    hydro_centa        ::String
     hydro_chieppena    ::String
     hydro_grigno       ::String
-    hydro_laghi        ::String
-    hydro_centa        ::String
+    hydro_maso         ::String
     hydro_moggio       ::String
-    nr_aff             ::Int
-    nc_aff             ::Int
     ICdischarge        ::String
     Q_output           ::String
     Ks                 ::Float64

@@ -10,79 +10,23 @@
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
     @unpack imax, n_col, n_line_per_section, Ks, dtmax, Nmax = params
 
-    struttura         = params.struttura;           hydro_brenta1    = params.hydro_brenta1;       hydro_laghi     = params.hydro_laghi;       
-    nr_strut          = params.nr_strut;            hydro_brenta2    = params.hydro_brenta2;       hydro_centa     = params.hydro_centa;       
-    parametri_sezioni = params.parametri_sezioni;   hydro_brenta3    = params.hydro_brenta3;       hydro_moggio    = params.hydro_moggio;      
-    local_slope       = params.local_slope;         hydro_brenta4    = params.hydro_brenta4;       hydro_ceggio    = params.hydro_ceggio;      
-    ICdischarge       = params.ICdischarge;         hydro_brenta5    = params.hydro_brenta5;       hydro_maso      = params.hydro_maso;
-    Q_output          = params.Q_output;            hydro_brenta6    = params.hydro_brenta6;       hydro_chieppena = params.hydro_chieppena;
-    time              = params.time;                hydro_brenta7    = params.hydro_brenta7;       hydro_grigno    = params.hydro_grigno;
-    temp              = params.temp;                hydro_brenta_new = params.hydro_brenta_new;      
-    n_row             = params.n_row;               hydro_brenta_v1  = params.hydro_brenta_v1;        
-    nr_PC             = params.nr_PC;               hydro_brenta_v2  = params.hydro_brenta_v2;                                               
-    nc_PC             = params.nc_PC;               hydro_brenta_v3  = params.hydro_brenta_v3;                      
-    nr_aff            = params.nr_aff;                           
-    nc_aff            = params.nc_aff;
-   
+    struttura         = params.struttura;
+    nr_strut          = params.nr_strut;
+    parametri_sezioni = params.parametri_sezioni;
+    local_slope       = params.local_slope;
+    ICdischarge       = params.ICdischarge;
+    Q_output          = params.Q_output;
+    time              = params.time;
+    temp              = params.temp;
+    n_row             = params.n_row;
+
 
     val, b, bx, b_min, x_b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
     A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff, smax, β_b,
     β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
     # --- CARICAMENTO IDROGRAMMI ---
-    data_Brenta = Array{Float64}(undef, nr_PC, nc_PC)
-    PROCESS_HYDROGRAPH!(data_Brenta, hydro_Brenta, nr_PC, nc_PC)
-    tk_PC = data_Brenta[:, 1]
-    Qk_PC = data_Brenta[:, 2]
-    data_Brenta = nothing  # Libera memoria
-
-    data_INTBAC1 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC1, hydro_INTBAC1, nr_aff, nc_aff)
-    tk_INTBAC1 = data_INTBAC1[:, 1]
-    Qk_INTBAC1 = data_INTBAC1[:, 2]
-    data_INTBAC1 = nothing  # Libera memoria
-
-    data_INTBAC2 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC2, hydro_INTBAC2, nr_aff, nc_aff)
-    tk_INTBAC2 = data_INTBAC2[:, 1]
-    Qk_INTBAC2 = data_INTBAC2[:, 2]
-    data_INTBAC2 = nothing  # Libera memoria
-
-    data_INTBAC3 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC3, hydro_INTBAC3, nr_aff, nc_aff)
-    tk_INTBAC3 = data_INTBAC3[:, 1]
-    Qk_INTBAC3 = data_INTBAC3[:, 2]
-    data_INTBAC3 = nothing  # Libera memoria
-
-    data_INTBAC4 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC4, hydro_INTBAC4, nr_aff, nc_aff)
-    tk_INTBAC4 = data_INTBAC4[:, 1]
-    Qk_INTBAC4 = data_INTBAC4[:, 2]
-    data_INTBAC4 = nothing  # Libera memoria
-
-    data_INTBAC5 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC5, hydro_INTBAC5, nr_aff, nc_aff)
-    tk_INTBAC5 = data_INTBAC5[:, 1]
-    Qk_INTBAC5 = data_INTBAC5[:, 2]
-    data_INTBAC5 = nothing  # Libera memoria
-
-    data_INTBAC6 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC6, hydro_INTBAC6, nr_aff, nc_aff)
-    tk_INTBAC6 = data_INTBAC6[:, 1]
-    Qk_INTBAC6 = data_INTBAC6[:, 2]
-    data_INTBAC6 = nothing  # Libera memoria
-
-    data_INTBAC7 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC7, hydro_INTBAC7, nr_aff, nc_aff)
-    tk_INTBAC7 = data_INTBAC7[:, 1]
-    Qk_INTBAC7 = data_INTBAC7[:, 2]
-    data_INTBAC7 = nothing  # Libera memoria
-
-    data_INTBAC8 = Array{Float64}(undef, nr_aff, nc_aff)
-    PROCESS_HYDROGRAPH!(data_INTBAC8, hydro_INTBAC8, nr_aff, nc_aff)
-    tk_INTBAC8 = data_INTBAC8[:, 1]
-    Qk_INTBAC8 = data_INTBAC8[:, 2]
-    data_INTBAC8 = nothing  # Libera memoria
+    hydro = LOAD_ALL_HYDROGRAPHS!(params)
 
     # --- CARICAMENTO DATI E INIZIALIZZAZIONE DOMINIO ---
     n_row_ifx = imax
