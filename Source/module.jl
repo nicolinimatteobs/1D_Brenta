@@ -23,21 +23,23 @@ function INITIAL_SETTINGS!()
     hydro_brenta_v1   = righe[15]
     hydro_brenta_v2   = righe[16]
     hydro_brenta_v3   = righe[17]
-    hydro_ceggio      = righe[18]
-    hydro_maso        = righe[19]
-    hydro_chieppena   = righe[20]
-    hydro_grigno      = righe[21]
-    hydro_laghi       = righe[22]
-    hydro_centa       = righe[23]
-    hydro_moggio      = righe[24]
-    nr_aff            = parse(Int, righe[25])
-    nc_aff            = parse(Int, righe[26])
-    ICdischarge       = righe[27]
-    Q_output          = righe[28]
-    Ks                = parse(Float64, righe[29])
-    time              = parse(Float64, righe[30])
-    dtmax             = parse(Float64, righe[31])
-    temp              = parse(Float64, righe[32]) #max loop in time temporaneo
+    hydro_brenta_v4   = righe[18]
+    hydro_caldonazzo  = righe[19]
+    hydro_ceggio      = righe[20]
+    hydro_levico      = righe[21]
+    hydro_centa       = righe[22]
+    hydro_chieppena   = righe[23]
+    hydro_grigno      = righe[24]
+    hydro_maso        = righe[25]
+    hydro_moggio      = righe[26]
+    nr_aff            = parse(Int, righe[27])
+    nc_aff            = parse(Int, righe[28])
+    ICdischarge       = righe[29]
+    Q_output          = righe[30]
+    Ks                = parse(Float64, righe[31])
+    time              = parse(Float64, righe[32])
+    dtmax             = parse(Float64, righe[33])
+    temp              = parse(Float64, righe[34]) #max loop in time temporaneo
     # Leggi il file struttura
     # Leggi solo le prime 4 righe del file struttura
     val_rif = open(strip(struttura), "r") do f
@@ -55,12 +57,12 @@ function INITIAL_SETTINGS!()
     return Parametri(
     hydro_brenta1,      hydro_brenta_v1,    hydro_chieppena,
     hydro_brenta2,      hydro_brenta_v2,    hydro_grigno,
-    hydro_brenta3,      hydro_brenta_v3,
-    hydro_brenta4,      hydro_centa,
-    hydro_brenta5,      hydro_laghi,
+    hydro_brenta3,      hydro_brenta_v3,    hydro_maso,
+    hydro_brenta4,      hydro_centa,        hydro_caldonazzo,
+    hydro_brenta5,      hydro_levico,
     hydro_brenta6,      hydro_moggio,
     hydro_brenta7,      hydro_ceggio,
-    hydro_brenta_new,   hydro_maso,
+    hydro_brenta_new,   hydro_brenta_v4,
     nr_aff,   nr_PC,
     nc_aff,   nc_PC,
     local_slope, struttura, nr_strut, parametri_sezioni, 
