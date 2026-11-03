@@ -117,54 +117,6 @@ function ALLOCATE_ARRAYS!(imax, n_col)
 
 end
 
-# Carico idrogrammi da file esterni
-function LOAD_HYDROGRAPH!(filename)
-    t = Float64[]
-    Q = Float64[]
-
-    for (n, line) in enumerate(eachline(filename))
-        isempty(strip(line)) && continue
-        # Dividi la linea in colonne (virgola o spazi) e converti in Float64
-        val = parse.(Float64, split(strip(line), [',', ' ', '\t']; keepempty=false))
-        if length(val) != 2
-            error("Errore: la riga $n del file '$filename' non ha 2 colonne")
-        end
-        push!(t, val[1])
-        push!(Q, val[2])
-    end
-
-    if isempty(t)
-        error("Errore: il file '$filename' non contiene dati")
-    end
-
-    return (t = t, Q = Q)
-end
-
-# Carica gli idrogrammi scritti in settings.txt e presenti su disco, es. hydro[:centa].Q
-function LOAD_ALL_HYDROGRAPHS!(params)
-    files = (brenta1 = params.hydro_brenta1, brenta2 = params.hydro_brenta2,
-             brenta3 = params.hydro_brenta3, brenta4 = params.hydro_brenta4,
-             brenta5 = params.hydro_brenta5, brenta6 = params.hydro_brenta6,
-             brenta7 = params.hydro_brenta7, brenta_new = params.hydro_brenta_new,
-             brenta_v1 = params.hydro_brenta_v1, brenta_v2 = params.hydro_brenta_v2,
-             brenta_v3 = params.hydro_brenta_v3, brenta_v4 = params.hydro_brenta_v4,
-             caldonazzo = params.hydro_caldonazzo, ceggio = params.hydro_ceggio,
-             levico = params.hydro_levico, centa = params.hydro_centa,
-             chieppena = params.hydro_chieppena, grigno = params.hydro_grigno,
-             maso = params.hydro_maso, moggio = params.hydro_moggio)
-
-    hydro = Dict{Symbol, @NamedTuple{t::Vector{Float64}, Q::Vector{Float64}}}()
-    for (name, filename) in pairs(files)
-        if isfile(filename)
-            hydro[name] = LOAD_HYDROGRAPH!(filename)
-        else
-            println("Attenzione: idrogramma '$filename' non trovato, non viene caricato")
-        end
-    end
-
-    return hydro
-end
-
 function LOAD_DATA!(data, filename, row, col)
 
     try

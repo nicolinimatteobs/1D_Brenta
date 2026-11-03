@@ -27,6 +27,7 @@
 
     # --- CARICAMENTO IDROGRAMMI ---
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
+    tend  = HYDROGRAPH_END_TIME(hydro)
 
     # --- CARICAMENTO DATI E INIZIALIZZAZIONE DOMINIO ---
     n_row_ifx = imax
@@ -99,7 +100,7 @@
     #save_fondo!("Output/rettangolare/fondo_rettangolare.csv", imax, bx, b_min, eta)
     #@infiltrate
 
-    tend = tk_PC[nr_PC]
+    
     dx   = min(minimum(dx_b), minimum(dx_int))
 
     #@infiltrate
