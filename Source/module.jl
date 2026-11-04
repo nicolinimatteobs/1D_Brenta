@@ -1,45 +1,39 @@
-include("struct.jl")
-
 function INITIAL_SETTINGS!()
-    # Legge esattamente 21 righe e rimuove spazi
+    # Legge esattamente 30 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:32]
+        [strip(readline(f)) for _ in 1:30]
     end
     # Parsing dei dati
     struttura         = righe[1]
     nr_strut          = parse(Int, righe[2])
     parametri_sezioni = righe[3]
     local_slope       = righe[4]
-    nr_PC             = parse(Int, righe[5])
-    nc_PC             = parse(Int, righe[6])
-    hydro_brenta1     = righe[7]
-    hydro_brenta2     = righe[8]
-    hydro_brenta3     = righe[9]
-    hydro_brenta4     = righe[10]
-    hydro_brenta5     = righe[11]
-    hydro_brenta6     = righe[12]
-    hydro_brenta7     = righe[13]
-    hydro_brenta_new  = righe[14]
-    hydro_brenta_v1   = righe[15]
-    hydro_brenta_v2   = righe[16]
-    hydro_brenta_v3   = righe[17]
-    hydro_brenta_v4   = righe[18]
-    hydro_caldonazzo  = righe[19]
-    hydro_ceggio      = righe[20]
-    hydro_levico      = righe[21]
-    hydro_centa       = righe[22]
-    hydro_chieppena   = righe[23]
-    hydro_grigno      = righe[24]
-    hydro_maso        = righe[25]
-    hydro_moggio      = righe[26]
-    nr_aff            = parse(Int, righe[27])
-    nc_aff            = parse(Int, righe[28])
-    ICdischarge       = righe[29]
-    Q_output          = righe[30]
-    Ks                = parse(Float64, righe[31])
-    time              = parse(Float64, righe[32])
-    dtmax             = parse(Float64, righe[33])
-    temp              = parse(Float64, righe[34]) #max loop in time temporaneo
+    hydro_brenta1     = righe[5]
+    hydro_brenta2     = righe[6]
+    hydro_brenta3     = righe[7]
+    hydro_brenta4     = righe[8]
+    hydro_brenta5     = righe[9]
+    hydro_brenta6     = righe[10]
+    hydro_brenta7     = righe[11]
+    hydro_brenta_new  = righe[12]
+    hydro_brenta_v1   = righe[13]
+    hydro_brenta_v2   = righe[14]
+    hydro_brenta_v3   = righe[15]
+    hydro_brenta_v4   = righe[16]
+    hydro_caldonazzo  = righe[17]
+    hydro_ceggio      = righe[18]
+    hydro_levico      = righe[19]
+    hydro_centa       = righe[20]
+    hydro_chieppena   = righe[21]
+    hydro_grigno      = righe[22]
+    hydro_maso        = righe[23]
+    hydro_moggio      = righe[24]
+    ICdischarge       = righe[25]
+    Q_output          = righe[26]
+    Ks                = parse(Float64, righe[27])
+    time              = parse(Float64, righe[28])
+    dtmax             = parse(Float64, righe[29])
+    temp              = parse(Float64, righe[30]) #max loop in time temporaneo
     # Leggi il file struttura
     # Leggi solo le prime 4 righe del file struttura
     val_rif = open(strip(struttura), "r") do f
@@ -55,17 +49,12 @@ function INITIAL_SETTINGS!()
     Nmax = round(Int, temp)
 
     return Parametri(
-    hydro_brenta1,      hydro_brenta_v1,    hydro_chieppena,
-    hydro_brenta2,      hydro_brenta_v2,    hydro_grigno,
-    hydro_brenta3,      hydro_brenta_v3,    hydro_maso,
-    hydro_brenta4,      hydro_centa,        hydro_caldonazzo,
-    hydro_brenta5,      hydro_levico,
-    hydro_brenta6,      hydro_moggio,
-    hydro_brenta7,      hydro_ceggio,
-    hydro_brenta_new,   hydro_brenta_v4,
-    nr_aff,   nr_PC,
-    nc_aff,   nc_PC,
-    local_slope, struttura, nr_strut, parametri_sezioni, 
+    struttura, nr_strut, parametri_sezioni, local_slope,
+    hydro_brenta1, hydro_brenta2, hydro_brenta3, hydro_brenta4,
+    hydro_brenta5, hydro_brenta6, hydro_brenta7, hydro_brenta_new,
+    hydro_brenta_v1, hydro_brenta_v2, hydro_brenta_v3, hydro_brenta_v4,
+    hydro_caldonazzo, hydro_ceggio, hydro_levico, hydro_centa,
+    hydro_chieppena, hydro_grigno, hydro_maso, hydro_moggio,
     ICdischarge, Q_output, Ks, time, dtmax, temp, Nmax,
     n_line_per_section, n_row, imax, n_col)
 end
@@ -124,38 +113,6 @@ function ALLOCATE_ARRAYS!(imax, n_col)
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int,
             Yb_array, qn, qb, ub, Yavg, Froude)
 
-end
-
-# Carico idrogrammi da file esterni
-function LOAD_HYDROGRAPH!(data, filename, row, col)
-    # Prova ad aprire il file
-    #@infiltrate
-    try
-        open(filename, "r") do f
-            for n in 1:row
-                line = readline(f)
-                # Dividi la linea in colonne e converti in Float64
-                val = parse.(Float64, split(strip(line)))
-                if length(val) != col
-                    error("Errore: numero di colonne nella riga $n non corrisponde a $col")
-                end
-                data[n, :] = val
-            end
-        end
-    catch e
-        println("Errore durante la lettura del file '$filename': ", e)
-        return nothing
-    end
-
-    return data
-end
-
-@views function PROCESS_HYDROGRAPH!(data, hydro, nr, nc)
-    # params è la struct con tutti i nomi dei file e dimensioni
-    #@infiltrate
-    LOAD_HYDROGRAPH!(data, hydro, nr, nc)
-
-    return (data)
 end
 
 function LOAD_DATA!(data, filename, row, col)

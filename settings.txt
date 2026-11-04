@@ -2,8 +2,6 @@ Input/dx_70/h_01/struttura_output.txt
 4
 Input/dx_70/h_01/parametri_sezioni.txt
 Input/dx_70/h_01/localslope_xcoord.txt
-653
-2
 input/idrogrammi/vaia/Brenta1.csv
 input/idrogrammi/vaia/Brenta2.csv
 input/idrogrammi/vaia/Brenta3.csv
@@ -24,8 +22,6 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-653
-2
 Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
 Output/VAIA/dx_70/affluenti/h_01/Q.csv
 70.00
@@ -40,8 +36,6 @@ FILE INPUT DEL CODICE
 - Nome del file contenente i valori tabulati da leggere durante il run
 - Nome del file contenente i valori univoci per l'intera sezione
 - Idrogramma a Ponte Cervia
-- Numero di righe idrogramma Ponte Cervia
-- Numero di colonne idrogramma Ponte Cervia
 - Idrogramm affluenti
 - Idrogramm affluenti
 - Idrogramm affluenti
@@ -50,8 +44,6 @@ FILE INPUT DEL CODICE
 - Idrogramm affluenti
 - Idrogramm affluenti
 - Idrogramm affluenti
-- Numero di righe idrogrammi
-- Numero di colonne idrogrammi
 - File output condizioni iniziali portata
 - File output soluzione portata
 - Ks

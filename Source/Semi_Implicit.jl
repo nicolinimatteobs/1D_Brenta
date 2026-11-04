@@ -1,9 +1,3 @@
-
-#include("module.jl")
-#include("struct.jl")
-#include("subroutines.jl")
-#include("writing.jl")
-
 @views @inbounds function SEMI_IMPLICIT!()
     # --- INIZIALIZZAZIONE STRUTTURE ---
     params     = INITIAL_SETTINGS!()
