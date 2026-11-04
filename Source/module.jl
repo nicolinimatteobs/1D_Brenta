@@ -1,5 +1,3 @@
-include("struct.jl")
-
 function INITIAL_SETTINGS!()
     # Legge esattamente 30 righe e rimuove spazi
     righe = open("settings.txt", "r") do f

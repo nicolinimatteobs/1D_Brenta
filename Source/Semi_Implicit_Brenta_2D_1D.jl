@@ -1,11 +1,10 @@
-#include("module.jl")
-#include("struct.jl")
-#include("subroutines.jl")
-#include("writing.jl")
-
-@views @inbounds function SEMI_IMPLICIT_RIEMPIMENTO!()
+@views @inbounds function SEMI_IMPLICIT_BRENTA_2D_1D!()
  # --- INIZIALIZZAZIONE STRUTTURE ---
     params     = INITIAL_SETTINGS!()
+
+    # --- CARICAMENTO IDROGRAMMI ---
+    hydro = LOAD_ALL_HYDROGRAPHS!(params)
+    tend  = HYDROGRAPH_END_TIME(hydro)
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
     @unpack imax, n_col, n_line_per_section, Ks, dtmax, Nmax = params
@@ -43,10 +42,6 @@
     SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
 
     # ----- PARAMETRI PER RIEMPIMENTO ----
-        # --- CARICAMENTO IDROGRAMMI ---
-    hydro = LOAD_ALL_HYDROGRAPHS!(params)
-    tend  = HYDROGRAPH_END_TIME(hydro)
-    
     Qin_idro      = Qk_PC[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
 

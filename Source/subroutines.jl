@@ -1,6 +1,3 @@
-include("module.jl")
-#include("struct.jl")
-
 function SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
     @inbounds for i in 1:imax-1
         dx_b[i] = x_b[i+1] - x_b[i]

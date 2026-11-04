@@ -1,6 +1,3 @@
-#include("module.jl")
-#include("struct.jl")
-
 function WRITE_INITIAL_CONDITIONS!(ICdischarge, imax, x_b, eta,b_min, x_int, q)
     # Scrive le condizioni iniziali in un file
     open(ICdischarge, "w") do io
