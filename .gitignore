@@ -3,3 +3,5 @@ output/*
 
 input/*
 !input/.gitkeep
+
+Manifest.toml
