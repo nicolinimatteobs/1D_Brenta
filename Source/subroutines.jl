@@ -146,14 +146,14 @@ function HYDROGRAPH_END_TIME(hydro)
     return tend
 end
 
-function LAGRANGE_INTERPOLATION!(nr_PC, tk_PC, Qk_PC, time, dt)
-    dτ = (tk_PC[nr_PC] - tk_PC[1]) / (nr_PC - 1)
-    m = Int(max(2, min(nr_PC - 1, ceil((time + dt) / dτ))))
+function LAGRANGE_INTERPOLATION!(nr, tk, Qk, time, dt)
+    dτ = (tk[nr] - tk[1]) / (nr - 1)
+    m = Int(max(2, min(nr - 1, ceil((time + dt) / dτ))))
 
     t = time + dt
     @inbounds begin
-        Qm1, Qm, Qp1 = Qk_PC[m-1], Qk_PC[m], Qk_PC[m+1]
-        tm1, tm, tp1 = tk_PC[m-1], tk_PC[m], tk_PC[m+1]
+        Qm1, Qm, Qp1 = Qk[m-1], Qk[m], Qk[m+1]
+        tm1, tm, tp1 = tk[m-1], tk[m], tk[m+1]
     end
 
     Q = Qm1 * ((t - tm) * (t - tp1)) / ((tm1 - tm) * (tm1 - tp1)) +

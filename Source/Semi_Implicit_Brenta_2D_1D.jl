@@ -6,6 +6,30 @@
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
     tend  = HYDROGRAPH_END_TIME(hydro)
 
+    # --- ALIAS IDROGRAMMI (tempi e portate) ---
+    tk_cald       = hydro[:caldonazzo].t;  Qk_cald       = hydro[:caldonazzo].Q
+    tk_brenta1    = hydro[:brenta1].t;     Qk_brenta1    = hydro[:brenta1].Q
+    tk_brenta2    = hydro[:brenta2].t;     Qk_brenta2    = hydro[:brenta2].Q
+    tk_brenta3    = hydro[:brenta3].t;     Qk_brenta3    = hydro[:brenta3].Q
+    tk_brenta4    = hydro[:brenta4].t;     Qk_brenta4    = hydro[:brenta4].Q
+    tk_brenta5    = hydro[:brenta5].t;     Qk_brenta5    = hydro[:brenta5].Q
+    tk_brenta6    = hydro[:brenta6].t;     Qk_brenta6    = hydro[:brenta6].Q
+    # Brenta7.csv non presente: riattivare quando il file viene aggiunto
+    #tk_brenta7    = hydro[:brenta7].t;     Qk_brenta7    = hydro[:brenta7].Q
+    tk_brenta_new = hydro[:brenta_new].t;  Qk_brenta_new = hydro[:brenta_new].Q
+    tk_brenta_v1  = hydro[:brenta_v1].t;   Qk_brenta_v1  = hydro[:brenta_v1].Q
+    tk_brenta_v2  = hydro[:brenta_v2].t;   Qk_brenta_v2  = hydro[:brenta_v2].Q
+    tk_brenta_v3  = hydro[:brenta_v3].t;   Qk_brenta_v3  = hydro[:brenta_v3].Q
+    tk_brenta_v4  = hydro[:brenta_v4].t;   Qk_brenta_v4  = hydro[:brenta_v4].Q
+    tk_ceggio     = hydro[:ceggio].t;      Qk_ceggio     = hydro[:ceggio].Q
+    tk_levico     = hydro[:levico].t;      Qk_levico     = hydro[:levico].Q
+    tk_centa      = hydro[:centa].t;       Qk_centa      = hydro[:centa].Q
+    tk_chieppena  = hydro[:chieppena].t;   Qk_chieppena  = hydro[:chieppena].Q
+    tk_grigno     = hydro[:grigno].t;      Qk_grigno     = hydro[:grigno].Q
+    tk_maso       = hydro[:maso].t;        Qk_maso       = hydro[:maso].Q
+    tk_moggio     = hydro[:moggio].t;      Qk_moggio     = hydro[:moggio].Q
+    nr_hydro      = length(tk_cald)  # Numero di righe, uguale per tutti gli idrogrammi
+
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
     @unpack imax, n_col, n_line_per_section, Ks, dtmax, Nmax = params
 
@@ -42,7 +66,7 @@
     SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
 
     # ----- PARAMETRI PER RIEMPIMENTO ----
-    Qin_idro      = Qk_PC[1]  # Portata in ingresso iniziale
+    Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
 
     
@@ -198,7 +222,7 @@
                         qstar[i] = Qin
                     end
                 else
-                    Qin_idro = LAGRANGE_INTERPOLATION!(nr_PC, tk_PC, Qk_PC, time, dt)
+                    Qin_idro = LAGRANGE_INTERPOLATION!(nr_hydro, tk_cald, Qk_cald, time, dt)
                     qstar[i] = Qin_idro
                 end
             elseif i == imax+1
