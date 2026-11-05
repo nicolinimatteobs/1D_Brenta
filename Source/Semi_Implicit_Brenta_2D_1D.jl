@@ -31,8 +31,6 @@
     tk_brenta4    = hydro[:brenta4].t;     Qk_brenta4    = hydro[:brenta4].Q
     tk_brenta5    = hydro[:brenta5].t;     Qk_brenta5    = hydro[:brenta5].Q
     tk_brenta6    = hydro[:brenta6].t;     Qk_brenta6    = hydro[:brenta6].Q
-    # Brenta7.csv non presente: riattivare quando il file viene aggiunto
-    #tk_brenta7    = hydro[:brenta7].t;     Qk_brenta7    = hydro[:brenta7].Q
     tk_brenta_new = hydro[:brenta_new].t;  Qk_brenta_new = hydro[:brenta_new].Q
     tk_brenta_v1  = hydro[:brenta_v1].t;   Qk_brenta_v1  = hydro[:brenta_v1].Q
     tk_brenta_v2  = hydro[:brenta_v2].t;   Qk_brenta_v2  = hydro[:brenta_v2].Q
@@ -48,23 +46,33 @@
     nr_hydro      = length(tk_cald)  # Numero di righe, uguale per tutti gli idrogrammi
 
 
-
-    
-
-
     # ----- PARAMETRI PER RIEMPIMENTO ----
     Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
 
+    Q_brenta1_IC    = Qk_brenta1[1]    # Portata affluente bacino 1 condizioni iniziali
+    Q_brenta2_IC    = Qk_brenta2[1]    # Portata affluente bacino 2 condizioni iniziali
+    Q_brenta3_IC    = Qk_brenta3[1]    # Portata affluente bacino 3 condizioni iniziali
+    Q_brenta4_IC    = Qk_brenta4[1]    # Portata affluente bacino 4 condizioni iniziali
+    Q_brenta5_IC    = Qk_brenta5[1]    # Portata affluente bacino 5 condizioni iniziali
+    Q_brenta6_IC    = Qk_brenta6[1]    # Portata affluente bacino 6 condizioni iniziali
+    Q_brenta_new_IC = Qk_brenta_new[1] # Portata affluente bacino 7 condizioni iniziali
+    Q_brenta_v1_IC  = Qk_brenta_v1[1]  # Portata affluente bacino 8 condizioni iniziali
+    Q_brenta_v2_IC  = Qk_brenta_v2[1]  # Portata affluente bacino 8 condizioni iniziali
+    Q_brenta_v3_IC  = Qk_brenta_v3[1]  # Portata affluente bacino 8 condizioni iniziali
+    Q_brenta_v4_IC  = Qk_brenta_v4[1]  # Portata affluente bacino 8 condizioni iniziali
+    Q_ceggio_IC     = Qk_ceggio[1]     # Portata affluente Ceggio condizioni iniziali
+    Q_levico_IC     = Qk_levico[1]     # Portata affluente Levico condizioni iniziali
+    Q_centa_IC      = Qk_centa[1]      # Portata affluente Centa condizioni iniziali
+    Q_chieppena_IC  = Qk_chieppena[1]  # Portata affluente Chieppena condizioni iniziali
+    Q_grigno_IC     = Qk_grigno[1]     # Portata affluente Grigno condizioni iniziali
+    Q_maso_IC       = Qk_maso[1]       # Portata affluente Maso condizioni iniziali
+    Q_moggio_IC     = Qk_moggio[1]     # Portata affluente Moggio condizioni iniziali
     
-    Q_intbac1_IC  = Qk_INTBAC1[1]/3   # Portata affluente bacino 1 condizioni iniziali
-    Q_intbac2_IC  = Qk_INTBAC2[1]/3   # Portata affluente bacino 2 condizioni iniziali
-    Q_intbac3_IC  = Qk_INTBAC3[1]/3   # Portata affluente bacino 3 condizioni iniziali
-    Q_intbac4_IC  = Qk_INTBAC4[1]/3   # Portata affluente bacino 4 condizioni iniziali
-    Q_intbac5_IC  = Qk_INTBAC5[1]/5   # Portata affluente bacino 5 condizioni iniziali
-    Q_intbac6_IC  = Qk_INTBAC6[1]/3   # Portata affluente bacino 6 condizioni iniziali
-    Q_intbac7_IC  = Qk_INTBAC7[1]/3   # Portata affluente bacino 7 condizioni iniziali
-    Q_intbac8_IC  = Qk_INTBAC8[1]/3   # Portata affluente bacino 8 condizioni iniziali
+
+
+
+
 
     exp_dt        = 2.0/3.0  # Esponente di dt nel calcolo della portata
     nCS           = 1
