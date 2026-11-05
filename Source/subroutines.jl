@@ -1,3 +1,6 @@
+# Costruisce la griglia longitudinale a partire dalle ascisse delle sezioni x_b:
+# dx_b = distanza tra sezioni consecutive, x_int = posizione delle interfacce tra le celle,
+# dx_int = lunghezza della cella attorno a ogni sezione. Riempie i tre vettori e li restituisce
 function SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 
     @inbounds for i in 1:imax-1
@@ -23,16 +26,21 @@ end
 
 
 
-# Prima riga di ogni sezione e ultima riga usata. data è la tabella trasposta:
-# ogni colonna è una riga di parametri_sezioni, il numero di righe può variare tra le sezioni
+# Individua dove inizia ogni sezione nella tabella trasposta data, in cui ogni colonna è una
+# riga di parametri_sezioni. Restituisce first_row (prima riga di ogni sezione, più un valore
+# finale n+1) e last_row (ultima riga usata, inizialmente la prima di ogni sezione).
+# Il numero di righe può variare tra le sezioni
 function SECTION_INDEX(data)
     n = size(data, 2)
     first_row = [1; [r for r in 2:n if data[1,r] != data[1,r-1]]; n+1]
     return first_row, first_row[1:end-1]
 end
 
-# Riga r della sezione con ys[r] <= y < ys[r+1], con dh anche non costante.
-# Prova prima l'ultima riga usata (g) e le vicine, altrimenti usa la ricerca binaria
+
+
+# Trova la riga r della sezione, compresa tra lo e hi, con ys[r] <= y < ys[r+1], anche con
+# dh non costante. Prova prima l'ultima riga usata (g) e le vicine, altrimenti usa la ricerca
+# binaria. Oltre il tirante massimo restituisce l'ultima riga della sezione (hi)
 @inline function FIND_ROW(ys, lo, hi, y, g)
     @inbounds begin
         if ys[g] <= y
@@ -51,8 +59,12 @@ end
     return lo
 end
 
-# Proprietà della sezione k per la quota eta, interpolate sulla tabella trasposta.
-# Con y < 0 usa y = 0, oltre il tirante massimo estrapola con l'ultima riga
+
+
+# Calcola le proprietà della sezione k per la quota eta, interpolando sulla tabella trasposta.
+# Restituisce area A, coefficiente β, den (denominatore di γ), larghezza w e raggio idraulico rh.
+# Con y < 0 usa y = 0, oltre il tirante massimo estrapola con l'ultima riga.
+# Aggiorna last_row[k] con la riga trovata
 @inline function READ_VALUES(data, ys, first_row, last_row, k, eta, b_min)
     y = max(eta - b_min, 0.0)
     @inbounds begin
@@ -67,6 +79,8 @@ end
     end
 end
 
+# Aggiorna area, β, denominatore di γ e raggio idraulico in tutte le sezioni,
+# leggendoli dalle tabelle in base alla quota eta corrente
 function BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta,
                       A_b, β_b, den_γ_b, rh_b)
     @inbounds for i in 1:imax
@@ -79,21 +93,31 @@ function BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta,
     return  A_b, β_b, den_γ_b, rh_b
 end
 
-# Legge pendenza, ascissa e talweg di ogni sezione
+
+
+# Legge il file della geometria e restituisce pendenza locale bx, ascissa x_b e talweg b_min
+# di ogni sezione
 function LOAD_GEOMETRY(filename, imax)
     data = Array{Float64}(undef, imax, 4)
     LOAD_DATA!(data, filename, imax, 4)
     return (bx = data[:, 2], x_b = data[:, 3], b_min = data[:, 4])
 end
 
-# Legge le tabelle delle sezioni: per ogni sezione una riga per ogni tirante
+
+
+# Legge il file delle tabelle delle sezioni e le restituisce come matrice n_row x n_col:
+# per ogni sezione una riga per ogni tirante
 function LOAD_SECTION_TABLES(filename, n_row, n_col)
     data = Array{Float64}(undef, n_row, n_col)
     LOAD_DATA!(data, filename, n_row, n_col)
     return data
 end
 
-# Carico idrogrammi da file esterni
+
+
+# Legge un singolo idrogramma da file e restituisce i vettori dei tempi t e delle portate Q.
+# Accetta colonne separate da virgole, spazi o tabulazioni e salta le righe vuote.
+# Si ferma con un errore se una riga non ha 2 colonne o se il file non contiene dati
 function LOAD_HYDROGRAPH!(filename)
     t = Float64[]
     Q = Float64[]
@@ -116,7 +140,10 @@ function LOAD_HYDROGRAPH!(filename)
     return (t = t, Q = Q)
 end
 
-# Carica gli idrogrammi scritti in settings.txt e presenti su disco, es. hydro[:centa].Q
+
+
+# Carica tutti gli idrogrammi scritti in settings.txt chiamando LOAD_HYDROGRAPH! per ciascuno.
+# Restituisce un dizionario, es. hydro[:centa].Q; i file non presenti vengono saltati con un avviso
 function LOAD_ALL_HYDROGRAPHS!(params)
     files = (brenta1 = params.hydro_brenta1, brenta2 = params.hydro_brenta2,
              brenta3 = params.hydro_brenta3, brenta4 = params.hydro_brenta4,
@@ -141,7 +168,10 @@ function LOAD_ALL_HYDROGRAPHS!(params)
     return hydro
 end
 
-# Tempo finale della simulazione: il minore tra i tempi finali degli idrogrammi
+
+
+# Calcola il tempo finale della simulazione: il minore tra i tempi finali degli idrogrammi.
+# Stampa un avviso se i tempi finali non sono tutti uguali
 function HYDROGRAPH_END_TIME(hydro)
     t_fin = [v.t[end] for v in values(hydro)]
     tend  = minimum(t_fin)
@@ -151,6 +181,10 @@ function HYDROGRAPH_END_TIME(hydro)
     return tend
 end
 
+
+
+# Calcola la portata dell'idrogramma al tempo time + dt con l'interpolazione di Lagrange su
+# tre punti. Sceglie i punti supponendo un passo temporale costante e tk che parte da zero
 function LAGRANGE_INTERPOLATION!(nr, tk, Qk, time, dt)
     dτ = (tk[nr] - tk[1]) / (nr - 1)
     m = Int(max(2, min(nr - 1, ceil((time + dt) / dτ))))
@@ -168,6 +202,10 @@ function LAGRANGE_INTERPOLATION!(nr, tk, Qk, time, dt)
     return Q
 end
 
+
+
+# Risolve con l'algoritmo di Thomas il sistema tridiagonale di Newton: aa, di e cc sono le
+# diagonali inferiore, principale e superiore, ff il termine noto. Scrive la soluzione in deta
 function THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
     gn = 0.0
     cn = Vector{Float64}(undef, imax)
@@ -187,6 +225,5 @@ function THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
     end
     end
 
-    
     return (deta)
 end
