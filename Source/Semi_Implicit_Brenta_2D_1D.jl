@@ -12,8 +12,9 @@
             A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff,
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
-    # --- CARICAMENTO DATI E CREAZIONE DOMINIO LONGITUDINALE ---
+    # --- CARICAMENTO DATI SEZIONI E CREAZIONE DOMINIO LONGITUDINALE ---
     @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
+    data_depth = LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col)
     SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 
     # --- CARICAMENTO IDROGRAMMI ---
@@ -46,13 +47,6 @@
 
 
 
-
-
-
-    #@infiltrate
-
-    data_depth = Array{Float64}(undef, n_row, n_col)
-    LOAD_DATA!(data_depth, parametri_sezioni, n_row, n_col)
     
 
 
