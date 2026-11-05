@@ -1,6 +1,27 @@
 @views @inbounds function SEMI_IMPLICIT_BRENTA_2D_1D!()
- # --- INIZIALIZZAZIONE STRUTTURE ---
-    params     = INITIAL_SETTINGS!()
+
+    # --- INIZIALIZZAZIONE STRUTTURE ---
+    params = INITIAL_SETTINGS!()
+
+    # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
+    @unpack imax, n_col, n_row, n_line_per_section, Ks, dtmax, Nmax,
+            parametri_sezioni, local_slope, time = params
+
+    # --- ALLOCAZIONE ARRAY ---
+    @unpack val, b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
+            A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff,
+            smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
+
+    # --- CARICAMENTO DATI E CREAZIONE DOMINIO LONGITUDINALE ---
+    n_row_ifx = imax
+    n_col_ifx = 4
+    data_ifx = Array{Float64}(undef, n_row_ifx, n_col_ifx)
+    LOAD_DATA!(data_ifx, local_slope, n_row_ifx, n_col_ifx)
+    bx    = data_ifx[:, 2]
+    x_b   = data_ifx[:, 3]
+    b_min = data_ifx[:, 4]
+    data_ifx = nothing  # Libera memoria
+    SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
 
     # --- CARICAMENTO IDROGRAMMI ---
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
@@ -30,40 +51,17 @@
     tk_moggio     = hydro[:moggio].t;      Qk_moggio     = hydro[:moggio].Q
     nr_hydro      = length(tk_cald)  # Numero di righe, uguale per tutti gli idrogrammi
 
-    # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_line_per_section, Ks, dtmax, Nmax = params
-
-    struttura         = params.struttura;
-    nr_strut          = params.nr_strut;
-    parametri_sezioni = params.parametri_sezioni;
-    local_slope       = params.local_slope;
-    ICdischarge       = params.ICdischarge;
-    Q_output          = params.Q_output;
-    time              = params.time;
-    temp              = params.temp;
-    n_row             = params.n_row;
 
 
-    val, b, bx, b_min, x_b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
-    A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff, smax, β_b,
-    β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
-    # --- CARICAMENTO DATI E INIZIALIZZAZIONE DOMINIO ---
-    n_row_ifx = imax
-    n_col_ifx = 4
-    data_ifx = Array{Float64}(undef, n_row_ifx, n_col_ifx)
-    LOAD_DATA!(data_ifx, local_slope, n_row_ifx, n_col_ifx)
-    bx    = data_ifx[:, 2]
-    x_b   = data_ifx[:, 3]
-    b_min = data_ifx[:, 4]
-    data_ifx = nothing  # Libera memoria
+
 
     #@infiltrate
 
     data_depth = Array{Float64}(undef, n_row, n_col)
     LOAD_DATA!(data_depth, parametri_sezioni, n_row, n_col)
     
-    SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
+
 
     # ----- PARAMETRI PER RIEMPIMENTO ----
     Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
