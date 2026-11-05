@@ -274,42 +274,6 @@
         end
         ###  FINE INSERIMENTO AFFLUENTI IC DA PONTE CERVIA
 
-        ####  INSERIMENTO AFFLUENTI IC DA PONTE ZACCON
-        #if IC == 1 
-        #    #@infiltrate
-        #    for i in 1:imax
-        #        #BACINO INTBAC 3
-        #        if i == 2 || i == 3 || i == 4
-        #            Q_aff[i] += Q_intbac3_IC
-        #        end
-        #        #BACINO INTBAC 4
-        #        if i == 79 || i == 80 || i == 81 
-        #            Q_aff[i] += Q_intbac4_IC
-        #        end
-        #        #BACINO INTBAC 5
-        #        if i == 108 || i == 109 || i == 110 || i == 111 || i == 112 
-        #            Q_aff[i] += Q_intbac5_IC
-        #        end
-        #        #BACINO INTBAC 6
-        #        if i == 137 || i == 138 || i == 139 
-        #            Q_aff[i] += Q_intbac6_IC
-        #        end
-        #        #BACINO INTBAC 7
-        #        if i == 229 || i == 230 || i == 231 
-        #            Q_aff[i] += Q_intbac7_IC
-        #        end
-        #        #BACINO INTBAC 8
-        #        if i == 245 || i == 246 || i == 247
-        #            Q_aff[i] += Q_intbac8_IC
-        #        end
-#
-        #        #@infiltrate
-        #        rhs[i] += dt/dx_int[i] * Q_aff[i]
-        #        #@show dt/dx_int[i]
-        #    end
-        #    #@infiltrate
-        #end
-        ##  FINE INSERIMENTO AFFLUENTI IC DA PONTE CERVIA
     
         ####  INSERIMENTO AFFLUENTI SIMULAZIONE DA PONTE CERVIA
         if IC == 0 
@@ -326,7 +290,7 @@
                 end
                 # BACINO INTBAC 2
                 #if i == 154 || i == 155 || i == 156
-                if i == 29 || i == 30 || i ==31
+                if i == 64 || i == 65 || i == 66
                     Q_intbac2 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC2, Qk_INTBAC2, time, dt)
                     Q_aff[i] += Q_intbac2/3
                 end
@@ -372,47 +336,6 @@
         end
         ##  FINE INSERIMENTO AFFLUENTI
 
-
-        #####  INSERIMENTO AFFLUENTI SIMULAZIONE DA PONTE ZACCON
-        #if IC == 0 
-        #    #@infiltrate
-        #    #@show qstar[9], qstar[10], qstar[11], qstar[29], qstar[30], qstar[31], qstar[51], qstar[52], qstar[53] @infiltrate
-        #    @inbounds for i in 1:imax+1
-        #        # BACINO INTBAC 3
-        #        if i == 2 || i == 3 || i == 4
-        #            Q_intbac3 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC3, Qk_INTBAC3, time, dt)
-        #            Q_aff[i] += Q_intbac3/3
-        #        end
-        #        # BACINO INTBAC 4
-        #        if i == 79 || i == 80 || i == 81
-        #            Q_intbac4 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC4, Qk_INTBAC4, time, dt)
-        #            Q_aff[i] += Q_intbac4/3
-        #        end
-        #        # BACINO INTBAC 5
-        #        if i == 108 || i == 109 || i == 110 || i == 111 || i == 112
-        #            Q_intbac5 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC5, Qk_INTBAC5, time, dt)
-        #            Q_aff[i] += Q_intbac5/5
-        #        end
-        #        # BACINO INTBAC 6
-        #        if i == 137 || i == 138 || i == 139
-        #            Q_intbac6 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC6, Qk_INTBAC6, time, dt)
-        #            Q_aff[i] += Q_intbac6/3
-        #        end
-        #        # BACINO INTBAC 7
-        #        if i == 229 || i == 230 || i == 231
-        #            Q_intbac7 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC7, Qk_INTBAC7, time, dt)
-        #            Q_aff[i] += Q_intbac7/3
-        #        end
-        #        # BACINO INTBAC 8
-        #        if i == 245 || i == 246 || i == 247
-        #            Q_intbac8 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC8, Qk_INTBAC8, time, dt)
-        #            Q_aff[i] += Q_intbac8/3
-        #        end
-        #        rhs[i] += dt/dx_int[i] * Q_aff[i]
-        #    end
-        #    #@show qstar[9], qstar[10], qstar[11], qstar[29], qstar[30], qstar[31], qstar[51], qstar[52], qstar[53] @infiltrate
-        #end
-        #  FINE INSERIMENTO AFFLUENTI PONTE ZACCON
 
 
         # --- Ciclo Newton ---
