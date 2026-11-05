@@ -74,15 +74,15 @@
 
 
 
-    exp_dt        = 2.0/3.0  # Esponente di dt nel calcolo della portata
+    exp_dt        = 2.0/3.0 # Esponente di dt nel calcolo della portata
     nCS           = 1
     IC_counter    = 0       
-    IC            = 1 # Indicatore condizioni iniziali attive
+    IC            = 1       # Indicatore condizioni iniziali attive
     consec_count  = 0 
     g             = 9.81
-    riempimento   = 1  # Indicatore fase di riempimento attiva
+    riempimento   = 1       # Indicatore fase di riempimento attiva
 
-    #@infiltrate
+
     eta    .= b_min   .+ 0.15 # Livello iniziale a valle   
     eta[1]  = b_min[1] + 0.3  # Livello iniziale a monte
 
