@@ -77,6 +77,13 @@ function BARYCENTERS!(imax, n_line_per_section, data_depth, b_min, eta,
     return  A_b, β_b, den_γ_b, rh_b
 end
 
+# Legge pendenza, ascissa e talweg di ogni sezione
+function LOAD_GEOMETRY(filename, imax)
+    data = Array{Float64}(undef, imax, 4)
+    LOAD_DATA!(data, filename, imax, 4)
+    return (bx = data[:, 2], x_b = data[:, 3], b_min = data[:, 4])
+end
+
 # Carico idrogrammi da file esterni
 function LOAD_HYDROGRAPH!(filename)
     t = Float64[]
