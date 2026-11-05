@@ -279,7 +279,7 @@
         if IC == 0 
             #@infiltrate
             #@show qstar[9], qstar[10], qstar[11], qstar[29], qstar[30], qstar[31], qstar[51], qstar[52], qstar[53] @infiltrate
-            @inbounds @simd for i in 1:imax+1
+            @inbounds @simd for i in 1:imax
                 # BACINO INTBAC 1
                 #if i == 22 || i == 23 || i == 24
                 if i == 9 || i == 10 || i == 11
