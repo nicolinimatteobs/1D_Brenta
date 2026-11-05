@@ -49,6 +49,9 @@
     # ----- PARAMETRI PER RIEMPIMENTO ----
     Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
+    y_ini          = 0.05    # Velo d'acqua iniziale [m]
+    T_riempimento  = 21600.0  # Durata della rampa di riempimento [s]
+    dt_riempimento = 5.0    # Passo massimo durante la rampa [s]
 
     Q_brenta1_IC    = Qk_brenta1[1]    # Portata affluente bacino 1 condizioni iniziali
     Q_brenta2_IC    = Qk_brenta2[1]    # Portata affluente bacino 2 condizioni iniziali
@@ -76,11 +79,10 @@
     IC            = 1       # Indicatore condizioni iniziali attive
     consec_count  = 0 
     g             = 9.81
-    riempimento   = 1       # Indicatore fase di riempimento attiva
 
 
-    eta    .= b_min   .+ 0.15 # Livello iniziale a valle   
-    eta[1]  = b_min[1] + 0.3  # Livello iniziale a monte
+    # Velo d'acqua iniziale, con portata di moto uniforme locale
+    eta .= b_min .+ y_ini
 
     @inbounds for i in 1:imax
         sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
@@ -93,7 +95,8 @@
     end 
   
 
-    Qin = q[1]  # Portata in ingresso corrente
+    Qin_0 = q[1]  # Portata in ingresso all'inizio della rampa
+    Qin   = Qin_0  # Portata in ingresso corrente
     Q_aff = zeros(imax)  # Vettore portate affluenti
 
     A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta, A_b, β_b, den_γ_b, rh_b)  
@@ -143,7 +146,8 @@
         #Threads.@threads :static
         @inbounds @simd for i in 2:imax
             
-            A_int[i]     = 0.5 * (A_b[i] + A_b[i-1])
+            # Durante la rampa area della cella a monte: una cella non cede più acqua di quanta ne ha
+            A_int[i]     = (IC == 1 && time < T_riempimento) ? (q[i] >= 0.0 ? A_b[i-1] : A_b[i]) : 0.5 * (A_b[i] + A_b[i-1])
             β_int[i]     = 0.5 * (β_b[i] + β_b[i-1])
             den_γ_int[i] = 0.5 * (den_γ_b[i] + den_γ_b[i-1])
             rh_int[i]    = 0.5 * (rh_b[i] + rh_b[i-1])
@@ -154,7 +158,8 @@
         end
 
         amax = maximum(smax)
-        dt   = min(dtmax, CFL*dx/(amax + tol))
+        dt_lim = (IC == 1 && time < T_riempimento) ? dt_riempimento : dtmax
+        dt   = min(dt_lim, CFL*dx/(amax + tol))
 
         #@infiltrate
 
@@ -165,25 +170,16 @@
             break
         end
 
-        if IC == 1 && riempimento == 0
-            if Qin < Qin_IC_target
-                #Qin += 0.2
-                Qin += 0.1
-            end
-            if Qin > Qin_IC_target
-                Qin = Qin_IC_target
-            end
+        # Rampa lineare: le portate salgono al valore iniziale in T_riempimento
+        if IC == 1
+            r_IC = min(1.0, (time + dt)/T_riempimento)
+            Qin  = Qin_0 + r_IC*(Qin_IC_target - Qin_0)
         end
         #@infiltrate
         @inbounds @simd for i in 1:imax+1
             if i == 1
                 if IC == 1
-                    if riempimento == 1
-                        qstar[i] = q[1]
-                        riempimento = 0
-                    else
-                        qstar[i] = Qin
-                    end
+                    qstar[i] = Qin
                 else
                     Qin_idro = LAGRANGE_INTERPOLATION!(nr_hydro, tk_cald, Qk_cald, time, dt)
                     qstar[i] = Qin_idro
@@ -267,7 +263,7 @@
                 end
 
                 #@infiltrate
-                rhs[i] += dt/dx_int[i] * Q_aff[i]
+                rhs[i] += dt/dx_int[i] * r_IC * Q_aff[i]
                 #@show dt/dx_int[i]
             end
             #@infiltrate
@@ -382,6 +378,7 @@
         # --- Aggiornamento tempo e counter ---
         time += dt
         nCS  += 1
+        Q_aff_tot = sum(Q_aff)  # Somma degli affluenti, per il bilancio
         Q_aff .= 0.0  # Reset portate affluenti
         # --- Salvataggio risultati ---
         if nCS % 500 == 0
@@ -423,7 +420,9 @@
                 end
             end
 
-            if IC_counter == imax #&& nCS > 15000
+            # Stazionario: rampa finita, q ferma e ingressi uguali all'uscita
+            Q_in_tot = q[1] + Q_aff_tot
+            if IC_counter == imax && time >= T_riempimento && abs(Q_in_tot - q[imax+1]) < 1e-3*Q_in_tot
                 println("Condizioni iniziali raggiunte al tempo: ", nCS, ", time = ", time)
                 IC           = 0 # Disattiva condizioni iniziali
                 nCS          = 1
