@@ -13,15 +13,8 @@
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
     # --- CARICAMENTO DATI E CREAZIONE DOMINIO LONGITUDINALE ---
-    n_row_ifx = imax
-    n_col_ifx = 4
-    data_ifx = Array{Float64}(undef, n_row_ifx, n_col_ifx)
-    LOAD_DATA!(data_ifx, local_slope, n_row_ifx, n_col_ifx)
-    bx    = data_ifx[:, 2]
-    x_b   = data_ifx[:, 3]
-    b_min = data_ifx[:, 4]
-    data_ifx = nothing  # Libera memoria
-    SPATIAL_DOMAIN!(imax ,x_b, dx_b, x_int, dx_int)
+    @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
+    SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 
     # --- CARICAMENTO IDROGRAMMI ---
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
