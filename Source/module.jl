@@ -108,25 +108,20 @@ end
 
 function LOAD_DATA!(data, filename, row, col)
 
-    try
-        open(filename, "r") do f
-            # Salta la prima riga (header)
-            readline(f)
+    open(filename, "r") do f
+        # Salta la prima riga (header)
+        readline(f)
 
-            # Leggi riga per riga
-            for n in 1:row
-                line = strip(readline(f))
-                fields = split(line, ',')
-                val = parse.(Float64, fields)
-                if length(val) != col
-                    error("Errore: numero di colonne nella riga $n non corrisponde a $col")
-                end
-                data[n, :] = val
+        # Leggi riga per riga
+        for n in 1:row
+            line = strip(readline(f))
+            fields = split(line, ',')
+            val = parse.(Float64, fields)
+            if length(val) != col
+                error("Errore: la riga $n del file '$filename' non ha $col colonne")
             end
+            data[n, :] = val
         end
-    catch e
-        println("Errore durante la lettura del file '$filename': ", e)
-        return nothing
     end
     return data
 end
