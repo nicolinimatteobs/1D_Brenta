@@ -1,3 +1,6 @@
+# Legge settings.txt e il file della struttura, e restituisce i parametri della simulazione.
+# Le righe di settings.txt vengono lette per posizione: non vanno spostate. I percorsi degli
+# idrogrammi sono raccolti in hydro_files. Le righe 2 e 26 non vengono più lette
 function INITIAL_SETTINGS!()
     # Legge esattamente 30 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
@@ -5,107 +8,82 @@ function INITIAL_SETTINGS!()
     end
     # Parsing dei dati
     struttura         = righe[1]
-    nr_strut          = parse(Int, righe[2])
     parametri_sezioni = righe[3]
     local_slope       = righe[4]
-    hydro_brenta1     = righe[5]
-    hydro_brenta2     = righe[6]
-    hydro_brenta3     = righe[7]
-    hydro_brenta4     = righe[8]
-    hydro_brenta5     = righe[9]
-    hydro_brenta6     = righe[10]
-    hydro_brenta7     = righe[11]
-    hydro_brenta_new  = righe[12]
-    hydro_brenta_v1   = righe[13]
-    hydro_brenta_v2   = righe[14]
-    hydro_brenta_v3   = righe[15]
-    hydro_brenta_v4   = righe[16]
-    hydro_caldonazzo  = righe[17]
-    hydro_ceggio      = righe[18]
-    hydro_levico      = righe[19]
-    hydro_centa       = righe[20]
-    hydro_chieppena   = righe[21]
-    hydro_grigno      = righe[22]
-    hydro_maso        = righe[23]
-    hydro_moggio      = righe[24]
+    hydro_files = (brenta1    = righe[5],  brenta2    = righe[6],
+                   brenta3    = righe[7],  brenta4    = righe[8],
+                   brenta5    = righe[9],  brenta6    = righe[10],
+                   brenta7    = righe[11], brenta_new = righe[12],
+                   brenta_v1  = righe[13], brenta_v2  = righe[14],
+                   brenta_v3  = righe[15], brenta_v4  = righe[16],
+                   caldonazzo = righe[17], ceggio     = righe[18],
+                   levico     = righe[19], centa      = righe[20],
+                   chieppena  = righe[21], grigno     = righe[22],
+                   maso       = righe[23], moggio     = righe[24])
     ICdischarge       = righe[25]
-    Q_output          = righe[26]
     Ks                = parse(Float64, righe[27])
     time              = parse(Float64, righe[28])
     dtmax             = parse(Float64, righe[29])
-    temp              = parse(Float64, righe[30]) #max loop in time temporaneo
-    # Leggi il file struttura
-    # Leggi solo le prime 4 righe del file struttura
-    val_rif = open(strip(struttura), "r") do f
+    Nmax              = round(Int, parse(Float64, righe[30]))  # Numero massimo di passi
+
+    # Legge le prime 4 righe del file struttura
+    val_rif = open(struttura, "r") do f
         [parse(Int, strip(readline(f))) for _ in 1:4]
-    end 
+    end
 
-    n_line_per_section = val_rif[1]
-    n_row              = val_rif[2]
-    imax               = val_rif[3]
-    n_col              = val_rif[4]
+    n_row = val_rif[2]
+    imax  = val_rif[3]
+    n_col = val_rif[4]
 
-    # Numero massimo di passi
-    Nmax = round(Int, temp)
-
-    return Parametri(
-    struttura, nr_strut, parametri_sezioni, local_slope,
-    hydro_brenta1, hydro_brenta2, hydro_brenta3, hydro_brenta4,
-    hydro_brenta5, hydro_brenta6, hydro_brenta7, hydro_brenta_new,
-    hydro_brenta_v1, hydro_brenta_v2, hydro_brenta_v3, hydro_brenta_v4,
-    hydro_caldonazzo, hydro_ceggio, hydro_levico, hydro_centa,
-    hydro_chieppena, hydro_grigno, hydro_maso, hydro_moggio,
-    ICdischarge, Q_output, Ks, time, dtmax, temp, Nmax,
-    n_line_per_section, n_row, imax, n_col)
+    return Parametri(parametri_sezioni, local_slope, hydro_files, ICdischarge,
+                     Ks, time, dtmax, Nmax, n_row, imax, n_col)
 end
 
-#struttura, nr_strut, parametri_sezioni, local_slope, hydro_Brenta,
-#    nr_PC, nc_PC, hydro_INTBAC1, hydro_INTBAC2, hydro_INTBAC3, hydro_INTBAC4, hydro_INTBAC5,
-#    hydro_INTBAC6, hydro_INTBAC7, hydro_INTBAC8, nr_aff, nc_aff, ICdischarge, Q_output, Ks, time, dtmax, temp, Nmax, 
-#    n_line_per_section, n_row, imax, n_col
-
-function ALLOCATE_ARRAYS!(imax, n_col)
+# Crea tutti gli array del modello, inizializzati a zero, e li restituisce per nome.
+# Quelli di lunghezza imax stanno sulle sezioni, quelli di lunghezza imax+1 sulle interfacce
+function ALLOCATE_ARRAYS!(imax)
     # VETTORI CON VALORI FISSI
-    val       = Vector{Float64}(undef, n_col)
-    b         = Vector{Float64}(undef, imax)
-    dx_b      = Vector{Float64}(undef, imax-1)
-    x_int     = Vector{Float64}(undef, imax+1)
-    dx_int    = Vector{Float64}(undef, imax)
+    b         = zeros(imax)
+    dx_b      = zeros(imax-1)
+    x_int     = zeros(imax+1)
+    dx_int    = zeros(imax)
 
     # ARRAYS CON VALORI VARIABILI
-    eta       = Vector{Float64}(undef, imax)
-    A_bn      = Vector{Float64}(undef, imax)
-    deta      = Vector{Float64}(undef, imax)
-    rh_b      = Vector{Float64}(undef, imax)
-    rh_int    = Vector{Float64}(undef, imax+1)
-    A_int     = Vector{Float64}(undef, imax+1)
-    A_int_g   = Vector{Float64}(undef, imax+1)
-    A_b       = Vector{Float64}(undef, imax)
-    dA        = Vector{Float64}(undef, imax)
-    q         = Vector{Float64}(undef, imax+1)
-    uf        = Vector{Float64}(undef, imax+1)
-    qstar     = Vector{Float64}(undef, imax+1)
-    γ         = Vector{Float64}(undef, imax+1)
-    aa        = Vector{Float64}(undef, imax)
-    bb        = Vector{Float64}(undef, imax)
-    cc        = Vector{Float64}(undef, imax)
-    di        = Vector{Float64}(undef, imax)
-    ff        = Vector{Float64}(undef, imax)
-    smax      = Vector{Float64}(undef, imax+1)
-    β_b       = Vector{Float64}(undef, imax)
-    β_int     = Vector{Float64}(undef, imax+1)
-    rhs       = Vector{Float64}(undef, imax)
-    den_γ_b   = Vector{Float64}(undef, imax)
-    den_γ_int = Vector{Float64}(undef, imax+1)
-    qn        = Vector{Float64}(undef, imax+1)
+    eta       = zeros(imax)
+    A_bn      = zeros(imax)
+    deta      = zeros(imax)
+    rh_b      = zeros(imax)
+    rh_int    = zeros(imax+1)
+    A_int     = zeros(imax+1)
+    A_int_g   = zeros(imax+1)
+    A_b       = zeros(imax)
+    dA        = zeros(imax)
+    q         = zeros(imax+1)
+    uf        = zeros(imax+1)
+    qstar     = zeros(imax+1)
+    γ         = zeros(imax+1)
+    aa        = zeros(imax)
+    bb        = zeros(imax)
+    cc        = zeros(imax)
+    di        = zeros(imax)
+    ff        = zeros(imax)
+    smax      = zeros(imax+1)
+    β_b       = zeros(imax)
+    β_int     = zeros(imax+1)
+    rhs       = zeros(imax)
+    den_γ_b   = zeros(imax)
+    den_γ_int = zeros(imax+1)
+    qn        = zeros(imax+1)
 
-    return (; val, b, dx_b, x_int, dx_int,
+    return (; b, dx_b, x_int, dx_int,
             eta, A_bn, deta, rh_b, rh_int, A_int, A_int_g, A_b, dA,
             q, uf, qstar, γ, aa, bb, cc, di, ff,
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn)
 
 end
 
+# Legge un file di dati separati da virgole e riempie la matrice data (row x col), saltando
+# la prima riga di intestazione. Si ferma con un errore se una riga non ha col colonne
 function LOAD_DATA!(data, filename, row, col)
 
     open(filename, "r") do f

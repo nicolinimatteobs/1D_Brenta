@@ -1,36 +1,14 @@
+# Parametri della simulazione letti da settings.txt e dal file della struttura.
+# hydro_files contiene i percorsi degli idrogrammi, es. params.hydro_files.centa
 struct Parametri
-    struttura          ::String
-    nr_strut           ::Int
     parametri_sezioni  ::String
     local_slope        ::String
-    hydro_brenta1      ::String
-    hydro_brenta2      ::String
-    hydro_brenta3      ::String
-    hydro_brenta4      ::String
-    hydro_brenta5      ::String
-    hydro_brenta6      ::String
-    hydro_brenta7      ::String
-    hydro_brenta_new   ::String
-    hydro_brenta_v1    ::String
-    hydro_brenta_v2    ::String
-    hydro_brenta_v3    ::String
-    hydro_brenta_v4    ::String
-    hydro_caldonazzo   ::String
-    hydro_ceggio       ::String
-    hydro_levico       ::String
-    hydro_centa        ::String
-    hydro_chieppena    ::String
-    hydro_grigno       ::String
-    hydro_maso         ::String
-    hydro_moggio       ::String
+    hydro_files        ::NamedTuple
     ICdischarge        ::String
-    Q_output           ::String
     Ks                 ::Float64
     time               ::Float64
     dtmax              ::Float64
-    temp               ::Float64
     Nmax               ::Int
-    n_line_per_section ::Int
     n_row              ::Int
     imax               ::Int
     n_col              ::Int

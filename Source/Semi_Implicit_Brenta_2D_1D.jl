@@ -10,7 +10,7 @@
     # --- ALLOCAZIONE ARRAY ---
     @unpack b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
             A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff,
-            smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
+            smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax)
 
     # --- CARICAMENTO DATI SEZIONI E CREAZIONE DOMINIO LONGITUDINALE ---
     @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
