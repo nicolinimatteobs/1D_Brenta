@@ -4,17 +4,19 @@
     params = INITIAL_SETTINGS!()
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_row, n_line_per_section, Ks, dtmax, Nmax,
+    @unpack imax, n_col, n_row, Ks, dtmax, Nmax,
             parametri_sezioni, local_slope, time = params
 
     # --- ALLOCAZIONE ARRAY ---
-    @unpack val, b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
+    @unpack b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
             A_int, A_int_g, A_b, dA, q, uf, qstar, γ, aa, bb, cc, di, ff,
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax, n_col)
 
     # --- CARICAMENTO DATI SEZIONI E CREAZIONE DOMINIO LONGITUDINALE ---
     @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
-    data_depth = LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col)
+    data_depth = permutedims(LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col))
+    ys         = copy(data_depth[2, :])  # copy: con @views sarebbe una vista, non un vettore continuo
+    first_row, last_row = SECTION_INDEX(data_depth)
     SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 
     # --- CARICAMENTO IDROGRAMMI ---
@@ -81,10 +83,10 @@
     #eta[1:half] .= b_min[1:half] .+ 0.5
     #eta[half+1:imax] .= b_min[half+1:imax] .+ 0.05
 
-    @inbounds @simd for i in 1:imax
-        READ_VALUES!(data_depth, i, eta[i] - b_min[i], n_line_per_section, val)
-        A_b[i]  = val[3]
-        rh_b[i] = val[11]
+    @inbounds for i in 1:imax
+        sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+        A_b[i]  = sec.A
+        rh_b[i] = sec.rh
         q[i]    = A_b[i]*Ks*sqrt(abs(bx[i]))*rh_b[i]^(exp_dt)
         if i == imax
             q[i+1] += q[i]  # Aggiunta portata in ingresso
@@ -95,7 +97,7 @@
     Qin = q[1]  # Portata in ingresso corrente
     Q_aff = zeros(imax)  # Vettore portate affluenti
 
-    A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, n_line_per_section, data_depth, b_min, eta, A_b, β_b, den_γ_b, rh_b, val)  
+    A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta, A_b, β_b, den_γ_b, rh_b)  
     
     #@infiltrate
     #WRITE_INITIAL_CONDITIONS!(ICdischarge, imax, x_b, eta, b_min, x_int, q)  # Scrittura condizioni iniziali
@@ -440,12 +442,10 @@
         # --- Ciclo Newton ---
         #@infiltrate
         @inbounds for iNewton in 1:100
-            @inbounds @simd for i in 1:imax
-                yb = eta[i] - b_min[i]
-
-                READ_VALUES!(data_depth, i, yb, n_line_per_section, val)
-                A_bn[i] = val[3]
-                dA[i]   = val[9]
+            @inbounds for i in 1:imax
+                sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+                A_bn[i] = sec.A
+                dA[i]   = sec.w
 
                 if i == 1
                     ff[i] = A_bn[i] + bb[i]*eta[i] + cc[i]*eta[i+1] - rhs[i]
@@ -506,15 +506,13 @@
         #end
 
         # --- Aggiornamento geometrie finali ---
-        @inbounds @simd for i in 1:imax
-            yb = eta[i] - b_min[i]
-            
-            READ_VALUES!(data_depth, i, yb, n_line_per_section, val)
-            A_b[i]     = val[3]
-            β_b[i]     = val[5]
-            den_γ_b[i] = val[7]
-            b[i]       = val[9]
-            rh_b[i]    = val[11]
+        @inbounds for i in 1:imax
+            sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+            A_b[i]     = sec.A
+            β_b[i]     = sec.β
+            den_γ_b[i] = sec.den
+            b[i]       = sec.w
+            rh_b[i]    = sec.rh
         end
 
         if IC == 1
