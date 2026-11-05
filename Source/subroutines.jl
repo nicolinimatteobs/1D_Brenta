@@ -1,28 +1,17 @@
 function SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
+
     @inbounds for i in 1:imax-1
         dx_b[i] = x_b[i+1] - x_b[i]
     end
 
     dx_int[1] = dx_b[1]
+    
     @inbounds  for i in 2:imax-1
         dx_int[i] = 0.5 * (dx_b[i] + dx_b[i-1])
     end
     dx_int[imax] = dx_b[imax-1]
 
     @inbounds  for i in 2:imax
-        x_int[i] = 0.5 * (x_b[i] + x_b[i-1])
-    end
-     @inbounds for i in 1:imax-1
-        dx_b[i] = x_b[i+1] - x_b[i]
-    end
-
-    dx_int[1] = dx_b[1]
-    @inbounds  for i in 2:imax-1
-        dx_int[i] = 0.5 * (dx_b[i] + dx_b[i-1])
-    end
-    dx_int[imax] = dx_b[imax-1]
-
-    @inbounds for i in 2:imax
         x_int[i] = 0.5 * (x_b[i] + x_b[i-1])
     end
 
