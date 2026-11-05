@@ -1,15 +1,15 @@
 using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator
 
-const InputFolderParent = "input"
+const InputFolderParent = "calcolo_tabelle_daBM/input"
 const InputFolderSections = "sections_split_S0200_S6000"
-const OutputFolder = "output"
+const OutputFolder = "calcolo_tabelle_daBM/output"
 
 function slope!(slope, y, x) 
     @. slope[begin:end-1] = (y[begin+1:end] - y[begin:end-1]) / (x[begin+1:end] - x[begin:end-1]) 
     slope[end] = slope[end-1]
 end
 
-@views function main()
+@views function main(; dosave::Bool=false)
     # leggi il file riguardante tutte le sezioni
     InputFile = "sections_dx.csv"
     InputPath = joinpath(InputFolderParent, InputFolderSections, InputFile)
@@ -57,7 +57,7 @@ end
     # compila l'area
     Ω   = data[!, "Wetted area [m2]"]
     slope!(Ω_s, Ω, WSE)
-    # display(plot(WSE, Ω, label="Ω"))
+    display(plot(WSE, Ω, label="Ω"))
     plt1 = plot(Ω, WSE; 
         title="Area bagnata",
         xlabel="Area [m^2]",
@@ -65,13 +65,13 @@ end
         legend=false,
         size=(450, 600)
     )
-    display(plt1)
-    savefig(plt1, joinpath(OutputFolder, "area_bagnata.svg"))
+    # display(plt1)
+    dosave && savefig(plt1, joinpath(OutputFolder, "area_bagnata.svg"))
 
     # compila la larghezza
     W = data[!, "Wetted geometric length [m]"]
     slope!(W_s, W, WSE)
-    # display(plot(WSE, W, label="W"))
+    display(plot(WSE, W, label="W"))
     plt2 = plot(W, WSE; 
         title="Larghezza bagnata",
         xlabel="Larghezza [m]",
@@ -79,14 +79,14 @@ end
         legend=false,
         size=(450, 600)
     )
-    display(plt2)
-    savefig(plt2, joinpath(OutputFolder, "larghezza_bagnata.svg"))
+    # display(plt2)
+    dosave && savefig(plt2, joinpath(OutputFolder, "larghezza_bagnata.svg"))
 
     # compila il raggio idraulico
     RH = Ω ./ W
     RH[begin] = 0.0
     slope!(RH_s, RH, WSE)
-    # display(plot(WSE, RH, label="RH"))
+    display(plot(WSE, RH, label="RH"))
     plt3 = plot(RH, WSE; 
         title="Raggio idraulico",
         xlabel="Raggio [m]",
@@ -94,13 +94,13 @@ end
         legend=false,
         size=(450, 600)
     )
-    display(plt3)
-    savefig(plt3, joinpath(OutputFolder, "raggio.idraulico.svg"))
+    # display(plt3)
+    dosave && savefig(plt3, joinpath(OutputFolder, "raggio.idraulico.svg"))
 
     # Calcola il Ks equivalente dell'intera sezione
     Q = data[!, "Discharge [m3/s]"]
     iWSE = 0.00246
-    Ks = @. sqrt( Q / ((Ω * cbrt(RH)^2 )^2 - iWSE) )
+    Ks = @. sqrt( Q^2 / ((Ω * cbrt(RH)^2 )^2 * iWSE) )
     display(plot(WSE, Ks, label="Ks"))
 
     #= CALCOLO DI KS
@@ -113,11 +113,11 @@ end
     jden = @. 1.0/(Ω * Ks * cbrt(RH)^2)^2
 
     slope!(jden_s, jden, WSE)
-    display(plot(WSE, jden, label="jden"))
+    dosave && savefig(plot(WSE, jden, label="jden"), joinpath(OutputFolder, "jden.svg"))
 
     @infiltrate false
 
     return nothing
 end
 
-main()
+main(; dosave=false)
