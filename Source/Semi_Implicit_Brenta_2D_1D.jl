@@ -70,10 +70,6 @@
     Q_moggio_IC     = Qk_moggio[1]     # Portata affluente Moggio condizioni iniziali
     
 
-
-
-
-
     exp_dt        = 2.0/3.0 # Esponente di dt nel calcolo della portata
     nCS           = 1
     IC_counter    = 0       
@@ -86,11 +82,6 @@
     eta    .= b_min   .+ 0.15 # Livello iniziale a valle   
     eta[1]  = b_min[1] + 0.3  # Livello iniziale a monte
 
-    #### DAM BREAK IC ####
-    #half = round(Int, imax/2)
-    #eta[1:half] .= b_min[1:half] .+ 0.5
-    #eta[half+1:imax] .= b_min[half+1:imax] .+ 0.05
-
     @inbounds for i in 1:imax
         sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
         A_b[i]  = sec.A
@@ -100,7 +91,7 @@
             q[i+1] += q[i]  # Aggiunta portata in ingresso
         end
     end 
-    #@infiltrate
+  
 
     Qin = q[1]  # Portata in ingresso corrente
     Q_aff = zeros(imax)  # Vettore portate affluenti
