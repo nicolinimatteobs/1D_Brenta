@@ -84,6 +84,13 @@ function LOAD_GEOMETRY(filename, imax)
     return (bx = data[:, 2], x_b = data[:, 3], b_min = data[:, 4])
 end
 
+# Legge le tabelle delle sezioni: per ogni sezione una riga per ogni tirante
+function LOAD_SECTION_TABLES(filename, n_row, n_col)
+    data = Array{Float64}(undef, n_row, n_col)
+    LOAD_DATA!(data, filename, n_row, n_col)
+    return data
+end
+
 # Carico idrogrammi da file esterni
 function LOAD_HYDROGRAPH!(filename)
     t = Float64[]
