@@ -68,9 +68,6 @@ function ALLOCATE_ARRAYS!(imax, n_col)
     # VETTORI CON VALORI FISSI
     val       = Vector{Float64}(undef, n_col)
     b         = Vector{Float64}(undef, imax)
-    bx        = Vector{Float64}(undef, imax)
-    b_min     = Vector{Float64}(undef, imax)
-    x_b       = Vector{Float64}(undef, imax)
     dx_b      = Vector{Float64}(undef, imax-1)
     x_int     = Vector{Float64}(undef, imax+1)
     dx_int    = Vector{Float64}(undef, imax)
@@ -100,18 +97,12 @@ function ALLOCATE_ARRAYS!(imax, n_col)
     rhs       = Vector{Float64}(undef, imax)
     den_γ_b   = Vector{Float64}(undef, imax)
     den_γ_int = Vector{Float64}(undef, imax+1)
-    Yb_array  = Vector{Float64}(undef, imax)
     qn        = Vector{Float64}(undef, imax+1)
-    qb        = Vector{Float64}(undef, imax)
-    ub        = Vector{Float64}(undef, imax)
-    Yavg      = Vector{Float64}(undef, imax)
-    Froude    = Vector{Float64}(undef, imax)
 
-    return (val, b, bx, b_min, x_b, dx_b, x_int, dx_int,
+    return (; val, b, dx_b, x_int, dx_int,
             eta, A_bn, deta, rh_b, rh_int, A_int, A_int_g, A_b, dA,
             q, uf, qstar, γ, aa, bb, cc, di, ff,
-            smax, β_b, β_int, rhs, den_γ_b, den_γ_int,
-            Yb_array, qn, qb, ub, Yavg, Froude)
+            smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn)
 
 end
 
