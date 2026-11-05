@@ -217,118 +217,132 @@
 
         end
 
-        ####  INSERIMENTO AFFLUENTI IC DA PONTE CERVIA
-        if IC == 1 
-            #@infiltrate
+        ####  INSERIMENTO AFFLUENTI CONDIZIONI INIZIALI
+        # Sezioni provvisorie: ogni affluente entra in una sola sezione, dalla 1 alla 19
+        if IC == 1
             @inbounds @simd for i in 1:imax
-                # BACINO INTBAC 1
-                #if i == 22 || i == 23 || i == 24
-                if i == 9 || i == 10 || i == 11 
-                    Q_aff[i] += Q_intbac1_IC
+                if i == 1
+                    Q_aff[i] += Q_brenta1_IC
                 end
-                #BACINO INTBAC 2
-                #if i == 154 || i == 155 || i == 156
-                if i == 64 || i == 65 || i ==66 
-                    Q_aff[i] += Q_intbac2_IC
+                if i == 2
+                    Q_aff[i] += Q_brenta2_IC
                 end
-                #BACINO INTBAC 3
-                #if i == 265 || i == 266 || i == 267
-                if i == 110 || i == 111 || i == 112
-                    Q_aff[i] += Q_intbac3_IC
+                if i == 3
+                    Q_aff[i] += Q_brenta3_IC
                 end
-                #BACINO INTBAC 4
-                #if i == 440 || i == 441 || i == 442
-                if i == 187 || i == 188 || i == 189 
-                    Q_aff[i] += Q_intbac4_IC
+                if i == 4
+                    Q_aff[i] += Q_brenta4_IC
                 end
-                #BACINO INTBAC 5
-                #if i == 508 || i == 509 || i == 510 || i == 511 || i == 512
-                if i == 216 || i == 217 || i == 218 || i == 219 || i == 220 
-                    Q_aff[i] += Q_intbac5_IC
+                if i == 5
+                    Q_aff[i] += Q_brenta5_IC
                 end
-                #BACINO INTBAC 6
-                #if i == 575 || i == 576 || i == 577
-                if i == 245 || i == 246 || i == 247 
-                    Q_aff[i] += Q_intbac6_IC
+                if i == 6
+                    Q_aff[i] += Q_brenta6_IC
                 end
-                #BACINO INTBAC 7
-                #if i == 784 || i == 785 || i == 786
-                if i == 337 || i == 338 || i == 339 
-                    Q_aff[i] += Q_intbac7_IC
+                # Sezione 7: brenta7, da riattivare quando Brenta7.csv viene aggiunto
+                if i == 8
+                    Q_aff[i] += Q_brenta_new_IC
                 end
-                #BACINO INTBAC 8
-                #if i == 822 || i == 823 || i == 824
-                if i == 353 || i == 354 || i == 355 
-                    Q_aff[i] += Q_intbac8_IC
+                if i == 9
+                    Q_aff[i] += Q_brenta_v1_IC
                 end
-
-                #@infiltrate
+                if i == 10
+                    Q_aff[i] += Q_brenta_v2_IC
+                end
+                if i == 11
+                    Q_aff[i] += Q_brenta_v3_IC
+                end
+                if i == 12
+                    Q_aff[i] += Q_brenta_v4_IC
+                end
+                if i == 13
+                    Q_aff[i] += Q_ceggio_IC
+                end
+                if i == 14
+                    Q_aff[i] += Q_levico_IC
+                end
+                if i == 15
+                    Q_aff[i] += Q_centa_IC
+                end
+                if i == 16
+                    Q_aff[i] += Q_chieppena_IC
+                end
+                if i == 17
+                    Q_aff[i] += Q_grigno_IC
+                end
+                if i == 18
+                    Q_aff[i] += Q_maso_IC
+                end
+                if i == 19
+                    Q_aff[i] += Q_moggio_IC
+                end
                 rhs[i] += dt/dx_int[i] * r_IC * Q_aff[i]
-                #@show dt/dx_int[i]
             end
-            #@infiltrate
         end
-        ###  FINE INSERIMENTO AFFLUENTI IC DA PONTE CERVIA
+        ###  FINE INSERIMENTO AFFLUENTI CONDIZIONI INIZIALI
 
     
-        ####  INSERIMENTO AFFLUENTI SIMULAZIONE DA PONTE CERVIA
-        if IC == 0 
-            #@infiltrate
-            #@show qstar[9], qstar[10], qstar[11], qstar[29], qstar[30], qstar[31], qstar[51], qstar[52], qstar[53] @infiltrate
+        ####  INSERIMENTO AFFLUENTI SIMULAZIONE
+        # Sezioni provvisorie: stesse sezioni delle condizioni iniziali
+        if IC == 0
             @inbounds @simd for i in 1:imax
-                # BACINO INTBAC 1
-                #if i == 22 || i == 23 || i == 24
-                if i == 9 || i == 10 || i == 11
-                    #@show i, Q_aff[i] @infiltrate 
-                    Q_intbac1 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC1, Qk_INTBAC1, time, dt)  
-                    Q_aff[i] += Q_intbac1/3
-                    #@show i, Q_aff[i] @infiltrate
+                if i == 1
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta1), tk_brenta1, Qk_brenta1, time, dt)
                 end
-                # BACINO INTBAC 2
-                #if i == 154 || i == 155 || i == 156
-                if i == 64 || i == 65 || i == 66
-                    Q_intbac2 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC2, Qk_INTBAC2, time, dt)
-                    Q_aff[i] += Q_intbac2/3
+                if i == 2
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta2), tk_brenta2, Qk_brenta2, time, dt)
                 end
-                # BACINO INTBAC 3
-                #if i == 265 || i == 266 || i == 267
-                if i == 110 || i == 111 || i == 112
-                    Q_intbac3 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC3, Qk_INTBAC3, time, dt)
-                    Q_aff[i] += Q_intbac3/3 
+                if i == 3
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta3), tk_brenta3, Qk_brenta3, time, dt)
                 end
-                # BACINO INTBAC 4
-                #if i == 440 || i == 441 || i == 442
-                if i == 187 || i == 188 || i == 189
-                    Q_intbac4 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC4, Qk_INTBAC4, time, dt)
-                    Q_aff[i] += Q_intbac4/3
+                if i == 4
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta4), tk_brenta4, Qk_brenta4, time, dt)
                 end
-                # BACINO INTBAC 5
-                #if i == 508 || i == 509 || i == 510 || i == 511 || i == 512
-                if i == 216 || i == 217 || i == 218 || i == 219 || i == 220 
-                    Q_intbac5 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC5, Qk_INTBAC5, time, dt)
-                    Q_aff[i] += Q_intbac5/5
+                if i == 5
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta5), tk_brenta5, Qk_brenta5, time, dt)
                 end
-                # BACINO INTBAC 6
-                #if i == 575 || i == 576 || i == 577
-                if i == 245 || i == 246 || i == 247
-                    Q_intbac6 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC6, Qk_INTBAC6, time, dt)
-                    Q_aff[i] += Q_intbac6/3 
+                if i == 6
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta6), tk_brenta6, Qk_brenta6, time, dt)
                 end
-                # BACINO INTBAC 7
-                #if i == 784 || i == 785 || i == 786
-                if i == 337 || i == 338 || i == 339
-                    Q_intbac7 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC7, Qk_INTBAC7, time, dt)
-                    Q_aff[i] += Q_intbac7/3
+                # Sezione 7: brenta7, da riattivare quando Brenta7.csv viene aggiunto
+                if i == 8
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_new), tk_brenta_new, Qk_brenta_new, time, dt)
                 end
-                # BACINO INTBAC 8
-                #if i == 822 || i == 823 || i == 824
-                if i == 353 || i == 354 || i == 355
-                    Q_intbac8 = LAGRANGE_INTERPOLATION!(nr_aff, tk_INTBAC8, Qk_INTBAC8, time, dt)
-                    Q_aff[i] += Q_intbac8/3
+                if i == 9
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v1), tk_brenta_v1, Qk_brenta_v1, time, dt)
+                end
+                if i == 10
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v2), tk_brenta_v2, Qk_brenta_v2, time, dt)
+                end
+                if i == 11
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v3), tk_brenta_v3, Qk_brenta_v3, time, dt)
+                end
+                if i == 12
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v4), tk_brenta_v4, Qk_brenta_v4, time, dt)
+                end
+                if i == 13
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_ceggio), tk_ceggio, Qk_ceggio, time, dt)
+                end
+                if i == 14
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_levico), tk_levico, Qk_levico, time, dt)
+                end
+                if i == 15
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_centa), tk_centa, Qk_centa, time, dt)
+                end
+                if i == 16
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_chieppena), tk_chieppena, Qk_chieppena, time, dt)
+                end
+                if i == 17
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_grigno), tk_grigno, Qk_grigno, time, dt)
+                end
+                if i == 18
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_maso), tk_maso, Qk_maso, time, dt)
+                end
+                if i == 19
+                    Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_moggio), tk_moggio, Qk_moggio, time, dt)
                 end
                 rhs[i] += dt/dx_int[i] * Q_aff[i]
             end
-            #@show qstar[9], qstar[10], qstar[11], qstar[29], qstar[30], qstar[31], qstar[51], qstar[52], qstar[53] @infiltrate
         end
         ##  FINE INSERIMENTO AFFLUENTI
 
