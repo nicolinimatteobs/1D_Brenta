@@ -98,37 +98,14 @@
 
     A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta, A_b, β_b, den_γ_b, rh_b)  
     
-    #@infiltrate
-    #WRITE_INITIAL_CONDITIONS!(ICdischarge, imax, x_b, eta, b_min, x_int, q)  # Scrittura condizioni iniziali
-    #save_fondo!("Output/fondo_Brenta_dx_70.csv", imax, bx, b_min, eta, x_b, q)
-    #save_fondo!("Output/rettangolare/fondo_rettangolare.csv", imax, bx, b_min, eta)
-    #@infiltrate
-
     
     dx   = min(minimum(dx_b), minimum(dx_int))
 
-    #@infiltrate
-
-    #initialize_Q!("Output/modello_ML/IC_Q.csv", imax, x_int)
-#
-   #open("Output/modello_ML/time.csv", "w") do io
-   #    write(io, "")   # reset file
-   #end
-#
-   #open("Output/modello_ML/IC_time.csv", "w") do io
-   #    write(io, "")   # reset file
-   #end
-
     qn = copy(q)  # Salva la portata precedente
-
-    #@infiltrate
 
     @time while nCS < Nmax
 
     qn .= q  # Salva la portata precedente
-
-    
-    
 
     if IC == 1
         #if nCS < 3000
