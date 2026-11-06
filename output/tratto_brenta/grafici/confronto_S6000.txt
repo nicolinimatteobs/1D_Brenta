@@ -1,0 +1,5 @@
+Confronto S6000 (modello 1D - riferimento piena_ns_discharge.csv), dati ogni 15 min da t = 900 s
+colmo riferimento 73.09 m3/s a 10.75 h | modello 83.15 m3/s a 7.53 h | differenza +10.05 m3/s (+13.75%), -193 min
+RMSE 12.045 m3/s, scarto massimo 32.189 m3/s, NSE 0.7327
+volume transitato: riferimento 2576178 m3, modello 2715477 m3 (+5.41%)
+colmo lungo il tratto: differenza massima 10.05 m3/s; ritardo del colmo da S0200 a S6000: riferimento 225 min, modello 33 min
