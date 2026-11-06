@@ -63,15 +63,26 @@ end
 
 # Calcola le proprietà della sezione k per la quota del pelo libero eta, interpolando sulla
 # tabella trasposta con le quote ys. Restituisce area A, coefficiente β, den (denominatore di γ),
-# larghezza w e raggio idraulico rh. Sotto la prima quota (il fondo) usa la prima riga,
-# oltre la quota massima estrapola con l'ultima riga. Aggiorna last_row[k] con la riga trovata
+# larghezza w e raggio idraulico rh. Sotto la prima quota (il fondo) usa la prima riga.
+# Oltre la quota massima estrapola dall'ultima riga con la pendenza dell'ultimo tratto della
+# tabella (tra le ultime due quote), calcolata dai valori. Aggiorna last_row[k] con la riga trovata
 @inline function READ_VALUES(data, ys, first_row, last_row, k, eta)
     @inbounds begin
         lo = first_row[k]
+        hi = first_row[k+1] - 1
         z  = max(eta, ys[lo])
-        r  = FIND_ROW(ys, lo, first_row[k+1]-1, z, last_row[k])
+        r  = FIND_ROW(ys, lo, hi, z, last_row[k])
         last_row[k] = r
         d = z - ys[r]
+        if r == hi && d > 0.0 && hi > lo
+            p  = hi - 1
+            dy = ys[hi] - ys[p]
+            return (A   = data[3,hi]  + (data[3,hi]  - data[3,p]) /dy*d,
+                    β   = data[5,hi]  + (data[5,hi]  - data[5,p]) /dy*d,
+                    den = data[7,hi]  + (data[7,hi]  - data[7,p]) /dy*d,
+                    w   = data[9,hi]  + (data[9,hi]  - data[9,p]) /dy*d,
+                    rh  = data[11,hi] + (data[11,hi] - data[11,p])/dy*d)
+        end
         return (A   = data[3,r]  + data[4,r]*d,
                 β   = data[5,r]  + data[6,r]*d,
                 den = data[7,r]  + data[8,r]*d,

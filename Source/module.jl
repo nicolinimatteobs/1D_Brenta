@@ -1,31 +1,31 @@
 # Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
-# vengono lette per posizione: non vanno spostate. I percorsi degli idrogrammi sono raccolti
-# in hydro_files; la riga 25 è la cartella in cui salvare gli output. Le righe 1, 2 e 26 non
-# vengono più lette. Numero di righe e di colonne delle tabelle e numero di sezioni sono
-# ricavati direttamente dai file di input
+# vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2
+# geometria, righe 3-22 idrogrammi (raccolti in hydro_files), riga 23 cartella degli output,
+# righe 24-27 Ks, tempo iniziale, passo massimo e numero massimo di passi. Numero di righe e
+# di colonne delle tabelle e numero di sezioni sono ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
-    # Legge esattamente 30 righe e rimuove spazi
+    # Legge esattamente 27 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:30]
+        [strip(readline(f)) for _ in 1:27]
     end
     # Parsing dei dati
-    parametri_sezioni = righe[3]
-    local_slope       = righe[4]
-    hydro_files = (brenta1    = righe[5],  brenta2    = righe[6],
-                   brenta3    = righe[7],  brenta4    = righe[8],
-                   brenta5    = righe[9],  brenta6    = righe[10],
-                   brenta7    = righe[11], brenta_new = righe[12],
-                   brenta_v1  = righe[13], brenta_v2  = righe[14],
-                   brenta_v3  = righe[15], brenta_v4  = righe[16],
-                   caldonazzo = righe[17], ceggio     = righe[18],
-                   levico     = righe[19], centa      = righe[20],
-                   chieppena  = righe[21], grigno     = righe[22],
-                   maso       = righe[23], moggio     = righe[24])
-    output_dir        = righe[25]
-    Ks                = parse(Float64, righe[27])
-    time              = parse(Float64, righe[28])
-    dtmax             = parse(Float64, righe[29])
-    Nmax              = round(Int, parse(Float64, righe[30]))  # Numero massimo di passi
+    parametri_sezioni = righe[1]
+    local_slope       = righe[2]
+    hydro_files = (brenta1    = righe[3],  brenta2    = righe[4],
+                   brenta3    = righe[5],  brenta4    = righe[6],
+                   brenta5    = righe[7],  brenta6    = righe[8],
+                   brenta7    = righe[9],  brenta_new = righe[10],
+                   brenta_v1  = righe[11], brenta_v2  = righe[12],
+                   brenta_v3  = righe[13], brenta_v4  = righe[14],
+                   caldonazzo = righe[15], ceggio     = righe[16],
+                   levico     = righe[17], centa      = righe[18],
+                   chieppena  = righe[19], grigno     = righe[20],
+                   maso       = righe[21], moggio     = righe[22])
+    output_dir        = righe[23]
+    Ks                = parse(Float64, righe[24])
+    time              = parse(Float64, righe[25])
+    dtmax             = parse(Float64, righe[26])
+    Nmax              = round(Int, parse(Float64, righe[27]))  # Numero massimo di passi
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
