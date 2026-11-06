@@ -1,13 +1,13 @@
-# Legge settings.txt e il file della struttura, e restituisce i parametri della simulazione.
-# Le righe di settings.txt vengono lette per posizione: non vanno spostate. I percorsi degli
-# idrogrammi sono raccolti in hydro_files. Le righe 2 e 26 non vengono più lette
+# Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
+# vengono lette per posizione: non vanno spostate. I percorsi degli idrogrammi sono raccolti
+# in hydro_files. Le righe 1, 2 e 26 non vengono più lette. Numero di righe e di colonne delle
+# tabelle e numero di sezioni sono ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
     # Legge esattamente 30 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
         [strip(readline(f)) for _ in 1:30]
     end
     # Parsing dei dati
-    struttura         = righe[1]
     parametri_sezioni = righe[3]
     local_slope       = righe[4]
     hydro_files = (brenta1    = righe[5],  brenta2    = righe[6],
@@ -26,17 +26,22 @@ function INITIAL_SETTINGS!()
     dtmax             = parse(Float64, righe[29])
     Nmax              = round(Int, parse(Float64, righe[30]))  # Numero massimo di passi
 
-    # Legge le prime 4 righe del file struttura
-    val_rif = open(struttura, "r") do f
-        [parse(Int, strip(readline(f))) for _ in 1:4]
-    end
-
-    n_row = val_rif[2]
-    imax  = val_rif[3]
-    n_col = val_rif[4]
+    # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
+    n_row, n_col = FILE_SIZE(parametri_sezioni)
+    imax, _      = FILE_SIZE(local_slope)
 
     return Parametri(parametri_sezioni, local_slope, hydro_files, ICdischarge,
                      Ks, time, dtmax, Nmax, n_row, imax, n_col)
+end
+
+# Conta le righe di dati di un file separato da virgole (esclusa l'intestazione e le righe vuote)
+# e le colonne dell'intestazione
+function FILE_SIZE(filename)
+    open(filename, "r") do f
+        n_col = length(split(strip(readline(f)), ','))
+        n_row = count(l -> !isempty(strip(l)), eachline(f))
+        return n_row, n_col
+    end
 end
 
 # Crea tutti gli array del modello, inizializzati a zero, e li restituisce per nome.

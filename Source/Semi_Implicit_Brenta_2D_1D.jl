@@ -16,6 +16,7 @@
     @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
     data_depth = permutedims(LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col))
     first_row, last_row = SECTION_INDEX(data_depth)
+    length(last_row) == imax || error("Le tabelle hanno $(length(last_row)) sezioni, la geometria ($local_slope) ne ha $imax")
     ys         = copy(data_depth[2, :])  # quote del pelo libero (colonna 2); copy: con @views sarebbe una vista
     SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 

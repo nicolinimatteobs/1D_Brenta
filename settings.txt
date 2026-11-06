@@ -1,5 +1,5 @@
-input/rettangolare_L30km_dx200/struttura_output.txt
-4
+non usata
+non usata
 input/rettangolare_L30km_dx200/parametri_sezioni.txt
 input/rettangolare_L30km_dx200/localslope_xcoord.txt
 input/idrogrammi/vaia/Brenta1.csv
@@ -31,8 +31,8 @@ Output/VAIA/dx_70/affluenti/h_01/Q.csv
 
 
 FILE INPUT DEL CODICE
-- Nome del file contenente la struttura dei file da leggere
-- Numero righe del file struttura_output.txt
+- Non usata (righe, colonne e sezioni sono ricavate dai file di input)
+- Non usata
 - Nome del file contenente i valori tabulati da leggere durante il run
 - Nome del file contenente i valori univoci per l'intera sezione
 - Idrogramma a Ponte Cervia
