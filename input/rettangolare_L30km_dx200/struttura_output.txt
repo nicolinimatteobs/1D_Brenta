@@ -1,0 +1,11 @@
+       101
+       15251
+       151
+       12
+
+- Numero di righe per sezione (parametri_sezioni.txt)
+- Numero di righe del file parametri_sezioni.txt
+- Numero di sezioni
+- Numero di colonne del file parametri_sezioni.txt
+La prima riga (intestazione) è sempre esclusa
+Nel dubbio eliminare sempre l'ultima riga vuota che si crea in automatico
