@@ -20,8 +20,7 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
-Output/VAIA/dx_70/affluenti/h_01/Q.csv
+Output/tratto_brenta
 33.00
 0
 60
