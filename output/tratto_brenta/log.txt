@@ -1,0 +1,14 @@
+Attenzione: idrogramma 'input/idrogrammi/vaia/Brenta7.csv' non trovato, non viene caricato
+Attenzione: tempi finali diversi, uso tend = 86400.0
+Time step: 500 Time: 2495.0000 dt: 5.000000
+Time step: 1000 Time: 4995.0000 dt: 5.000000
+Time step: 1500 Time: 7495.0000 dt: 5.000000
+Time step: 2000 Time: 9995.0000 dt: 5.000000
+Time step: 2500 Time: 12495.0000 dt: 5.000000
+Time step: 3000 Time: 14995.0000 dt: 5.000000
+Time step: 3500 Time: 17495.0000 dt: 5.000000
+Time step: 4000 Time: 19995.0000 dt: 5.000000
+Condizioni iniziali raggiunte al tempo: 4321, time = 21600.0
+Time step: 500 Time: 29940.0000 dt: 60.000000
+Time step: 1000 Time: 59940.0000 dt: 60.000000
+ 12.486113 seconds (15.86 M allocations: 1.057 GiB, 3.75% gc time, 0.86% compilation time)

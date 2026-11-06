@@ -1,0 +1,43 @@
+Tempi totali [s]
+sim_dx20 386.4871129
+sim_dx100 26.3256793
+sim_dx200 13.234542
+sim_dx200_upwind 13.5333271
+
+    1 km  dx 20 m (riferimento)      picco    3.998 m3/s a 139.00 h (+0.00%,    +0 s)  tirante max 0.418 m  min 0.1077 m  scarto Q medio 0.000 max 0.000
+    1 km  dx 100 m, media            picco    3.998 m3/s a 139.00 h (-0.00%,    +0 s)  tirante max 0.418 m  min 0.1208 m  scarto Q medio 0.000 max 0.002
+    1 km  dx 100 m, upwind           picco    3.998 m3/s a 139.00 h (-0.00%,    +0 s)  tirante max 0.418 m  min 0.1077 m  scarto Q medio 0.000 max 0.002
+    1 km  dx 200 m, media (attuale)  picco    3.998 m3/s a 139.00 h (-0.00%,    +0 s)  tirante max 0.401 m  min 0.0440 m  scarto Q medio 0.009 max 0.193
+    1 km  dx 200 m, upwind           picco    3.998 m3/s a 139.00 h (-0.01%,    +0 s)  tirante max 0.432 m  min 0.1129 m  scarto Q medio 0.001 max 0.011
+    5 km  dx 20 m (riferimento)      picco   22.997 m3/s a  18.71 h (+0.00%,    +0 s)  tirante max 1.265 m  min 0.4599 m  scarto Q medio 0.000 max 0.000
+    5 km  dx 100 m, media            picco   22.994 m3/s a  18.71 h (-0.01%,    +2 s)  tirante max 1.264 m  min 0.4599 m  scarto Q medio 0.002 max 0.008
+    5 km  dx 100 m, upwind           picco   22.985 m3/s a  18.71 h (-0.05%,   +12 s)  tirante max 1.264 m  min 0.4599 m  scarto Q medio 0.003 max 0.021
+    5 km  dx 200 m, media (attuale)  picco   22.990 m3/s a  18.72 h (-0.03%,   +41 s)  tirante max 1.264 m  min 0.4633 m  scarto Q medio 0.024 max 0.269
+    5 km  dx 200 m, upwind           picco   22.975 m3/s a  18.72 h (-0.09%,   +43 s)  tirante max 1.264 m  min 0.4599 m  scarto Q medio 0.013 max 0.068
+   10 km  dx 20 m (riferimento)      picco   47.754 m3/s a  48.41 h (+0.00%,    +0 s)  tirante max 2.057 m  min 0.5006 m  scarto Q medio 0.000 max 0.000
+   10 km  dx 100 m, media            picco   47.749 m3/s a  48.41 h (-0.01%,   +19 s)  tirante max 2.056 m  min 0.5006 m  scarto Q medio 0.008 max 0.071
+   10 km  dx 100 m, upwind           picco   47.740 m3/s a  48.41 h (-0.03%,   +34 s)  tirante max 2.058 m  min 0.5007 m  scarto Q medio 0.013 max 0.120
+   10 km  dx 200 m, media (attuale)  picco   47.760 m3/s a  48.41 h (+0.01%,   +14 s)  tirante max 2.056 m  min 0.5039 m  scarto Q medio 0.027 max 0.268
+   10 km  dx 200 m, upwind           picco   47.746 m3/s a  48.43 h (-0.02%,   +78 s)  tirante max 2.061 m  min 0.5008 m  scarto Q medio 0.024 max 0.172
+   15 km  dx 20 m (riferimento)      picco   54.289 m3/s a  48.77 h (+0.00%,    +0 s)  tirante max 2.244 m  min 0.6535 m  scarto Q medio 0.000 max 0.000
+   15 km  dx 100 m, media            picco   54.283 m3/s a  48.78 h (-0.01%,   +18 s)  tirante max 2.244 m  min 0.6535 m  scarto Q medio 0.008 max 0.074
+   15 km  dx 100 m, upwind           picco   54.269 m3/s a  48.78 h (-0.04%,   +34 s)  tirante max 2.245 m  min 0.6535 m  scarto Q medio 0.014 max 0.131
+   15 km  dx 200 m, media (attuale)  picco   54.295 m3/s a  48.78 h (+0.01%,   +41 s)  tirante max 2.245 m  min 0.6563 m  scarto Q medio 0.028 max 0.271
+   15 km  dx 200 m, upwind           picco   54.270 m3/s a  48.79 h (-0.03%,   +49 s)  tirante max 2.247 m  min 0.6538 m  scarto Q medio 0.026 max 0.190
+   20 km  dx 20 m (riferimento)      picco   68.076 m3/s a  21.89 h (+0.00%,    +0 s)  tirante max 2.646 m  min 0.7777 m  scarto Q medio 0.000 max 0.000
+   20 km  dx 100 m, media            picco   68.063 m3/s a  48.98 h (-0.02%, +97516 s)  tirante max 2.645 m  min 0.7777 m  scarto Q medio 0.008 max 0.072
+   20 km  dx 100 m, upwind           picco   68.044 m3/s a  48.98 h (-0.05%, +97531 s)  tirante max 2.654 m  min 0.7778 m  scarto Q medio 0.015 max 0.135
+   20 km  dx 200 m, media (attuale)  picco   68.083 m3/s a  21.91 h (+0.01%,   +48 s)  tirante max 2.654 m  min 0.7802 m  scarto Q medio 0.029 max 0.268
+   20 km  dx 200 m, upwind           picco   68.043 m3/s a  48.99 h (-0.05%, +97547 s)  tirante max 2.672 m  min 0.7784 m  scarto Q medio 0.028 max 0.191
+   25 km  dx 20 m (riferimento)      picco  104.019 m3/s a  48.12 h (+0.00%,    +0 s)  tirante max 4.267 m  min 1.0593 m  scarto Q medio 0.000 max 0.000
+   25 km  dx 100 m, media            picco  103.994 m3/s a  48.12 h (-0.02%,   +19 s)  tirante max 4.324 m  min 1.1013 m  scarto Q medio 0.010 max 0.086
+   25 km  dx 100 m, upwind           picco  103.972 m3/s a  48.13 h (-0.05%,   +34 s)  tirante max 4.325 m  min 1.1295 m  scarto Q medio 0.018 max 0.144
+   25 km  dx 200 m, media (attuale)  picco  108.691 m3/s a  48.04 h (+4.49%,  -294 s)  tirante max 4.307 m  min 1.1468 m  scarto Q medio 2.305 max 5.237
+   25 km  dx 200 m, upwind           picco  108.654 m3/s a  48.02 h (+4.46%,  -342 s)  tirante max 4.331 m  min 1.1770 m  scarto Q medio 2.285 max 5.256
+   30 km  dx 20 m (riferimento)      picco  184.959 m3/s a  45.74 h (+0.00%,    +0 s)  tirante max 5.413 m  min 1.6976 m  scarto Q medio 0.000 max 0.000
+   30 km  dx 100 m, media            picco  184.926 m3/s a  45.75 h (-0.02%,    +8 s)  tirante max 5.412 m  min 1.6978 m  scarto Q medio 0.018 max 0.090
+   30 km  dx 100 m, upwind           picco  184.922 m3/s a  45.74 h (-0.02%,    -5 s)  tirante max 5.412 m  min 1.6977 m  scarto Q medio 0.027 max 0.146
+   30 km  dx 200 m, media (attuale)  picco  184.936 m3/s a  45.74 h (-0.01%,    +4 s)  tirante max 5.413 m  min 1.6982 m  scarto Q medio 0.043 max 0.235
+   30 km  dx 200 m, upwind           picco  184.930 m3/s a  45.75 h (-0.02%,   +12 s)  tirante max 5.412 m  min 1.6977 m  scarto Q medio 0.057 max 0.302
+run_dx100_media 31.051283
+run_dx100_upwind 28.9439511
