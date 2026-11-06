@@ -5,7 +5,7 @@
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
     @unpack imax, n_col, n_row, Ks, dtmax, Nmax,
-            parametri_sezioni, local_slope, time = params
+            parametri_sezioni, local_slope, output_dir, time = params
 
     # --- ALLOCAZIONE ARRAY ---
     @unpack b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
@@ -24,8 +24,8 @@
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
     tend  = HYDROGRAPH_END_TIME(hydro)
 
-    # --- FILE DI OUTPUT: cartella output/<nome della cartella delle tabelle> ---
-    out = INIT_OUTPUT(joinpath("output", basename(dirname(parametri_sezioni))))
+    # --- FILE DI OUTPUT: cartella indicata nella riga 25 di settings.txt ---
+    out = INIT_OUTPUT(output_dir)
 
     # --- ALIAS IDROGRAMMI (tempi e portate) ---
     tk_cald       = hydro[:caldonazzo].t;  Qk_cald       = hydro[:caldonazzo].Q

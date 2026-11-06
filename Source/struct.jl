@@ -4,7 +4,7 @@ struct Parametri
     parametri_sezioni  ::String
     local_slope        ::String
     hydro_files        ::NamedTuple
-    ICdischarge        ::String
+    output_dir         ::String
     Ks                 ::Float64
     time               ::Float64
     dtmax              ::Float64

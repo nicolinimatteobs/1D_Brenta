@@ -1,7 +1,7 @@
 non usata
 non usata
-input/rettangolare_L30km_dx200/parametri_sezioni.txt
-input/rettangolare_L30km_dx200/localslope_xcoord.txt
+input/geometria/rettangolare_L30km_dx200/parametri_sezioni.txt
+input/geometria/rettangolare_L30km_dx200/localslope_xcoord.txt
 input/idrogrammi/vaia/Brenta1.csv
 input/idrogrammi/vaia/Brenta2.csv
 input/idrogrammi/vaia/Brenta3.csv
@@ -22,34 +22,29 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
-Output/VAIA/dx_70/affluenti/h_01/Q.csv
+output/rettangolare/rettangolare_L30km_dx200
+non usata
 33.00
 0
 60
 1e9
 
 
-FILE INPUT DEL CODICE
-- Non usata (righe, colonne e sezioni sono ricavate dai file di input)
-- Non usata
-- Nome del file contenente i valori tabulati da leggere durante il run
-- Nome del file contenente i valori univoci per l'intera sezione
-- Idrogramma a Ponte Cervia
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- Idrogramm affluenti
-- File output condizioni iniziali portata
-- File output soluzione portata
-- Ks
-- tempo iniziale
-- time step massimo
-- max loop in time temporaneo (serve per definire Nmax come reale Nmax)
+CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
+1      - Non usata (righe, colonne e sezioni sono ricavate dai file di input)
+2      - Non usata
+3      - Tabelle delle sezioni (parametri_sezioni.txt), in input/geometria/<caso>/
+4      - Geometria: pendenza, ascissa e talweg di ogni sezione (localslope_xcoord.txt), in input/geometria/<caso>/
+5-16   - Idrogrammi affluenti Brenta1-6, Brenta7, BrentaNuovo, BrentaVecchio1-4, in input/idrogrammi/<evento>/
+17     - Idrogramma in ingresso da monte (Caldonazzo)
+18-24  - Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio
+         (devono esistere tutti tranne Brenta7.csv, che non è ancora usato e viene saltato con un avviso)
+25     - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste, in output/<caso>/
+26     - Non usata
+27     - Ks
+28     - Tempo iniziale
+29     - Passo temporale massimo [s]
+30     - Numero massimo di passi temporali
 
 Input/dx_70/h_01/struttura_output.txt
 4

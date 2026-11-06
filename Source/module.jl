@@ -1,7 +1,8 @@
 # Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
 # vengono lette per posizione: non vanno spostate. I percorsi degli idrogrammi sono raccolti
-# in hydro_files. Le righe 1, 2 e 26 non vengono più lette. Numero di righe e di colonne delle
-# tabelle e numero di sezioni sono ricavati direttamente dai file di input
+# in hydro_files; la riga 25 è la cartella in cui salvare gli output. Le righe 1, 2 e 26 non
+# vengono più lette. Numero di righe e di colonne delle tabelle e numero di sezioni sono
+# ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
     # Legge esattamente 30 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
@@ -20,7 +21,7 @@ function INITIAL_SETTINGS!()
                    levico     = righe[19], centa      = righe[20],
                    chieppena  = righe[21], grigno     = righe[22],
                    maso       = righe[23], moggio     = righe[24])
-    ICdischarge       = righe[25]
+    output_dir        = righe[25]
     Ks                = parse(Float64, righe[27])
     time              = parse(Float64, righe[28])
     dtmax             = parse(Float64, righe[29])
@@ -30,7 +31,7 @@ function INITIAL_SETTINGS!()
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
 
-    return Parametri(parametri_sezioni, local_slope, hydro_files, ICdischarge,
+    return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
                      Ks, time, dtmax, Nmax, n_row, imax, n_col)
 end
 
