@@ -53,7 +53,7 @@
     # ----- PARAMETRI PER RIEMPIMENTO ----
     Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
-    y_ini          = 0.10    # Velo d'acqua iniziale [m]
+    y_ini          = 0.10    # Tirante minimo iniziale [m] (si parte dal moto uniforme, ma non sotto y_ini)
     T_riempimento  = 21600.0  # Durata della rampa di riempimento [s]
     dt_riempimento = 5.0    # Passo massimo durante la rampa [s]
 
@@ -98,8 +98,14 @@
     g             = 9.81
 
 
-    # Velo d'acqua iniziale, con portata di moto uniforme locale
-    eta .= b_min .+ y_ini
+    # Stato iniziale: in ogni sezione tirante di moto uniforme per la prima portata dell'idrogramma
+    # di monte (almeno y_ini), con la portata di moto uniforme locale. Così la portata di monte
+    # non cambia durante il riempimento
+    @inbounds for i in 1:imax
+        eta[i] = UNIFORM_LEVEL(data_depth, ys, first_row, last_row, i, Qin_IC_target, Ks, bx[i]; y_min = y_ini)
+    end
+    # Alternativa: velo d'acqua costante di y_ini in tutte le sezioni
+    #eta .= b_min .+ y_ini
 
     @inbounds for i in 1:imax
         sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])

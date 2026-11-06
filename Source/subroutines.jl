@@ -94,6 +94,22 @@ function BARYCENTERS!(imax, data_depth, ys, first_row, last_row, eta,
     return  A_b, β_b, den_γ_b, rh_b
 end
 
+# Quota del pelo libero di moto uniforme (Manning) per la portata Q nella sezione k, con pendenza S.
+# Cerca per bisezione tra fondo + y_min e la quota massima della tabella, sfruttando il fatto che
+# la portata di Manning cresce con la quota. Se già con y_min la portata supera Q restituisce
+# fondo + y_min: il tirante minimo evita veli troppo sottili (magre, pendenze quasi nulle)
+function UNIFORM_LEVEL(data, ys, first_row, last_row, k, Q, Ks, S; y_min = 0.10)
+    Qm(e) = (s = READ_VALUES(data, ys, first_row, last_row, k, e); s.A*Ks*sqrt(abs(S))*s.rh^(2/3))
+    a = ys[first_row[k]] + y_min
+    Qm(a) >= Q && return a
+    b = ys[first_row[k+1]-1]
+    for _ in 1:60
+        m = 0.5*(a + b)
+        Qm(m) < Q ? (a = m) : (b = m)
+    end
+    return 0.5*(a + b)
+end
+
 
 
 # Legge il file della geometria e restituisce pendenza locale bx, ascissa x_b e talweg b_min
