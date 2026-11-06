@@ -1,7 +1,7 @@
 output/*
 !output/.gitkeep
 
-input/*
+# input/*
 !input/.gitkeep
 
 Manifest.toml
