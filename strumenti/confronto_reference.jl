@@ -1,4 +1,4 @@
-# Confronto tra le portate del modello 1D e il riferimento 2D reference/piena_ns_discharge.csv
+# Confronto tra le portate del modello 1D e il riferimento 2D reference/ns_channel_piena_discharge.csv
 # (colonne Q_S0200 ... Q_S6000, una ogni 200 m, dati ogni 15 min; a t = 0 vale zero ed è escluso).
 # Idrogramma nell'ultima sezione e colmo in tutte le sezioni; le colonne sono associate alle
 # sezioni arrotondando l'ascissa ai 200 m. Grafici e numeri in <cartella degli output>/grafici.
@@ -8,7 +8,7 @@ const R   = dirname(@__DIR__)                                    # cartella del 
 const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:27]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
 const D   = joinpath(R, SET[23])                                 # cartella degli output (riga 23)
-const REF = joinpath(R, "reference", "piena_ns_discharge.csv")
+const REF = joinpath(R, "reference", "ns_channel_piena_discharge.csv")
 const OUT = joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)
@@ -41,7 +41,7 @@ nomecol(xi) = @sprintf("Q_S%04d [m3/s]", round(Int, xi/200)*200)
 
 nome_u = nomecol(x[end]); c = confronto(length(x), nome_u)
 p1 = plot(; title = "Sezione $(nome_u[3:7]): portata", ylabel = "portata [m³/s]", legend = :topright, st...)
-plot!(p1, tr[ok] ./ 3600, c.qr; label = "riferimento 2D (piena_ns_discharge)", color = :black, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
+plot!(p1, tr[ok] ./ 3600, c.qr; label = "riferimento 2D (ns_channel_piena_discharge)", color = :black, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
 plot!(p1, t ./ 3600, Qs[:, end]; label = "modello 1D", color = BLU, linewidth = 2)
 plot!(p1, tr[ok] ./ 3600, Rf[ok, col("Q_BC_monte [m3/s]")]; label = "ingresso da monte", color = GRI, linestyle = :dash, linewidth = 1)
 p2 = plot(; title = "Differenza modello - riferimento", xlabel = "tempo [h]", ylabel = "ΔQ [m³/s]", legend = false, st...)
@@ -64,7 +64,7 @@ plot!(q2, x ./ 1000, tpm ./ 3600; label = "modello 1D", color = BLU, linewidth =
 savefig(plot(q1, q2; layout = (2, 1), size = (1000, 700), dpi = 130, left_margin = 6Plots.mm), joinpath(OUT, "9_colmo_lungo_il_tratto.png"))
 
 io = IOBuffer()
-@printf(io, "Confronto %s (modello 1D - riferimento piena_ns_discharge.csv), dati ogni 15 min da t = %.0f s\n", nome_u[3:7], tr[ok][1])
+@printf(io, "Confronto %s (modello 1D - riferimento ns_channel_piena_discharge.csv), dati ogni 15 min da t = %.0f s\n", nome_u[3:7], tr[ok][1])
 @printf(io, "colmo riferimento %.2f m3/s a %.2f h | modello %.2f m3/s a %.2f h | differenza %+.2f m3/s (%+.2f%%), %+.0f min\n",
         c.pr, c.tpr/3600, c.pm, c.tpm/3600, c.pm - c.pr, 100(c.pm - c.pr)/c.pr, (c.tpm - c.tpr)/60)
 @printf(io, "RMSE %.3f m3/s, scarto massimo %.3f m3/s, NSE %.4f\n", c.rmse, c.emax, c.nse)

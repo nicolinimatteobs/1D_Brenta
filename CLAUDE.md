@@ -47,7 +47,7 @@ Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 | `input/geometria/<caso>/` | Tabelle delle sezioni e geometria |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
 | `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici |
-| `reference/` | Risultati del modello 2D usati come riferimento (`piena_ns_discharge.csv`) |
+| `reference/` | Risultati del modello 2D usati come riferimento (`ns_channel_piena_discharge.csv`) |
 | `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata |
 | `strumenti/` | Script di controllo, grafici e confronto |
 
@@ -155,10 +155,12 @@ passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un pro
 - tabelle da `calcolo_tabelle_daBM`;
 - idrogramma `input/idrogrammi/prova_tratto_brenta/piena.csv` (5,07 → 83,34 m³/s a 7 h, durata 24 h);
 - Ks 33, dt massimo 60 s, upwind, nessun affluente;
-- output in `output/tratto_brenta/`.
+- output in `output/tratto_brenta_sfioro/`, con lo sfioro sugli argini (configurazione corrente);
+- `output/tratto_brenta/` conserva i risultati **senza sfioro**: non va sovrascritta. Per rifarli
+  serve una geometria a 4 colonne e un'altra cartella alla riga 23 di `settings.txt`.
 
-**Con lo sfioro sugli argini** (prova su copia temporanea, `output/tratto_brenta/` non è ancora
-aggiornata e i risultati nell'elenco più sotto sono **senza sfioro**):
+**Con lo sfioro sugli argini** (`output/tratto_brenta_sfioro/`; i risultati nell'elenco più sotto
+sono invece **senza sfioro**):
 - colmo in S6000 da 83,15 a 70,49 m³/s (−15%), a 7,47 h invece che a 7,55 h: il ritardo quasi non cambia;
 - esce il 4,4% del volume entrato (circa 119 000 m³), quasi tutto da S0800 e S1000 sull'argine destro;
 - portata uscente massima 12,8 m³/s; sfiorano solo S0600, S0800, S1000, S1200 e S2000;
@@ -170,16 +172,23 @@ aggiornata e i risultati nell'elenco più sotto sono **senza sfioro**):
 Risultati senza sfioro:
 - **Riempimento:** finisce a 6 h, senza NaN.
 - **Il modello 1D quasi non lamina:** colmo da 83,34 a 83,15 m³/s, con un ritardo di circa 33 min sui 6 km.
-- **Confronto con il 2D** (`reference/piena_ns_discharge.csv`, sezione S6000):
-  - colmo 2D: 73,09 m³/s a 10,75 h;
-  - colmo 1D: 83,15 m³/s a 7,53 h (+14%, 3,2 h prima);
-  - NSE 0,73.
-- **Nel 2D** il colmo cala lungo il tratto e ha un ritardo di 225 min. L'idrogramma ha un plateau
-  intorno a 50 m³/s tra 5,5 e 8 h, e circa il 5% del volume non arriva in S6000 entro 24 h.
-  Il quadro è compatibile con un'esondazione nelle golene.
+- **Confronto con il 2D** (`reference/ns_channel_piena_discharge.csv`, sezione S6000), con il
+  colmo 2D di 66,28 m³/s a 9,00 h:
+
+  | Modello 1D | Colmo [m³/s] | Istante [h] | Differenza colmo | Volume | RMSE [m³/s] | NSE |
+  |---|---|---|---|---|---|---|
+  | Senza sfioro | 83,15 | 7,53 | +25,5% | +5,7% | 6,05 | 0,933 |
+  | Con sfioro | 70,49 | 7,45 | +6,4% | +1,1% | 2,98 | 0,984 |
+
+  Grafici: `output/tratto_brenta/grafici/` senza sfioro, `output/tratto_brenta_sfioro/grafici/` con sfioro.
+- **Nel 2D** il colmo cala soprattutto nei primi 2,4 km (da 80,6 a 66,3 m³/s), poi resta costante, con
+  un ritardo di 120 min dalla prima all'ultima sezione (28 min nel 1D con sfioro). L'idrogramma in
+  S6000 ha un plateau intorno a 66 m³/s fino a circa 10,5 h. In S6000 transita il 94,5% del volume
+  entrato, più del 93,2% di S3000: nei tratti a valle l'acqua sembra rientrare nel canale. Il 1D non
+  ha questo rientro, e dopo le 10 h la sua portata è più bassa del 2D fino a 8 m³/s.
 - **Nel 1D** al colmo il livello supera la quota massima delle tabelle nelle sezioni 2-17, di 3-24 cm:
   lì i valori sono estrapolati e non c'è nessuna golena.
-- Le colonne `Q_P17_*` del riferimento (colmo 56,67 m³/s) non sono ancora state interpretate.
+- Nel riferimento attuale le colonne `Q_P17_*` hanno lo stesso colmo di S3000 (66,29 m³/s a 8,75 h).
 
 **Canale rettangolare di prova** (`input/geometria/rettangolare_L30km_dx200`, 30 km, B = 10 m,
 pendenza 0,003, Ks 33, idrogrammi `vaia` con 18 affluenti), risultati in `output/rettangolare/`:
@@ -206,3 +215,9 @@ pendenza 0,003, Ks 33, idrogrammi `vaia` con 18 affluenti), risultati in `output
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
   - `Brenta7.csv` non esiste ancora.
+
+## Considerazione finale per lunedì
+I risultati sono incoraggianti, il modello 1D si è avvicinato molto a quello che riusciamo a misurare con il 2D. Non sono convinto che le le informazioni estratte dal 2D siano effettivamente utilizzate in maniera appropriata nell'1D, per lo meno però possiamo fare un confronto.  
+Ci sono ulteriori aspetti che non abbiamo ancora considerato:
+- Unire gli affluenti allo sfioro;
+- Nel 2D, considerando tutto il fiume, si vede chiaramente che l'acqua tende a rientrare dopo un certo punto. Attualmente non abbiamo questa dinamica, perchè l'acqua che facciamo uscire poi non rientra più. La S6000 mostra un copmportamento che fa pensare che l'acqua sia rientrata, perchè non solo il picco si è ridotto, ma è anche in ritardo. Dobbiamo cercare di capire come includere questo aspetto in maniera intelligiente.
