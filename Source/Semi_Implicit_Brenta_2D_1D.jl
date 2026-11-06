@@ -167,6 +167,12 @@
             β_int[i]     = 0.5 * (β_b[i] + β_b[i-1])
             den_γ_int[i] = 0.5 * (den_γ_b[i] + den_γ_b[i-1])
             rh_int[i]    = 0.5 * (rh_b[i] + rh_b[i-1])
+            # Alternativa upwind: area e attrito presi dalla cella a monte invece che dalla media.
+            # Evita il dente di sega a monte degli affluenti quando le celle sono molto più lunghe
+            # del tratto in cui il livello torna al moto uniforme (circa dx > 0,6*y/S), ma è meno
+            # accurata nei tratti profondi. Per attivarla sostituire le righe di A_int e den_γ_int con:
+            #A_int[i]     = q[i] >= 0.0 ? A_b[i-1] : A_b[i]
+            #den_γ_int[i] = q[i] >= 0.0 ? den_γ_b[i-1] : den_γ_b[i]
  
             uf[i]   = q[i] * A_int[i]/(A_int[i]^2 + tol)
             smax[i] = abs(β_int[i] * uf[i])
