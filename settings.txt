@@ -1,7 +1,7 @@
-Input/dx_70/h_01/struttura_output.txt
+input/rettangolare_L30km_dx200/struttura_output.txt
 4
-Input/dx_70/h_01/parametri_sezioni.txt
-Input/dx_70/h_01/localslope_xcoord.txt
+input/rettangolare_L30km_dx200/parametri_sezioni.txt
+input/rettangolare_L30km_dx200/localslope_xcoord.txt
 input/idrogrammi/vaia/Brenta1.csv
 input/idrogrammi/vaia/Brenta2.csv
 input/idrogrammi/vaia/Brenta3.csv
@@ -24,7 +24,7 @@ input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
 Output/VAIA/dx_70/affluenti/h_01/IC_Q.csv
 Output/VAIA/dx_70/affluenti/h_01/Q.csv
-70.00
+33.00
 0
 60
 1e9

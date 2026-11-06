@@ -1,3 +1,15 @@
+# Crea la cartella degli output e svuota i file di una simulazione precedente.
+# Restituisce i percorsi dei file: IC_* per le condizioni iniziali, gli altri per la simulazione
+function INIT_OUTPUT(out_dir)
+    mkpath(out_dir)
+    nomi  = (:IC_Q, :IC_eta, :IC_h, :IC_time, :Q, :eta, :h, :time)
+    files = NamedTuple{nomi}(Tuple(joinpath(out_dir, string(n, ".csv")) for n in nomi))
+    for f in files
+        write(f, "")
+    end
+    return files
+end
+
 function WRITE_INITIAL_CONDITIONS!(ICdischarge, imax, x_b, eta,b_min, x_int, q)
     # Scrive le condizioni iniziali in un file
     open(ICdischarge, "w") do io

@@ -23,6 +23,9 @@
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
     tend  = HYDROGRAPH_END_TIME(hydro)
 
+    # --- FILE DI OUTPUT: cartella output/<nome della cartella delle tabelle> ---
+    out = INIT_OUTPUT(joinpath("output", basename(dirname(parametri_sezioni))))
+
     # --- ALIAS IDROGRAMMI (tempi e portate) ---
     tk_cald       = hydro[:caldonazzo].t;  Qk_cald       = hydro[:caldonazzo].Q
     tk_brenta1    = hydro[:brenta1].t;     Qk_brenta1    = hydro[:brenta1].Q
@@ -71,6 +74,10 @@
     Q_grigno_IC     = Qk_grigno[1]     # Portata affluente Grigno condizioni iniziali
     Q_maso_IC       = Qk_maso[1]       # Portata affluente Maso condizioni iniziali
     Q_moggio_IC     = Qk_moggio[1]     # Portata affluente Moggio condizioni iniziali
+
+    # Sezioni di ingresso degli affluenti, distribuite equamente lungo il canale
+    n_aff   = 18
+    sez_aff = [round(Int, k*imax/(n_aff + 1)) for k in 1:n_aff]
     
 
     exp_dt        = 2.0/3.0 # Esponente di dt nel calcolo della portata
@@ -218,62 +225,62 @@
         end
 
         ####  INSERIMENTO AFFLUENTI CONDIZIONI INIZIALI
-        # Sezioni provvisorie: ogni affluente entra in una sola sezione, dalla 1 alla 19
+        # Ogni affluente entra in una sola sezione, indicata in sez_aff
         if IC == 1
             @inbounds @simd for i in 1:imax
-                if i == 1
+                if i == sez_aff[1]
                     Q_aff[i] += Q_brenta1_IC
                 end
-                if i == 2
+                if i == sez_aff[2]
                     Q_aff[i] += Q_brenta2_IC
                 end
-                if i == 3
+                if i == sez_aff[3]
                     Q_aff[i] += Q_brenta3_IC
                 end
-                if i == 4
+                if i == sez_aff[4]
                     Q_aff[i] += Q_brenta4_IC
                 end
-                if i == 5
+                if i == sez_aff[5]
                     Q_aff[i] += Q_brenta5_IC
                 end
-                if i == 6
+                if i == sez_aff[6]
                     Q_aff[i] += Q_brenta6_IC
                 end
-                # Sezione 7: brenta7, da riattivare quando Brenta7.csv viene aggiunto
-                if i == 8
+                # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
+                if i == sez_aff[7]
                     Q_aff[i] += Q_brenta_new_IC
                 end
-                if i == 9
+                if i == sez_aff[8]
                     Q_aff[i] += Q_brenta_v1_IC
                 end
-                if i == 10
+                if i == sez_aff[9]
                     Q_aff[i] += Q_brenta_v2_IC
                 end
-                if i == 11
+                if i == sez_aff[10]
                     Q_aff[i] += Q_brenta_v3_IC
                 end
-                if i == 12
+                if i == sez_aff[11]
                     Q_aff[i] += Q_brenta_v4_IC
                 end
-                if i == 13
+                if i == sez_aff[12]
                     Q_aff[i] += Q_ceggio_IC
                 end
-                if i == 14
+                if i == sez_aff[13]
                     Q_aff[i] += Q_levico_IC
                 end
-                if i == 15
+                if i == sez_aff[14]
                     Q_aff[i] += Q_centa_IC
                 end
-                if i == 16
+                if i == sez_aff[15]
                     Q_aff[i] += Q_chieppena_IC
                 end
-                if i == 17
+                if i == sez_aff[16]
                     Q_aff[i] += Q_grigno_IC
                 end
-                if i == 18
+                if i == sez_aff[17]
                     Q_aff[i] += Q_maso_IC
                 end
-                if i == 19
+                if i == sez_aff[18]
                     Q_aff[i] += Q_moggio_IC
                 end
                 rhs[i] += dt/dx_int[i] * r_IC * Q_aff[i]
@@ -283,62 +290,62 @@
 
     
         ####  INSERIMENTO AFFLUENTI SIMULAZIONE
-        # Sezioni provvisorie: stesse sezioni delle condizioni iniziali
+        # Stesse sezioni delle condizioni iniziali (sez_aff)
         if IC == 0
             @inbounds @simd for i in 1:imax
-                if i == 1
+                if i == sez_aff[1]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta1), tk_brenta1, Qk_brenta1, time, dt)
                 end
-                if i == 2
+                if i == sez_aff[2]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta2), tk_brenta2, Qk_brenta2, time, dt)
                 end
-                if i == 3
+                if i == sez_aff[3]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta3), tk_brenta3, Qk_brenta3, time, dt)
                 end
-                if i == 4
+                if i == sez_aff[4]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta4), tk_brenta4, Qk_brenta4, time, dt)
                 end
-                if i == 5
+                if i == sez_aff[5]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta5), tk_brenta5, Qk_brenta5, time, dt)
                 end
-                if i == 6
+                if i == sez_aff[6]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta6), tk_brenta6, Qk_brenta6, time, dt)
                 end
-                # Sezione 7: brenta7, da riattivare quando Brenta7.csv viene aggiunto
-                if i == 8
+                # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
+                if i == sez_aff[7]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_new), tk_brenta_new, Qk_brenta_new, time, dt)
                 end
-                if i == 9
+                if i == sez_aff[8]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v1), tk_brenta_v1, Qk_brenta_v1, time, dt)
                 end
-                if i == 10
+                if i == sez_aff[9]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v2), tk_brenta_v2, Qk_brenta_v2, time, dt)
                 end
-                if i == 11
+                if i == sez_aff[10]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v3), tk_brenta_v3, Qk_brenta_v3, time, dt)
                 end
-                if i == 12
+                if i == sez_aff[11]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_brenta_v4), tk_brenta_v4, Qk_brenta_v4, time, dt)
                 end
-                if i == 13
+                if i == sez_aff[12]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_ceggio), tk_ceggio, Qk_ceggio, time, dt)
                 end
-                if i == 14
+                if i == sez_aff[13]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_levico), tk_levico, Qk_levico, time, dt)
                 end
-                if i == 15
+                if i == sez_aff[14]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_centa), tk_centa, Qk_centa, time, dt)
                 end
-                if i == 16
+                if i == sez_aff[15]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_chieppena), tk_chieppena, Qk_chieppena, time, dt)
                 end
-                if i == 17
+                if i == sez_aff[16]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_grigno), tk_grigno, Qk_grigno, time, dt)
                 end
-                if i == 18
+                if i == sez_aff[17]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_maso), tk_maso, Qk_maso, time, dt)
                 end
-                if i == 19
+                if i == sez_aff[18]
                     Q_aff[i] += LAGRANGE_INTERPOLATION!(length(tk_moggio), tk_moggio, Qk_moggio, time, dt)
                 end
                 rhs[i] += dt/dx_int[i] * Q_aff[i]
@@ -401,19 +408,18 @@
         
 
         #@infiltrate
-        if IC == 0 
-            save_Q!("Output/VAIA/ks_70/Q_new_ks_70.csv", q)
-            save_time!("Output/VAIA/ks_70/time_new_ks_70.csv", time)
-            save_eta!("Output/VAIA/ks_70/eta_new_ks_70.csv", eta)
-            save_h!("Output/VAIA/ks_70/h_new_ks_70.csv", eta .- b_min)
+        if IC == 1
+            save_Q!(out.IC_Q, q)
+            save_time!(out.IC_time, time)
+            save_eta!(out.IC_eta, eta)
+            save_h!(out.IC_h, eta .- b_min)
+        else
+            save_Q!(out.Q, q)
+            save_time!(out.time, time)
+            save_eta!(out.eta, eta)
+            save_h!(out.h, eta .- b_min)
         end
-#
-        #if IC == 1
-        #    save_Q!("Output/modello_ML/IC_Q.csv", q)
-        #    save_time!("Output/modello_ML/IC_time.csv", time)
-        #    #save_eta!("Output/modello_ML/IC_eta.csv", eta)
-        #    #save_h!("Output/modello_ML/IC_h.csv", eta .- b_min)
-        #end
+
 
         # --- Aggiornamento geometrie finali ---
         @inbounds for i in 1:imax
