@@ -249,8 +249,14 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     # l'ultima sezione è in contropendenza, ma il modello 1D ne usa la pendenza per la velocità
     # di uscita: uso la pendenza media del fondo sull'intero tratto
     local_slope[end] = (talweg[end] - talweg[begin]) / (s[end] - s[begin])
+    # quote degli argini destro e sinistro di ogni sezione, dai punti in bankpoints.csv
+    bankpoints = CSV.read(joinpath(InputFolderParent, "bankpoints"*Format), DataFrame)
+    z_argine = Dict(String(r["nome"]) => r["z_dtm"] for r in eachrow(bankpoints))
+    argine_dx = [z_argine[nome*"_dx"] for nome in nomi]
+    argine_sx = [z_argine[nome*"_sx"] for nome in nomi]
     geometria = DataFrame("section" => eachindex(nomi), "local_slope" => local_slope,
-        "x_coord_[m]" => s, "talweg_[m]" => talweg)
+        "x_coord_[m]" => s, "talweg_[m]" => talweg,
+        "argine_dx_[m]" => argine_dx, "argine_sx_[m]" => argine_sx)
     if dosave
         CSV.write(joinpath(OutputFolder, "localslope_xcoord"*Format), geometria)
     end

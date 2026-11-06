@@ -14,8 +14,9 @@ o su branch personali che poi vengono uniti.
   temporanee vanno bene.
 - **Commit e merge li fa l'utente**, a meno che non lo chieda espressamente.
 - Se compare un NaN il modello si ferma da solo (`CHECK_NAN`): riportare fase, passo, tempo e posizioni.
-- I file `.jl` e `settings.txt` usano fine riga **CRLF**: mantienila quando modifichi i file
-  (attenzione a `sed -i`, che può convertirli in LF).
+- Nel repository i file sono salvati con fine riga **LF** (su Windows possono comparire CRLF nella
+  copia locale): mantieni quello che trovi nel file.
+- **`CLAUDE.md` va tenuto aggiornato** a mano a mano che si lavora.
 - Per i grafici si usa `Plots.jl`, con testi in italiano e unità di misura.
 
 ## Come si usa
@@ -84,7 +85,9 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
   stato iniziale (`UNIFORM_LEVEL`) e per la condizione di moto uniforme all'uscita.
 
 **Geometria**: `section, local_slope, x_coord_[m], talweg_[m]`, una riga per sezione. La pendenza
-locale è negativa verso valle (nel codice si usa `abs`).
+locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
+`argine_dx_[m], argine_sx_[m]`, quote assolute degli argini (in `calcolo_tabelle_daBM` vengono da
+`input/bankpoints.csv`). I file a 4 colonne restano validi: gli argini valgono `Inf` e non c'è sfioro.
 
 **Output** (separati da spazi, una riga per passo temporale):
 - `Q.csv`: portate alle **interfacce** (imax+1 valori: l'ultimo è l'uscita);
@@ -134,6 +137,17 @@ passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un pro
 - **Ora sono commentati** (blocchi "INSERIMENTO AFFLUENTI" nel solutore) per il test sul tratto reale
   senza affluenti. Per riattivarli basta togliere i `#` dai due blocchi.
 
+## Esondazione (portata uscente)
+
+- Sfioro libero sugli argini, formula 16 di `reference/siviglia_stocchino_colombini_ASCE2009.pdf`:
+  `q_l = Cd·√(2g·Y₀³)` [m²/s], con `Cd = 0.385` e `Y₀` tirante sopra la cresta (`FREE_OVERFLOW`).
+- Un contributo per ogni argine superato: `Q_lat = (q_dx + q_sx)·dx_int`, cioè lo sfioro interessa
+  tutta la lunghezza della cella con lo stesso `Y₀`.
+- Entra solo nella continuità, come gli affluenti ma con segno opposto (`rhs -= dt/dx * Q_lat`), ed è
+  esplicito (`eta` del passo precedente). È attivo anche nel riempimento e compare nel suo bilancio.
+- L'acqua uscita non rientra: non ci sono golene né sfioro rigurgitato.
+- `Q_lat` non viene salvato: si ricava da `eta.csv` con la stessa formula.
+
 ## Stato attuale e risultati
 
 **Test_Brenta** (configurazione corrente di `settings.txt`):
@@ -143,7 +157,17 @@ passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un pro
 - Ks 33, dt massimo 60 s, upwind, nessun affluente;
 - output in `output/tratto_brenta/`.
 
-Risultati:
+**Con lo sfioro sugli argini** (prova su copia temporanea, `output/tratto_brenta/` non è ancora
+aggiornata e i risultati nell'elenco più sotto sono **senza sfioro**):
+- colmo in S6000 da 83,15 a 70,49 m³/s (−15%), a 7,47 h invece che a 7,55 h: il ritardo quasi non cambia;
+- esce il 4,4% del volume entrato (circa 119 000 m³), quasi tutto da S0800 e S1000 sull'argine destro;
+- portata uscente massima 12,8 m³/s; sfiorano solo S0600, S0800, S1000, S1200 e S2000;
+- bilancio di massa chiuso e nessuna oscillazione con dt = 60 s;
+- il livello supera ancora la quota massima delle tabelle in 5 sezioni (3, 6, 7, 10, 11), al massimo di 2,3 cm;
+- grafico del confronto con e senza sfioro: `output/tratto_brenta/grafici/10_effetto_sfioro.png`
+  (fatto una tantum sulla prova temporanea: `strumenti/grafici_simulazione.jl` non lo rigenera).
+
+Risultati senza sfioro:
 - **Riempimento:** finisce a 6 h, senza NaN.
 - **Il modello 1D quasi non lamina:** colmo da 83,34 a 83,15 m³/s, con un ritardo di circa 33 min sui 6 km.
 - **Confronto con il 2D** (`reference/piena_ns_discharge.csv`, sezione S6000):
@@ -153,7 +177,7 @@ Risultati:
 - **Nel 2D** il colmo cala lungo il tratto e ha un ritardo di 225 min. L'idrogramma ha un plateau
   intorno a 50 m³/s tra 5,5 e 8 h, e circa il 5% del volume non arriva in S6000 entro 24 h.
   Il quadro è compatibile con un'esondazione nelle golene.
-- **Nel 1D** al colmo il livello supera la quota massima delle tabelle nelle sezioni 2-17, di 5-24 cm:
+- **Nel 1D** al colmo il livello supera la quota massima delle tabelle nelle sezioni 2-17, di 3-24 cm:
   lì i valori sono estrapolati e non c'è nessuna golena.
 - Le colonne `Q_P17_*` del riferimento (colmo 56,67 m³/s) non sono ancora state interpretate.
 
@@ -167,8 +191,11 @@ pendenza 0,003, Ks 33, idrogrammi `vaia` con 18 affluenti), risultati in `output
 
 ## Problemi aperti e prossimi passi possibili
 
-- **Tabelle più alte, con le golene**, per evitare l'estrapolazione e rappresentare la laminazione
-  vista nel 2D: è il punto principale per avvicinare il 1D al riferimento.
+- **Esondazione, il punto principale per avvicinare il 1D al riferimento.** Includere le golene nelle
+  tabelle sarebbe la strategia migliore, ma non è banale, soprattutto dove l'acqua in golena arriva da
+  monte invece di uscire in quella sezione. Si procede quindi, un passo alla volta, con una **portata
+  laterale uscente** (vedi "Esondazione"). I dati 2D di riferimento non sono ancora definitivi: per
+  ora interessa l'effetto del termine, non far combaciare gli idrogrammi.
 - **Upwind:** l'instabilità con area e attrito insieme su veli sottili e tratti lunghi è da
   risolvere, oppure va scelto un upwind solo parziale.
 - **Stato iniziale vicino all'equilibrio** nei tratti non prismatici: profilo di moto permanente,

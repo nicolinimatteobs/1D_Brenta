@@ -123,12 +123,26 @@ end
 
 
 
-# Legge il file della geometria e restituisce pendenza locale bx, ascissa x_b e talweg b_min
-# di ogni sezione
+# Legge il file della geometria e restituisce pendenza locale bx, ascissa x_b, talweg b_min e
+# quote degli argini destro e sinistro di ogni sezione. I file a 4 colonne non hanno gli argini:
+# le quote valgono Inf, quindi non c'è mai sfioro
 function LOAD_GEOMETRY(filename, imax)
-    data = Array{Float64}(undef, imax, 4)
-    LOAD_DATA!(data, filename, imax, 4)
-    return (bx = data[:, 2], x_b = data[:, 3], b_min = data[:, 4])
+    _, n_col = FILE_SIZE(filename)
+    data = Array{Float64}(undef, imax, n_col)
+    LOAD_DATA!(data, filename, imax, n_col)
+    argine_dx = n_col >= 6 ? data[:, 5] : fill(Inf, imax)
+    argine_sx = n_col >= 6 ? data[:, 6] : fill(Inf, imax)
+    return (bx = data[:, 2], x_b = data[:, 3], b_min = data[:, 4], argine_dx, argine_sx)
+end
+
+
+
+# Portata sfiorata da un argine per unità di lunghezza [m2/s], con la quota eta del pelo libero
+# e la quota z_argine della cresta (free overflow, formula 16 di Siviglia et al., ASCE 2009).
+# Vale zero se il livello non supera l'argine
+@inline function FREE_OVERFLOW(eta, z_argine, Cd, g)
+    Y0 = max(eta - z_argine, 0.0)
+    return Cd*sqrt(2.0*g*Y0^3)
 end
 
 

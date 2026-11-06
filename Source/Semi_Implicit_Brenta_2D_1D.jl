@@ -13,7 +13,7 @@
             smax, β_b, β_int, rhs, den_γ_b, den_γ_int, qn = ALLOCATE_ARRAYS!(imax)
 
     # --- CARICAMENTO DATI SEZIONI E CREAZIONE DOMINIO LONGITUDINALE ---
-    @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
+    @unpack bx, x_b, b_min, argine_dx, argine_sx = LOAD_GEOMETRY(local_slope, imax)
     data_depth = permutedims(LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col))
     first_row, last_row = SECTION_INDEX(data_depth)
     length(last_row) == imax || error("Le tabelle hanno $(length(last_row)) sezioni, la geometria ($local_slope) ne ha $imax")
@@ -121,6 +121,8 @@
     Qin_0 = q[1]  # Portata in ingresso all'inizio della rampa
     Qin   = Qin_0  # Portata in ingresso corrente
     Q_aff = zeros(imax)  # Vettore portate affluenti
+    Q_lat = zeros(imax)  # Vettore portate uscenti per esondazione
+    Cd    = 0.385        # Coefficiente di efflusso dello sfioro sugli argini
 
     A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, eta, A_b, β_b, den_γ_b, rh_b)  
     
@@ -379,6 +381,14 @@
         #end
         ##  FINE INSERIMENTO AFFLUENTI
 
+        ####  PORTATA USCENTE PER ESONDAZIONE
+        # Termine sorgente nella sola continuità, come gli affluenti ma con segno opposto: un contributo
+        # per ogni argine superato, con lo sfioro lungo tutta la cella (dx_int) e la quota eta del passo precedente
+        @inbounds for i in 1:imax
+            Q_lat[i] = (FREE_OVERFLOW(eta[i], argine_dx[i], Cd, g) + FREE_OVERFLOW(eta[i], argine_sx[i], Cd, g))*dx_int[i]
+            rhs[i]  -= dt/dx_int[i] * Q_lat[i]
+        end
+        ####  FINE PORTATA USCENTE PER ESONDAZIONE
 
 
         CHECK_NAN("termine noto e affluenti", nCS, time, IC; rhs, aa, cc)
@@ -431,6 +441,7 @@
         time += dt
         nCS  += 1
         Q_aff_tot = sum(Q_aff)  # Somma degli affluenti, per il bilancio
+        Q_lat_tot = sum(Q_lat)  # Somma delle portate uscenti per esondazione, per il bilancio
         Q_aff .= 0.0  # Reset portate affluenti
         # --- Salvataggio risultati ---
         if nCS % 500 == 0
@@ -472,7 +483,7 @@
             end
 
             # Stazionario: rampa finita, q ferma e ingressi uguali all'uscita
-            Q_in_tot = q[1] + Q_aff_tot
+            Q_in_tot = q[1] + Q_aff_tot - Q_lat_tot
             if IC_counter == imax && time >= T_riempimento && abs(Q_in_tot - q[imax+1]) < 1e-3*Q_in_tot
                 println("Condizioni iniziali raggiunte al tempo: ", nCS, ", time = ", time)
                 IC           = 0 # Disattiva condizioni iniziali
