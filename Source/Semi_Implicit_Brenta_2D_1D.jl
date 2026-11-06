@@ -15,8 +15,8 @@
     # --- CARICAMENTO DATI SEZIONI E CREAZIONE DOMINIO LONGITUDINALE ---
     @unpack bx, x_b, b_min = LOAD_GEOMETRY(local_slope, imax)
     data_depth = permutedims(LOAD_SECTION_TABLES(parametri_sezioni, n_row, n_col))
-    ys         = copy(data_depth[2, :])  # copy: con @views sarebbe una vista, non un vettore continuo
     first_row, last_row = SECTION_INDEX(data_depth)
+    ys         = copy(data_depth[2, :])  # quote del pelo libero (colonna 2); copy: con @views sarebbe una vista
     SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
 
     # --- CARICAMENTO IDROGRAMMI ---
@@ -92,7 +92,7 @@
     eta .= b_min .+ y_ini
 
     @inbounds for i in 1:imax
-        sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+        sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])
         A_b[i]  = sec.A
         rh_b[i] = sec.rh
         q[i]    = A_b[i]*Ks*sqrt(abs(bx[i]))*rh_b[i]^(exp_dt)
@@ -106,7 +106,7 @@
     Qin   = Qin_0  # Portata in ingresso corrente
     Q_aff = zeros(imax)  # Vettore portate affluenti
 
-    A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta, A_b, β_b, den_γ_b, rh_b)  
+    A_b, β_b, den_γ_b, rh_b = BARYCENTERS!(imax, data_depth, ys, first_row, last_row, eta, A_b, β_b, den_γ_b, rh_b)  
     
     
     dx   = min(minimum(dx_b), minimum(dx_int))
@@ -167,6 +167,7 @@
         amax = maximum(smax)
         dt_lim = (IC == 1 && time < T_riempimento) ? dt_riempimento : dtmax
         dt   = min(dt_lim, CFL*dx/(amax + tol))
+        CHECK_NAN("calcolo di dt", nCS, time, IC; dt, uf, smax)
 
         #@infiltrate
 
@@ -203,6 +204,7 @@
             γ[i]       = abs(uf[i])/(den_γ_int[i] + 1e-14)
             A_int_g[i] = A_int[i]/(1.0 + dt*γ[i])
         end
+        CHECK_NAN("calcolo di qstar", nCS, time, IC; qstar, γ, A_int_g)
         # --- Aggiornamento geometrie e preparazione RHS per Thomas ---
         A_bn .= A_b
 
@@ -355,11 +357,13 @@
 
 
 
+        CHECK_NAN("termine noto e affluenti", nCS, time, IC; rhs, aa, cc)
+
         # --- Ciclo Newton ---
         #@infiltrate
         @inbounds for iNewton in 1:100
             @inbounds for i in 1:imax
-                sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+                sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])
                 A_bn[i] = sec.A
                 dA[i]   = sec.w
 
@@ -383,6 +387,7 @@
                 break
             end
             THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
+            CHECK_NAN("Thomas, iterazione di Newton $iNewton", nCS, time, IC; ff, di, deta)
             eta .= eta .- deta
         end
         #@infiltrate
@@ -395,6 +400,8 @@
             q[i] = (qstar[i] - g*A_int[i]*dt/dx_b[i-1]*(eta[i]-eta[i-1]))/(1.0 + dt*γ[i])
           
         end
+
+        CHECK_NAN("aggiornamento delle portate", nCS, time, IC; q)
 
         # --- Aggiornamento tempo e counter ---
         time += dt
@@ -423,7 +430,7 @@
 
         # --- Aggiornamento geometrie finali ---
         @inbounds for i in 1:imax
-            sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+            sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])
             A_b[i]     = sec.A
             β_b[i]     = sec.β
             den_γ_b[i] = sec.den

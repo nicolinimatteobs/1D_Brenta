@@ -38,9 +38,9 @@ end
 
 
 
-# Trova la riga r della sezione, compresa tra lo e hi, con ys[r] <= y < ys[r+1], anche con
-# dh non costante. Prova prima l'ultima riga usata (g) e le vicine, altrimenti usa la ricerca
-# binaria. Oltre il tirante massimo restituisce l'ultima riga della sezione (hi)
+# Trova la riga r della sezione, compresa tra lo e hi, con ys[r] <= y < ys[r+1], dove ys sono
+# le quote del pelo libero, anche con passo non costante. Prova prima l'ultima riga usata (g)
+# e le vicine, altrimenti usa la ricerca binaria. Oltre la quota massima restituisce hi
 @inline function FIND_ROW(ys, lo, hi, y, g)
     @inbounds begin
         if ys[g] <= y
@@ -61,16 +61,17 @@ end
 
 
 
-# Calcola le proprietà della sezione k per la quota eta, interpolando sulla tabella trasposta.
-# Restituisce area A, coefficiente β, den (denominatore di γ), larghezza w e raggio idraulico rh.
-# Con y < 0 usa y = 0, oltre il tirante massimo estrapola con l'ultima riga.
-# Aggiorna last_row[k] con la riga trovata
-@inline function READ_VALUES(data, ys, first_row, last_row, k, eta, b_min)
-    y = max(eta - b_min, 0.0)
+# Calcola le proprietà della sezione k per la quota del pelo libero eta, interpolando sulla
+# tabella trasposta con le quote ys. Restituisce area A, coefficiente β, den (denominatore di γ),
+# larghezza w e raggio idraulico rh. Sotto la prima quota (il fondo) usa la prima riga,
+# oltre la quota massima estrapola con l'ultima riga. Aggiorna last_row[k] con la riga trovata
+@inline function READ_VALUES(data, ys, first_row, last_row, k, eta)
     @inbounds begin
-        r = FIND_ROW(ys, first_row[k], first_row[k+1]-1, y, last_row[k])
+        lo = first_row[k]
+        z  = max(eta, ys[lo])
+        r  = FIND_ROW(ys, lo, first_row[k+1]-1, z, last_row[k])
         last_row[k] = r
-        d = y - ys[r]
+        d = z - ys[r]
         return (A   = data[3,r]  + data[4,r]*d,
                 β   = data[5,r]  + data[6,r]*d,
                 den = data[7,r]  + data[8,r]*d,
@@ -81,10 +82,10 @@ end
 
 # Aggiorna area, β, denominatore di γ e raggio idraulico in tutte le sezioni,
 # leggendoli dalle tabelle in base alla quota eta corrente
-function BARYCENTERS!(imax, data_depth, ys, first_row, last_row, b_min, eta,
+function BARYCENTERS!(imax, data_depth, ys, first_row, last_row, eta,
                       A_b, β_b, den_γ_b, rh_b)
     @inbounds for i in 1:imax
-        g = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i], b_min[i])
+        g = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])
         A_b[i]     = g.A
         β_b[i]     = g.β
         den_γ_b[i] = g.den
@@ -215,4 +216,16 @@ function THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
     end
 
     return (deta)
+end
+
+# Ferma la simulazione se in uno dei vettori passati compare un NaN, indicando dove:
+# fase del calcolo, passo, tempo e sezioni o interfacce coinvolte
+function CHECK_NAN(fase, nCS, time, IC; vettori...)
+    for (nome, v) in vettori
+        idx = findall(isnan, v)
+        if !isempty(idx)
+            error("NaN in $nome dopo $fase: passo $nCS (" * (IC == 1 ? "condizioni iniziali" : "simulazione") *
+                  "), t = $time s, posizioni $(idx[1:min(end,10)]) ($(length(idx)) in totale)")
+        end
+    end
 end
