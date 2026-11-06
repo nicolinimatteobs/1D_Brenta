@@ -24,7 +24,7 @@
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
     tend  = HYDROGRAPH_END_TIME(hydro)
 
-    # --- FILE DI OUTPUT: cartella indicata nella riga 25 di settings.txt ---
+    # --- FILE DI OUTPUT: cartella indicata nella riga 23 di settings.txt ---
     out = INIT_OUTPUT(output_dir)
 
     # --- ALIAS IDROGRAMMI (tempi e portate) ---
