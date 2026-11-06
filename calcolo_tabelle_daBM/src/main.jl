@@ -223,12 +223,15 @@ function main(; dosave::Bool=false, doplot::Bool=false)
             minimum(i_ok), maximum(i_ok), minimum(K_ok), maximum(K_ok))
         append!(avvisi, check_section(nome, table, data[!, "Discharge [m3/s]"]))
 
+        # salva tabella e grafici solo se la tabella è diversa da quella già salvata
         Folder = joinpath(OutputFolder, nome)
-        if dosave
+        TablePath = joinpath(Folder, "tabella"*Format)
+        salva = dosave && !(isfile(TablePath) && isequal(CSV.read(TablePath, DataFrame), table))
+        if salva
             mkpath(Folder)
-            CSV.write(joinpath(Folder, "tabella"*Format), table)
+            CSV.write(TablePath, table)
         end
-        (dosave || doplot) && plot_section(table, nome, Folder; dosave, doplot)
+        (salva || doplot) && plot_section(table, nome, Folder; dosave=salva, doplot)
     end
 
     # tabella unica, con il numero progressivo della sezione da monte verso valle
@@ -238,12 +241,26 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         CSV.write(joinpath(OutputFolder, "tabella_sezioni"*Format), tabella_unica)
     end
 
+    # geometria delle sezioni: la pendenza del fondo è calcolata come quella della superficie libera,
+    # ma con il segno usato dal modello 1D, negativo quando il fondo scende verso valle
+    s = sections_all[!, "s_m"]
+    talweg = [dati[nome][1][begin, "Reference elevation [m]"] for nome in nomi]
+    local_slope = -vec(free_surface_slope(permutedims(talweg), trues(1, length(nomi)), s))
+    # l'ultima sezione è in contropendenza, ma il modello 1D ne usa la pendenza per la velocità
+    # di uscita: uso la pendenza media del fondo sull'intero tratto
+    local_slope[end] = (talweg[end] - talweg[begin]) / (s[end] - s[begin])
+    geometria = DataFrame("section" => eachindex(nomi), "local_slope" => local_slope,
+        "x_coord_[m]" => s, "talweg_[m]" => talweg)
+    if dosave
+        CSV.write(joinpath(OutputFolder, "localslope_xcoord"*Format), geometria)
+    end
+
     println("\nControlli: $(length(avvisi)) valori fuori dai limiti")
     foreach(println, avvisi)
 
     @infiltrate false
 
-    return tabelle, tabella_unica
+    return tabelle, tabella_unica, geometria
 end
 
 main(; dosave=true)
