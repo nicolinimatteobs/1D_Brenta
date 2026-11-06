@@ -162,17 +162,18 @@
         #Threads.@threads :static
         @inbounds @simd for i in 2:imax
             
-            # Durante la rampa area della cella a monte: una cella non cede più acqua di quanta ne ha
-            A_int[i]     = (IC == 1 && time < T_riempimento) ? (q[i] >= 0.0 ? A_b[i-1] : A_b[i]) : 0.5 * (A_b[i] + A_b[i-1])
-            β_int[i]     = 0.5 * (β_b[i] + β_b[i-1])
-            den_γ_int[i] = 0.5 * (den_γ_b[i] + den_γ_b[i-1])
-            rh_int[i]    = 0.5 * (rh_b[i] + rh_b[i-1])
-            # Alternativa upwind: area e attrito presi dalla cella a monte invece che dalla media.
+            # Upwind: area e attrito presi dalla cella a monte invece che dalla media.
             # Evita il dente di sega a monte degli affluenti quando le celle sono molto più lunghe
             # del tratto in cui il livello torna al moto uniforme (circa dx > 0,6*y/S), ma è meno
-            # accurata nei tratti profondi. Per attivarla sostituire le righe di A_int e den_γ_int con:
-            #A_int[i]     = q[i] >= 0.0 ? A_b[i-1] : A_b[i]
-            #den_γ_int[i] = q[i] >= 0.0 ? den_γ_b[i-1] : den_γ_b[i]
+            # accurato nei tratti profondi
+            A_int[i]     = q[i] >= 0.0 ? A_b[i-1] : A_b[i]
+            β_int[i]     = 0.5 * (β_b[i] + β_b[i-1])
+            den_γ_int[i] = q[i] >= 0.0 ? den_γ_b[i-1] : den_γ_b[i]
+            rh_int[i]    = 0.5 * (rh_b[i] + rh_b[i-1])
+            # Alternativa con la media (upwind sull'area solo durante la rampa: una cella non cede
+            # più acqua di quanta ne ha). Per riattivarla sostituire le righe di A_int e den_γ_int con:
+            #A_int[i]     = (IC == 1 && time < T_riempimento) ? (q[i] >= 0.0 ? A_b[i-1] : A_b[i]) : 0.5 * (A_b[i] + A_b[i-1])
+            #den_γ_int[i] = 0.5 * (den_γ_b[i] + den_γ_b[i-1])
  
             uf[i]   = q[i] * A_int[i]/(A_int[i]^2 + tol)
             smax[i] = abs(β_int[i] * uf[i])
