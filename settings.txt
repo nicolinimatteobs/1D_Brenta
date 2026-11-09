@@ -6,7 +6,6 @@ input/idrogrammi/vaia/Brenta3.csv
 input/idrogrammi/vaia/Brenta4.csv
 input/idrogrammi/vaia/Brenta5.csv
 input/idrogrammi/vaia/Brenta6.csv
-input/idrogrammi/vaia/Brenta7.csv
 input/idrogrammi/vaia/BrentaNuovo.csv
 input/idrogrammi/vaia/BrentaVecchio1.csv
 input/idrogrammi/vaia/BrentaVecchio2.csv

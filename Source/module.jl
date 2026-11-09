@@ -6,7 +6,7 @@
 function INITIAL_SETTINGS!()
     # Legge esattamente 27 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:27]
+        [strip(readline(f)) for _ in 1:26]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
@@ -14,18 +14,18 @@ function INITIAL_SETTINGS!()
     hydro_files = (brenta1    = righe[3],  brenta2    = righe[4],
                    brenta3    = righe[5],  brenta4    = righe[6],
                    brenta5    = righe[7],  brenta6    = righe[8],
-                   brenta7    = righe[9],  brenta_new = righe[10],
-                   brenta_v1  = righe[11], brenta_v2  = righe[12],
-                   brenta_v3  = righe[13], brenta_v4  = righe[14],
-                   caldonazzo = righe[15], ceggio     = righe[16],
-                   levico     = righe[17], centa      = righe[18],
-                   chieppena  = righe[19], grigno     = righe[20],
-                   maso       = righe[21], moggio     = righe[22])
-    output_dir        = righe[23]
-    Ks                = parse(Float64, righe[24])
-    time              = parse(Float64, righe[25])
-    dtmax             = parse(Float64, righe[26])
-    Nmax              = round(Int, parse(Float64, righe[27]))  # Numero massimo di passi
+                   brenta_new = righe[9],
+                   brenta_v1  = righe[10], brenta_v2  = righe[11],
+                   brenta_v3  = righe[12], brenta_v4  = righe[13],
+                   caldonazzo = righe[14], ceggio     = righe[15],
+                   levico     = righe[16], centa      = righe[17],
+                   chieppena  = righe[18], grigno     = righe[19],
+                   maso       = righe[20], moggio     = righe[21])
+    output_dir        = righe[22]
+    Ks                = parse(Float64, righe[23])
+    time              = parse(Float64, righe[24])
+    dtmax             = parse(Float64, righe[25])
+    Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
