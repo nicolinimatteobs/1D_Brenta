@@ -3,11 +3,11 @@
 # Uso, dalla cartella del progetto:  julia --project=. strumenti/grafici_simulazione.jl
 using Plots, Printf
 const R     = dirname(@__DIR__)                                  # cartella del progetto
-const SET   = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:27]]
+const SET   = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
 const TAB   = joinpath(R, SET[1])                                # tabelle delle sezioni (riga 1)
 const GEO   = joinpath(R, SET[2])                                # geometria (riga 2)
-const MONTE = joinpath(R, SET[15])                               # idrogramma di monte (riga 15)
-const D     = joinpath(R, SET[23])                               # cartella degli output (riga 23)
+const MONTE = joinpath(R, SET[14])                               # idrogramma di monte (riga 14)
+const D     = joinpath(R, SET[22])                               # cartella degli output (riga 22)
 const OUT   = joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const VER = "#1baf7a"; const ROS = "#d55181"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)

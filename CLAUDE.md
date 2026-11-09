@@ -26,6 +26,7 @@ julia --project=. -e "using Pkg; Pkg.instantiate()"     # la prima volta
 julia --project=. -O2 main.jl                          # condizioni iniziali + simulazione
 julia --project=. strumenti/controllo_input.jl         # controllo a secco degli input, nessuna simulazione
 julia --project=. strumenti/grafici_simulazione.jl     # grafici in <output>/grafici
+julia --project=. strumenti/grafici_spinup.jl          # figura e animazione del riempimento in <output>/grafici
 julia --project=. strumenti/confronto_reference.jl     # confronto con il 2D in reference/
 ```
 
@@ -50,27 +51,28 @@ Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 | `reference/` | Risultati del modello 2D usati come riferimento (`ns_channel_piena_discharge.csv`) |
 | `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata |
 | `strumenti/` | Script di controllo, grafici e confronto |
+| `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
 
 ## settings.txt
 
-Letto **per posizione** (27 righe, non spostarle; dalla riga 28 in poi sono note e vecchie configurazioni):
+Letto **per posizione** (26 righe, non spostarle; dalla riga 27 in poi sono note e vecchie configurazioni):
 
 | Riga | Contenuto |
 |---|---|
 | 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/tabella_sezioni.csv`) |
 | 2 | Geometria (es. `input/geometria/Test_Brenta/localslope_xcoord.csv`) |
-| 3-14 | Idrogrammi affluenti Brenta1-6, Brenta7, BrentaNuovo, BrentaVecchio1-4 |
-| 15 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
-| 16-22 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
-| 23 | Cartella degli output (creata se non esiste) |
-| 24 | Ks |
-| 25 | Tempo iniziale |
-| 26 | Passo temporale massimo [s] |
-| 27 | Numero massimo di passi |
+| 3-13 | Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4 |
+| 14 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
+| 15-21 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
+| 22 | Cartella degli output (creata se non esiste) |
+| 23 | Ks |
+| 24 | Tempo iniziale |
+| 25 | Passo temporale massimo [s] |
+| 26 | Numero massimo di passi |
 
 - Numero di righe e colonne delle tabelle e numero di sezioni **sono ricavati dai file**
   (`FILE_SIZE`): non serve più il vecchio `struttura_output.txt`.
-- Tutti gli idrogrammi devono esistere tranne `Brenta7.csv`, non ancora usato (viene saltato con un avviso).
+- Tutti gli idrogrammi indicati devono esistere. `Brenta7.csv`, non ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 
 ## Formato degli input
@@ -157,7 +159,7 @@ passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un pro
 - Ks 33, dt massimo 60 s, upwind, nessun affluente;
 - output in `output/tratto_brenta_sfioro/`, con lo sfioro sugli argini (configurazione corrente);
 - `output/tratto_brenta/` conserva i risultati **senza sfioro**: non va sovrascritta. Per rifarli
-  serve una geometria a 4 colonne e un'altra cartella alla riga 23 di `settings.txt`.
+  serve una geometria a 4 colonne e un'altra cartella alla riga 22 di `settings.txt`.
 
 **Con lo sfioro sugli argini** (`output/tratto_brenta_sfioro/`; i risultati nell'elenco più sotto
 sono invece **senza sfioro**):
@@ -173,7 +175,10 @@ sono invece **senza sfioro**):
   livelli e portate 2D vengono da `../Test_Brenta/results/inputs/ns_channel_piena_results.h5`
   (30 sezioni, un'uscita ogni 900 s), perché `calcolo_tabelle_daBM/input/sections_ns_channel_S0200_S6000/`
   contiene gli **scalini di portata** per le tabelle, non la piena. Differenza di quota 1D − 2D:
-  scarto quadratico medio 6 cm, massimo 27 cm (x = 5,8 km, t = 11,25 h, 1D più basso).
+  scarto quadratico medio 6 cm, massimo 27 cm (x = 5,8 km, t = 11,25 h, 1D più basso);
+- evoluzione del riempimento in `output/tratto_brenta_sfioro/grafici/`: `12_spinup_convergenza.png` e
+  `13_spinup_animazione.gif` (dagli `IC_*.csv`, con `strumenti/grafici_spinup.jl`). I criteri di arresto su portata e
+  bilancio sono soddisfatti da 2,95 h; il riempimento dura 6 h solo per `T_riempimento`.
 
 Risultati senza sfioro:
 - **Riempimento:** finisce a 6 h, senza NaN.
@@ -203,6 +208,22 @@ pendenza 0,003, Ks 33, idrogrammi `vaia` con 18 affluenti), risultati in `output
 - **Magre e tabelle:** con portate molto basse le tabelle con larghezza e β nulli sul fondo (sotto
   10 cm) fanno fallire Newton e non conservano la massa. Servono tabelle fisiche e fitte vicino
   al fondo. Resoconto completo in `output/rettangolare/resoconto_magra/resoconto.md`.
+
+## Scenari fittizi
+
+Idrogrammi di monte creati da `idromaker/main.jl` (lanciare `julia --project=. idromaker/main.jl`
+dalla cartella del progetto): Gumbel con portata di base 5 m³/s e passo 900 s. Valori provati su una
+copia temporanea, 1D con sfioro:
+
+| Scenario | Caratteristiche | Durata | Colmo [m³/s] | Colmo a S6000 | Ore con sfioro | Volume sfiorato |
+|---|---|---|---|---|---|---|
+| `fittizio_1` | Riferimento (uguale a `prova_tratto_brenta`) | 24 h | 83,34 a 7 h | 70,49 | 4,3 | 118 940 m³ (4,4%) |
+| `fittizio_2` | Come l'1, portata più bassa | 24 h | 74,83 a 7 h | 69,50 | 3,2 | 37 091 m³ (1,5%) |
+| `fittizio_3` | Come l'1, colmo mantenuto per 6 h | 30 h | 83,34 da 7 a 13 h | 70,50 | 10,3 | 396 194 m³ (8,8%) |
+| `fittizio_4` | Due colmi come l'1, a 7 e 22 h | 39 h | 83,34 | 70,49 | 8,7 | 239 275 m³ (4,6%) |
+
+Nel 1D l'esondazione inizia intorno a 66 m³/s (S1000). Il colmo a valle cambia poco tra gli scenari
+perché lo sfioro limita la portata a circa 70 m³/s.
 
 ## Problemi aperti e prossimi passi possibili
 

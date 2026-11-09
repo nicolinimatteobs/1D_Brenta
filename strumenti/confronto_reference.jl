@@ -5,9 +5,9 @@
 # Uso, dalla cartella del progetto:  julia --project=. strumenti/confronto_reference.jl
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:27]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
-const D   = joinpath(R, SET[23])                                 # cartella degli output (riga 23)
+const D   = joinpath(R, SET[22])                                 # cartella degli output (riga 22)
 const REF = joinpath(R, "reference", "ns_channel_piena_discharge.csv")
 const OUT = joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const GRI = "#7a7a7a"
