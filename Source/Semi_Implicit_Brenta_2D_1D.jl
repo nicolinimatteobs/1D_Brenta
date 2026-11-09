@@ -136,15 +136,6 @@
     qn .= q  # Salva la portata precedente
 
     if IC == 1
-        #if nCS < 3000
-        #    CFL = 0.2
-        #elseif nCS < 6000
-        #    CFL = 0.3
-        #elseif nCS < 9000
-        #    CFL = 0.5
-        #else
-        #    CFL = 0.9
-        #end
         CFL = 0.6
         tol = 1e-14
     else
