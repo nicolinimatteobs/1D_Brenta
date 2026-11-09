@@ -167,7 +167,13 @@ sono invece **senza sfioro**):
 - bilancio di massa chiuso e nessuna oscillazione con dt = 60 s;
 - il livello supera ancora la quota massima delle tabelle in 5 sezioni (3, 6, 7, 10, 11), al massimo di 2,3 cm;
 - grafico del confronto con e senza sfioro: `output/tratto_brenta/grafici/10_effetto_sfioro.png`
-  (fatto una tantum sulla prova temporanea: `strumenti/grafici_simulazione.jl` non lo rigenera).
+  (fatto una tantum sulla prova temporanea: `strumenti/grafici_simulazione.jl` non lo rigenera);
+- animazioni della piena 2D in `output/tratto_brenta_sfioro/grafici/`: `10_piena_2D.gif` (solo 2D) e
+  `11_piena_1D_2D.gif` (1D con sfioro e 2D insieme, con la differenza di quota). Fatte una tantum:
+  livelli e portate 2D vengono da `../Test_Brenta/results/inputs/ns_channel_piena_results.h5`
+  (30 sezioni, un'uscita ogni 900 s), perché `calcolo_tabelle_daBM/input/sections_ns_channel_S0200_S6000/`
+  contiene gli **scalini di portata** per le tabelle, non la piena. Differenza di quota 1D − 2D:
+  scarto quadratico medio 6 cm, massimo 27 cm (x = 5,8 km, t = 11,25 h, 1D più basso).
 
 Risultati senza sfioro:
 - **Riempimento:** finisce a 6 h, senza NaN.
