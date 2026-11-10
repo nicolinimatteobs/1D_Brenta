@@ -9,6 +9,7 @@ struct Parametri
     time               ::Float64
     dtmax              ::Float64
     Nmax               ::Int
+    con_affluenti      ::Bool
     n_row              ::Int
     imax               ::Int
     n_col              ::Int

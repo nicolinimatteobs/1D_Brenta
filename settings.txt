@@ -24,20 +24,20 @@ output/fittizio_2
 0
 60
 1e9
-
+no
 
 CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 1      - Tabelle delle sezioni, con la quota del pelo libero in colonna 2, in input/geometria/<caso>/
-2      - Geometria: pendenza, ascissa e talweg di ogni sezione, in input/geometria/<caso>/
-3-14   - Idrogrammi affluenti Brenta1-6, Brenta7, BrentaNuovo, BrentaVecchio1-4, in input/idrogrammi/<evento>/
-15     - Idrogramma in ingresso da monte
-16-22  - Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio
-         (devono esistere tutti tranne Brenta7.csv, che non è ancora usato e viene saltato con un avviso)
-23     - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste
-24     - Ks
-25     - Tempo iniziale
-26     - Passo temporale massimo [s]
-27     - Numero massimo di passi temporali
+2      - Geometria: pendenza, ascissa e talweg di ogni sezione (ed eventualmente argini), in input/geometria/<caso>/
+3-13   - Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4, in input/idrogrammi/<evento>/
+14     - Idrogramma in ingresso da monte
+15-21  - Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio (devono esistere tutti)
+22     - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste
+23     - Ks (usato solo nella condizione al contorno di valle)
+24     - Tempo iniziale
+25     - Passo temporale massimo [s]
+26     - Numero massimo di passi temporali
+27     - Affluenti attivi: si o no (stato iniziale, riempimento e simulazione)
 
 Input/dx_70/h_01/struttura_output.txt
 4

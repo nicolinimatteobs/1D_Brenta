@@ -8,7 +8,7 @@ function SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
     end
 
     dx_int[1] = dx_b[1]
-    
+
     @inbounds  for i in 2:imax-1
         dx_int[i] = 0.5 * (dx_b[i] + dx_b[i-1])
     end
@@ -109,6 +109,18 @@ end
 # g·A·S = g·A·u²/(g·jden), cioè Q = A·√(g·jden·S) (con jden = Ks²·Rh^(4/3)/g è Manning con il Ks
 # della tabella)
 UNIFORM_DISCHARGE(A, den, S) = A*sqrt(9.81*den*abs(S))
+
+# Portata degli affluenti che entra in ogni cella: l'affluente j, con portata Qj[j], entra nella
+# sezione sez_aff[j] e nelle semi_aff[j] vicine per lato, diviso in parti uguali su ncel_aff[j] sezioni
+function TRIBUTARY_INFLOW!(Q_aff, Qj, sez_aff, semi_aff, ncel_aff)
+    Q_aff .= 0.0
+    @inbounds for j in eachindex(Qj)
+        for i in max(1, sez_aff[j] - semi_aff[j]):min(length(Q_aff), sez_aff[j] + semi_aff[j])
+            Q_aff[i] += Qj[j] / ncel_aff[j]
+        end
+    end
+    return Q_aff
+end
 
 # Quota del pelo libero di moto uniforme per la portata Q nella sezione k, con pendenza S e l'attrito
 # delle tabelle (UNIFORM_DISCHARGE). Cerca per bisezione tra fondo + y_min e la quota massima della
@@ -257,8 +269,8 @@ function THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
     @inbounds for i in (imax-1):-1:1
         deta[i] = fn[i] - cn[i]*deta[i+1]
         if abs(deta[i]) > 100
-        #@infiltrate
-    end
+            #@infiltrate
+        end
     end
 
     return (deta)

@@ -1,12 +1,13 @@
 # Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
 # vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2
-# geometria, righe 3-22 idrogrammi (raccolti in hydro_files), riga 23 cartella degli output,
-# righe 24-27 Ks, tempo iniziale, passo massimo e numero massimo di passi. Numero di righe e
-# di colonne delle tabelle e numero di sezioni sono ricavati direttamente dai file di input
+# geometria, righe 3-21 idrogrammi (raccolti in hydro_files), riga 22 cartella degli output,
+# righe 23-26 Ks, tempo iniziale, passo massimo e numero massimo di passi, riga 27 affluenti
+# attivi (si/no). Numero di righe e di colonne delle tabelle e numero di sezioni sono ricavati
+# direttamente dai file di input
 function INITIAL_SETTINGS!()
     # Legge esattamente 27 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:26]
+        [strip(readline(f)) for _ in 1:27]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
@@ -26,13 +27,22 @@ function INITIAL_SETTINGS!()
     time              = parse(Float64, righe[24])
     dtmax             = parse(Float64, righe[25])
     Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi
+    con_affluenti     = PARSE_SI_NO(righe[27], "riga 27 di settings.txt (affluenti attivi)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
 
     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
-                     Ks, time, dtmax, Nmax, n_row, imax, n_col)
+                     Ks, time, dtmax, Nmax, con_affluenti, n_row, imax, n_col)
+end
+
+# Legge un sì/no da settings.txt: accetta si, sì, no, true, false, 1, 0 (maiuscole o minuscole)
+function PARSE_SI_NO(s, dove)
+    v = lowercase(strip(s))
+    v in ("si", "sì", "true", "1") && return true
+    v in ("no", "false", "0") && return false
+    error("Valore '$s' non valido per $dove: usare si o no")
 end
 
 # Conta le righe di dati di un file separato da virgole (esclusa l'intestazione e le righe vuote)
