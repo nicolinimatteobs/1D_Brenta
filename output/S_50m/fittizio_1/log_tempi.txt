@@ -1,0 +1,22 @@
+Tempi di calcolo - fittizio_1, sezioni ogni 50 m
+Rimisurati il 2026-11-10 su una copia temporanea, con lo stesso codice che ha prodotto i risultati di
+questa cartella e con l'aggiunta delle sole stampe dei tempi: tutti i file IC_*.csv, Q, eta, h e time
+ottenuti sono identici byte per byte a quelli salvati qui.
+
+Codice: codice di ea8ed30 (partenza dalle portate cumulate senza rampa, arresto con T_assestamento, T_fermo e tol_fermo; dt massimo 5 s nel riempimento)
+Geometria: input/geometria/Test_Brenta/S_50m/, 120 sezioni
+Idrogramma: input/idrogrammi/fittizio_1/piena.csv; affluenti spenti; sfioro sugli argini attivo;
+Ks 33 (contorno di valle); dt massimo 60 s in simulazione; julia -O2, 1 thread
+Macchina: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz; julia version 1.12.6
+
+Fase                          tempo simulato   passi    tempo di calcolo [s]
+                                                        con compilazione   senza compilazione
+Condizioni iniziali (IC)        2.50 h          1801         0.73               0.57
+Simulazione                    24.00 h          3454         1.25               1.21
+Totale                                                        1.98               1.78
+
+"Con compilazione" è la prima esecuzione in un processo Julia nuovo: comprende la compilazione delle
+funzioni chiamate nel ciclo; non comprende l'avvio di Julia, il caricamento dei pacchetti e la lettura
+degli input (pochi secondi in tutto). "Senza compilazione" è una seconda esecuzione nello stesso
+processo. I tempi comprendono la scrittura dei file di output. Misura di @time sull'intero ciclo
+(seconda esecuzione): 1.783120 s (18.70 M allocations: 2.642 GiB, 12.51% gc time).

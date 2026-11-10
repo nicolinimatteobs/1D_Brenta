@@ -38,15 +38,27 @@ Gli script dei grafici accettano argomenti facoltativi, per lavorare su una cart
 della riga 22 di `settings.txt` senza modificarlo:
 
 ```bash
-julia --project=. strumenti/grafici_simulazione.jl output/fittizio_1 input/idrogrammi/fittizio_1/piena.csv
-julia --project=. strumenti/grafici_spinup.jl      output/fittizio_1
-julia --project=. strumenti/confronto_reference.jl output/fittizio_1 reference/ns_50_fittizio_1_discharge.csv
+julia --project=. strumenti/grafici_simulazione.jl output/S_50m/fittizio_1 input/idrogrammi/fittizio_1/piena.csv
+julia --project=. strumenti/grafici_spinup.jl      output/S_50m/fittizio_1
+julia --project=. strumenti/confronto_reference.jl output/S_50m/fittizio_1 reference/ns_50_fittizio_1_discharge.csv
+julia --project=. strumenti/animazioni_2D.jl       output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv
 ```
+
+`animazioni_2D.jl` (argomenti obbligatori) crea `10_piena_2D.gif` (solo 2D) e `11_piena_1D_2D.gif` (1D e
+2D sovrapposti, con la differenza di quota): il 1D è interpolato negli istanti del 2D (ogni 15 min) e le
+sezioni 2D ancora asciutte non sono disegnate. Stampa media, scarto quadratico medio e massimo della
+differenza di quota, ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è
+significativo.
 
 `confronto_reference.jl` confronta solo il periodo comune tra simulazione e riferimento e, sezione per
 sezione, scarta gli istanti in cui il riferimento ha portata nulla (2D che parte da alveo asciutto).
 Se il riferimento non ha ancora raggiunto il colmo quando finisce, il colmo non viene confrontato.
-Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
+Le colonne del riferimento sono associate alle sezioni arrotondando l'ascissa ai 50 m (con le sezioni
+a 200 m dà le stesse colonne di prima).
+Tutti gli strumenti leggono tabelle e geometria dalle righe 1-2 di `settings.txt`: devono essere quelle
+della simulazione che si sta analizzando.
+Una simulazione del Test_Brenta richiede pochi secondi: circa 15 s con 30 sezioni, compresa la
+compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 
 ## Struttura
 
@@ -62,8 +74,8 @@ Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
 | `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta due spaziature, `Test_Brenta/S_200m/` e `Test_Brenta/S_50m/` |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
-| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici |
-| `reference/` | Risultati del modello 2D usati come riferimento (`ns_channel_piena_discharge.csv`) |
+| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/` e `output/S_50m/` |
+| `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`, estratti da `../Test_Brenta/results/inputs/tmp/fittizi/ns_50_fittizio_N_results.h5`, gruppo `RESULTS/NodeStrg/StateVar`, colonna 1) |
 | `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata (vedi "Costruzione delle tabelle") |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
@@ -91,8 +103,10 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
 - Tutti gli idrogrammi indicati devono esistere, anche con gli affluenti spenti. `Brenta7.csv`, non
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
-- Il `settings.txt` committato punta al canale rettangolare con l'idrogramma `fittizio_2`, output in
-  `output/fittizio_2` e affluenti spenti: controllare righe 1-2, 14, 22 e 27 prima di lanciare.
+- Il `settings.txt` committato punta al canale rettangolare con l'idrogramma `fittizio_1`, output in
+  `output/rettangolare/prova_IC` e affluenti accesi: controllare righe 1-2, 14, 22 e 27 prima di
+  lanciare. Per i fittizi sul Test_Brenta: righe 1-2 su `input/geometria/Test_Brenta/S_200m/` o
+  `S_50m/`, riga 22 su `output/S_<passo>m/fittizio_N`, riga 27 `no`.
 
 ## Formato degli input
 
@@ -203,7 +217,8 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 
 **Test_Brenta** (configurazione corrente di `settings.txt`):
 - tratto di 6 km, 30 sezioni ogni 200 m (S0200-S6000), in `input/geometria/Test_Brenta/S_200m/`;
-  tutti i risultati qui sotto sono con questa geometria (quella a 50 m non è ancora stata simulata);
+  tutti i risultati qui sotto sono con questa geometria (con quella a 50 m ci sono solo gli scenari
+  fittizi, vedi "Scenari fittizi con la geometria a 50 m");
 - tabelle da `calcolo_tabelle_daBM`;
 - idrogramma `input/idrogrammi/prova_tratto_brenta/piena.csv` (5,07 → 83,34 m³/s a 7 h, durata 24 h);
 - Ks 33, dt massimo 60 s, upwind, nessun affluente;
@@ -275,10 +290,37 @@ copia temporanea, 1D con sfioro:
 Nel 1D l'esondazione inizia intorno a 66 m³/s (S1000). Il colmo a valle cambia poco tra gli scenari
 perché lo sfioro limita la portata a circa 70 m³/s.
 
-**Risultati salvati e confronto con il 2D.** Le simulazioni 1D con sfioro sono in `output/fittizio_1`
-… `fittizio_4`, ciascuna con la sua cartella `grafici/`: grafici 1-7 e GIF di `grafici_simulazione.jl`,
-8-9 e `confronto_S6000.txt` di `confronto_reference.jl`, 12-13 di `grafici_spinup.jl`. Mancano i
-grafici 10-11 (piena 2D), che richiedono i livelli 2D: per i fittizi ci sono solo le portate.
+**Risultati salvati e confronto con il 2D.** Le simulazioni 1D con sfioro con la **geometria a 200 m**
+(fatte con il codice di `7ba5b92`, partenza da moto uniforme con rampa di 6 h) sono in
+`output/S_200m/fittizio_1` … `fittizio_4`, ciascuna con la sua cartella `grafici/`: grafici 1-7 e GIF di
+`grafici_simulazione.jl`, 8-9 e `confronto_S6000.txt` di `confronto_reference.jl`, 10-11 di
+`animazioni_2D.jl`, 12-13 di `grafici_spinup.jl`. Lo stesso vale per `output/S_50m/`.
+
+**Tempi di calcolo** (`log_tempi.txt` in ogni cartella dei fittizi, a 200 e a 50 m). Rimisurati su copie
+temporanee con il codice che ha prodotto ciascun risultato, aggiungendo solo le stampe dei tempi: i
+risultati rilanciati sono identici byte per byte a quelli salvati. i9-9900K, Julia 1.12.6, 1 thread,
+`-O2`, seconda esecuzione nello stesso processo (cioè senza compilazione):
+
+| Geometria | Condizioni iniziali | Simulazione |
+|---|---|---|
+| 200 m (rampa, 7ba5b92) | 6,0 h simulate, 4321 passi, 0,51-0,63 s | 0,27-0,32 s (24-39 h) |
+| 50 m (codice attuale) | 2,5 h simulate, 1801 passi, 0,57-0,58 s | 1,20 s (24 h) - 2,01 s (39 h) |
+
+A 50 m la simulazione costa 4-7 volte di più (4 volte le sezioni e passo da 60 a circa 28 s); le
+condizioni iniziali costano circa lo stesso perché il nuovo arresto dimezza il tempo simulato. La
+prima esecuzione, con la compilazione, aggiunge 0,1-0,2 s.
+
+**Differenza di quota 1D − 2D** (animazioni 11, dalle 3 h in poi, dopo l'arrivo del fronte 2D):
+
+| Scenario | 200 m: media / scarto quadratico medio | 50 m: media / scarto quadratico medio |
+|---|---|---|
+| `fittizio_1` | −0,002 / 0,069 m | −0,047 / 0,106 m |
+| `fittizio_2` | +0,007 / 0,055 m | −0,028 / 0,076 m |
+| `fittizio_3` | −0,023 / 0,103 m | −0,101 / 0,203 m |
+| `fittizio_4` | −0,013 / 0,083 m | −0,065 / 0,140 m |
+
+A 50 m, a valle di 3 km il 1D sta circa 25 cm sotto il 2D: è l'acqua uscita da S2950 e S3550 che nel
+1D non rientra (vedi sotto).
 
 I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` hanno colonne ogni 50 m (S0050-S6000)
 e sono diversi da `ns_channel_piena_discharge.csv`:
@@ -319,6 +361,37 @@ Il confronto è stato rifatto senza rilanciare la simulazione: con il codice att
 confrontabile con il 2D. Anche `confronto_reference.jl` legge la geometria dalla riga 2 di
 `settings.txt`: con la configurazione attuale va lanciato da una copia con la geometria del Test_Brenta.
 
+### Scenari fittizi con la geometria a 50 m
+
+Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici, animazioni, confronti e tempi come a 200 m. Codice
+attuale (partenza dalle portate cumulate, nuovo arresto del riempimento), affluenti spenti (riga 27
+`no`), sfioro attivo, Ks 33, dt massimo 60 s. Lanciati da una copia del progetto con le righe 1-2 di
+`settings.txt` su `input/geometria/Test_Brenta/S_50m/`, e così anche gli strumenti (leggono la
+geometria da `settings.txt`).
+
+- Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso entro lo 0,15%;
+  il livello non supera mai la quota massima delle tabelle (a 200 m la superava di 1-2 cm). Le
+  pendenze del fondo irregolari non hanno dato problemi nello stato iniziale.
+- **In uscita la portata si ferma a circa 55 m³/s in tutti gli scenari**, contro circa 70 a 200 m:
+
+| Scenario | Colmo in S6000: 2D | 1D 200 m | 1D 50 m | NSE 50 m (200 m) | Volume sfiorato 50 m (200 m) |
+|---|---|---|---|---|---|
+| `fittizio_1` | 68,14 | 70,49 | 55,00 (−19%) | 0,935 (0,981) | 406 233 m³, 14,9% (4,4%) |
+| `fittizio_2` | 64,16 | 69,50 | 54,49 (−15%) | 0,965 (0,988) | 266 780 m³, 10,8% (1,5%) |
+| `fittizio_3` | 81,71 | 70,50 | 55,01 (−33%) | 0,785 (0,954) | 1 018 192 m³, 22,5% (8,8%) |
+| `fittizio_4` (2ª onda) | 78,54 | 70,49 | 55,00 (−30%) | 0,871 (0,967) | 817 613 m³, 15,6% (4,6%) |
+
+- **Fino a 2,9 km il colmo 1D segue quasi esattamente il 2D** (circa 68 m³/s nel `fittizio_1`), molto
+  meglio che a 200 m. Poi due sezioni che a 200 m non c'erano fanno uscire molta acqua:
+  - **S2950**: argine destro a 426,21 m, solo 2,33 m sopra il talweg (il più basso del tratto). Nel
+    `fittizio_1` da sola sfiora 191 000 m³, quasi metà del totale, e il colmo scende a 58 m³/s;
+  - **S3550**: argine sinistro a 425,11 m, altri 52 000 m³; il colmo scende a 55 m³/s.
+- Nel 2D proprio lì il colmo **risale** da 65,5 a 68,1 m³/s: l'acqua rientra. Nel 1D esce e non torna,
+  quindi da 3,6 km in poi resta circa 13 m³/s sotto. È lo stesso rientro dei `fittizio_3` e
+  `fittizio_4`, qui molto più evidente: con le sezioni a 50 m pesa ancora di più la mancanza del rientro.
+- Sfiorano 12 sezioni tra 0,25 e 3,55 km (9 nel `fittizio_2`), contro 5 tra 0,6 e 2 km a 200 m.
+- Anche qui, per il `fittizio_4`, grafico 9 e ritardo in `confronto_S6000.txt` mescolano le due onde.
+
 ## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
 
 `julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Il caso si sceglie con
@@ -350,7 +423,8 @@ le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
 - **pendenze del fondo molto più irregolari**: 23 sezioni in contropendenza e 6 con |pendenza| sotto
   2·10⁻⁴, fino a 7·10⁻⁶ in S1800 (l'ultima sezione usa sempre la pendenza media, −0,00213). Lo stato
   iniziale usa il moto uniforme con `|local_slope|`: a 5,07 m³/s il tirante supera 1,5 m in 7 sezioni
-  (massimo 1,32 m a 200 m) e in S1800 il livello andrebbe oltre la tabella. Prima di simulare conviene
+  (massimo 1,32 m a 200 m) e in S1800 il livello andrebbe oltre la tabella. Negli scenari fittizi il
+  riempimento lo ha comunque assestato senza problemi (2,5 h); per portate iniziali diverse resta da
   valutare una pendenza più regolare per lo stato iniziale.
 
 ## Problemi aperti e prossimi passi possibili
