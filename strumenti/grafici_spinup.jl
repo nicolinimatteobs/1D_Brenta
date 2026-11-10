@@ -1,6 +1,6 @@
 # Evoluzione del riempimento (spin-up) fino a convergenza: figura e animazione dai file IC_*.csv.
 # Legge da settings.txt geometria e cartella degli output, e salva in <cartella degli output>/grafici
-# 12_spinup_convergenza.png e 13_spinup_animazione.gif. Non lancia nessuna simulazione.
+# 10_spinup_convergenza.png e 11_spinup_animazione.gif. Non lancia nessuna simulazione.
 # Uso, dalla cartella del progetto:  julia --project=. strumenti/grafici_spinup.jl [cartella degli output] [cartella dei grafici]
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
@@ -66,7 +66,7 @@ d = plot(t[mask(dE)], dE[mask(dE)]; yscale = :log10, ylims = ylog(dE), xlims = (
 hline!(d, [sE]; color = GRI, linestyle = :dot, label = @sprintf("1 cm, da %.2f h", tE))
 savefig(plot(a, b, c, d; layout = @layout([a{0.34h}; b{0.34h}; [c d]]), size = (1050, 980), dpi = 130, left_margin = 6Plots.mm, bottom_margin = 2Plots.mm,
              plot_title = @sprintf("%s: spin-up fino a convergenza (Q di monte = %.2f m³/s)", basename(D), Qf), plot_titlefontsize = 12),
-        joinpath(OUT, "12_spinup_convergenza.png"))
+        joinpath(OUT, "10_spinup_convergenza.png"))
 
 # --- Animazione: passo fitto nel transitorio iniziale, largo verso la convergenza ---
 fr = filter(<=(n), unique(vcat(1:3:60, 60:12:720, 720:24:2160, 2160:180:n, n)))
@@ -93,5 +93,5 @@ anim = Animation()
 for k in fr; frame(anim, scena(k)); end
 ultimo = scena(n)
 for _ in 1:24; frame(anim, ultimo); end      # pausa sull'ultimo fotogramma (circa 2 s)
-gif(anim, joinpath(OUT, "13_spinup_animazione.gif"); fps = 12)
+gif(anim, joinpath(OUT, "11_spinup_animazione.gif"); fps = 12)
 println("fotogrammi: ", length(fr))

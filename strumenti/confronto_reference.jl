@@ -66,7 +66,7 @@ hline!(p2, [0.0]; color = :black, linewidth = 0.8)
 c.valido && plot!(p2, c.tt ./ 3600, c.e; color = ARA, linewidth = 1.8, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
 c.valido || annotate!(p2, t[end]/7200, 0.0, text("il riferimento è asciutto in questa sezione per tutto il periodo disponibile", 9, :center, :bottom, GRI))
 savefig(plot(p1, p2; layout = grid(2, 1, heights = [0.65, 0.35]), size = (1000, 750), dpi = 130, left_margin = 6Plots.mm),
-        joinpath(OUT, "8_confronto_S6000.png"))
+        joinpath(OUT, "7_confronto_S6000.png"))
 
 pr = Float64[]; pm = Float64[]; tpr = Float64[]; tpm = Float64[]; cok = Bool[]
 for i in eachindex(x)
@@ -90,7 +90,7 @@ plot!(q2, x ./ 1000, tpm ./ 3600; label = "modello 1D", color = BLU, linewidth =
 if !all(cok)
     annotate!(q1, x[1]/1000, minimum(pm), text("sezioni senza punto nero: il riferimento non ha ancora raggiunto il colmo", 8, :left, :bottom, GRI))
 end
-savefig(plot(q1, q2; layout = (2, 1), size = (1000, 700), dpi = 130, left_margin = 6Plots.mm), joinpath(OUT, "9_colmo_lungo_il_tratto.png"))
+savefig(plot(q1, q2; layout = (2, 1), size = (1000, 700), dpi = 130, left_margin = 6Plots.mm), joinpath(OUT, "8_colmo_lungo_il_tratto.png"))
 
 io = IOBuffer()
 @printf(io, "Confronto %s (modello 1D - riferimento %s), dati ogni 15 min\n", nome_u[3:7], basename(REF))
