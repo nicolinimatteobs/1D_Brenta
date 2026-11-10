@@ -70,7 +70,7 @@ Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 
 ## settings.txt
 
-Letto **per posizione** (26 righe, non spostarle; dalla riga 27 in poi sono note e vecchie configurazioni):
+Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
 
 | Riga | Contenuto |
 |---|---|
@@ -80,15 +80,19 @@ Letto **per posizione** (26 righe, non spostarle; dalla riga 27 in poi sono note
 | 14 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
 | 15-21 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
 | 22 | Cartella degli output (creata se non esiste) |
-| 23 | Ks |
+| 23 | Ks (solo condizione al contorno di valle) |
 | 24 | Tempo iniziale |
 | 25 | Passo temporale massimo [s] |
 | 26 | Numero massimo di passi |
+| 27 | Affluenti attivi: `si` o `no` (accetta anche `sì`, `true`/`false`, `1`/`0`) |
 
 - Numero di righe e colonne delle tabelle e numero di sezioni **sono ricavati dai file**
   (`FILE_SIZE`): non serve più il vecchio `struttura_output.txt`.
-- Tutti gli idrogrammi indicati devono esistere. `Brenta7.csv`, non ancora usato, non è più in `settings.txt`.
+- Tutti gli idrogrammi indicati devono esistere, anche con gli affluenti spenti. `Brenta7.csv`, non
+  ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
+- Il `settings.txt` committato punta al canale rettangolare con l'idrogramma `fittizio_2`, output in
+  `output/fittizio_2` e affluenti spenti: controllare righe 1-2, 14, 22 e 27 prima di lanciare.
 
 ## Formato degli input
 
@@ -134,54 +138,55 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
 
 ## Condizioni iniziali (riempimento)
 
-1. In ogni sezione si parte dal **tirante di moto uniforme** (pendenza locale, attrito delle tabelle)
-   per la prima portata dell'idrogramma di monte, calcolato da `UNIFORM_LEVEL` per bisezione sulla
-   tabella, con un tirante minimo `y_ini = 0.10` m. Anche la portata iniziale si calcola con
-   l'attrito delle tabelle (`UNIFORM_DISCHARGE`). La vecchia partenza (velo costante) è commentata.
+1. **Partenza dalle portate cumulate.** La portata alle interfacce è la prima portata dell'idrogramma
+   di monte più gli affluenti entrati più a monte (solo se la riga 27 è `si`). In ogni sezione il
+   tirante è quello di **moto uniforme** per la portata media della cella, con la pendenza locale e
+   l'attrito delle tabelle (`UNIFORM_LEVEL`, bisezione con `UNIFORM_DISCHARGE`), e non sotto
+   `y_ini = 0.0` m (quindi nessun tirante minimo). La vecchia partenza (velo costante) è commentata.
    - Prima si usava Manning con il Ks di `settings.txt` (33), mentre nelle tabelle del Test_Brenta
-     il Ks ai tiranti iniziali va da 1,9 a 50 (mediana 16). Nel fittizio_1 lo stato iniziale era
-     lontano dall'equilibrio del modello: al primo passo la portata crollava fino a 0,19 m³/s e poi
-     si ricaricava da monte verso valle, con il criterio di arresto soddisfatto a 2,95 h.
-   - Con l'attrito delle tabelle la portata al primo passo resta tra 3,98 e 6,43 m³/s, l'uscita non
-     scende sotto 5,07 m³/s e il criterio è soddisfatto a 1,77 h. Lo stato finale è identico.
+     il Ks ai tiranti iniziali va da 1,9 a 50 (mediana 16): nel fittizio_1 al primo passo la portata
+     crollava fino a 0,19 m³/s. Con l'attrito delle tabelle resta tra 3,98 e 6,43 m³/s.
    - La bisezione suppone che la portata di moto uniforme cresca con la quota: con il Ks variabile
      delle tabelle non è garantito, ma sul Test_Brenta ha funzionato.
-2. Rampa di `T_riempimento = 21600` s con passo massimo `dt_riempimento = 5` s: la portata di monte
-   va al primo valore dell'idrogramma (con la partenza da moto uniforme resta già costante) e gli
-   affluenti salgono da 0 al loro primo valore (`r_IC`).
-3. Il riempimento finisce quando la rampa è conclusa, la portata non cambia più (`|q − qn| < 0,01`
-   in tutte le celle) e l'uscita è uguale agli ingressi entro lo 0,1%. Poi tempo e contatori
-   ripartono da zero e inizia la simulazione vera.
+2. **Nessuna rampa:** portata di monte e affluenti sono al loro primo valore da subito. Passo massimo
+   `dt_riempimento = 5` s.
+3. **Arresto** quando valgono tutte insieme:
+   - sono passati almeno `T_assestamento = 3600` s;
+   - la portata non cambia più (`|q − qn| < 0,01` in tutte le celle);
+   - il livello è fermo: ogni `T_fermo = 1800` s si confronta con quello di inizio finestra, e deve
+     essere cambiato meno di `tol_fermo = 1 mm` in tutte le sezioni;
+   - l'uscita è uguale agli ingressi (monte + affluenti − sfioro) entro lo 0,1%.
+
+   Poi tempo e contatori ripartono da zero e inizia la simulazione vera.
 
 In un tratto **non prismatico** il moto uniforme sezione per sezione non è l'equilibrio: durante il
-riempimento il tratto si assesta (rigurgiti) e trattiene acqua. Sul Test_Brenta il tirante medio
-passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un profilo di moto permanente.
+riempimento il tratto si assesta (rigurgiti) e trattiene acqua. Anche a valle degli affluenti
+la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servirebbe un profilo di moto permanente.
 
-**Prova senza rampa** (solo in copie temporanee, il codice non è cambiato). Affluenti e portata di monte
-al valore iniziale da subito (`r_IC = 1`), nessuna durata minima, solo condizioni iniziali:
-
-| Caso | Con la rampa | Senza rampa, dt 5 s | Senza rampa, dt 60 s |
-|---|---|---|---|
-| Canale rettangolare con 18 affluenti | 37 335 s | 19 710 s | NaN a 7 587 s |
-| Test_Brenta con sfioro, senza affluenti | 21 600 s | 10 615 s | 10 959 s |
-
-- Lo stato finale coincide con quello con la rampa (scarti sotto 1 mm di quota e 0,01 m³/s).
-- Il criterio di arresto non scatta subito nemmeno senza durata minima: nel Test_Brenta si ferma a
-  2,95 h, quando il tratto si è assestato.
-- Con gli affluenti che entrano tutti insieme nel velo iniziale serve un passo piccolo: con 60 s il
-  canale rettangolare va in NaN. Anche nel Test_Brenta con 60 s il tirante minimo durante il
-  riempimento scende a 6 cm, contro i 26 cm con 5 s.
-- La rampa serve quindi soprattutto quando ci sono affluenti e lo stato di partenza non li contiene.
-  Con la partenza dalla portata cumulata (affluenti già nella portata e nel tirante iniziali) non
-  dovrebbe servire, ma non è ancora provato.
+**Perché così** (prove in copie temporanee, grafici in `output/IC/Test_Brenta_vaia/` e
+`output/IC/rettangolare_vaia/`, con gli affluenti `vaia` e portata di monte `vaia/Caldonazzo.csv`):
+- Prima c'era una rampa di 6 h in cui gli affluenti salivano da 0 al primo valore. Inserirli uno alla
+  volta allunga il riempimento di 3-4 volte e con dt 60 s va in NaN o non converge.
+- Con le portate cumulate lo stato finale è identico a quello con la rampa. Il livello è entro 1 mm
+  dall'equilibrio a 1,73 h invece di 7,35 h (Test_Brenta) e a 4,67 h invece di 10,39 h (rettangolare):
+  circa 5,6-5,7 h in meno (`7_assestamento.png`, `8_rampa_e_assestamento.gif`).
+- Il solo criterio su portata e bilancio scattava troppo presto: nel rettangolare a 2,76 h, con il
+  livello ancora a 6 mm dall'equilibrio. Da qui la durata minima e il controllo sul livello.
+- Con il codice attuale il riempimento finisce a 2,5 h nel Test_Brenta con affluenti e nel fittizio_1,
+  a 5,5 h nel rettangolare con affluenti, con lo stato finale entro 0,03 mm dall'equilibrio. Le
+  simulazioni successive coincidono con quelle fatte con la rampa (scarti sotto 1 mm e 0,03 m³/s).
+- Nel Test_Brenta con affluenti al primo passo l'uscita arriva a 50 m³/s (contro 36): la condizione
+  al contorno di valle usa il Ks 33 di `settings.txt`, la tabella nell'ultima sezione circa 18.
 
 ## Affluenti
 
 - 18 affluenti distribuiti uniformemente: `sez_aff = round(k*imax/19)`.
 - Quelli con picco ≥ 10 m³/s entrano su 3 sezioni (`semi_aff`, `ncel_aff`), gli altri su una.
 - Entrano solo come sorgente nella continuità (`rhs += dt/dx * Q_aff`), senza quantità di moto.
-- **Ora sono commentati** (blocchi "INSERIMENTO AFFLUENTI" nel solutore) per il test sul tratto reale
-  senza affluenti. Per riattivarli basta togliere i `#` dai due blocchi.
+  `TRIBUTARY_INFLOW!` (`subroutines.jl`) distribuisce le portate dei 18 affluenti sulle celle; in
+  simulazione si interpolano con `LAGRANGE_INTERPOLATION!` al tempo `time + dt`.
+- Si accendono e spengono con la **riga 27 di `settings.txt`** (`con_affluenti` in `Parametri`), che
+  vale per stato iniziale, riempimento e simulazione. Non serve toccare il codice.
 
 ## Esondazione (portata uscente)
 
@@ -304,12 +309,14 @@ il 1D.
 - **Stato iniziale vicino all'equilibrio** nei tratti non prismatici: profilo di moto permanente,
   o almeno la pendenza tra i talweg al posto di `local_slope`.
 - **Criterio di arresto del riempimento:** la tolleranza assoluta 0,01 m³/s su `|q − qn|` è poco
-  adatta alle portate molto basse.
+  adatta alle portate molto basse; `T_assestamento`, `T_fermo` e `tol_fermo` sono provati solo su
+  Test_Brenta (6 km) e rettangolare (30 km).
+- **Condizione al contorno di valle** con il Ks di `settings.txt`, non coerente con le tabelle.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
-  - Brenta7 è stato tolto da `settings.txt` e da `INITIAL_SETTINGS!` (commit `64e12cb`), ma il commento
-    in testa a `INITIAL_SETTINGS!` e la legenda in fondo a `settings.txt` descrivono ancora il formato a 27 righe.
+  - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
+    minimo di 10 cm, non con la partenza cumulata.
 
 ## Considerazione finale per lunedì
 I risultati sono incoraggianti, il modello 1D si è avvicinato molto a quello che riusciamo a misurare con il 2D. Non sono convinto che le le informazioni estratte dal 2D siano effettivamente utilizzate in maniera appropriata nell'1D, per lo meno però possiamo fare un confronto.  
@@ -319,10 +326,9 @@ Ci sono ulteriori aspetti che non abbiamo ancora considerato:
 
 ## Ultimo commit descritto
 
-`7ba5b92` ("confronti fittizi 1D 2D"), più le modifiche committate insieme a questa versione del
-file: stato iniziale calcolato con l'attrito delle tabelle (`UNIFORM_DISCHARGE`, `UNIFORM_LEVEL`);
-`strumenti/grafici_spinup.jl` funziona anche con gli affluenti (il criterio confronta l'uscita con
-quella finale invece che con la sola portata di monte) e la portata di riferimento nell'animazione è
-quella dello stato finale; nuovo `strumenti/confronto_spinup.jl`, che confronta più riempimenti
-(`julia --project=. strumenti/confronto_spinup.jl <cartella dei grafici> <cartella 1> <cartella 2> ...`),
-usato per `output/vaia/prova_IC/confronti IC` (tirante minimo iniziale 0, 0,05 e 0,10 m).
+`21b8f7a` ("gestione affluenti e IC cumulata su prima portata di idrogramma"): partenza dalle portate
+cumulate senza rampa, nuovo criterio di arresto del riempimento, affluenti dalla riga 27 di
+`settings.txt`, indentazione sistemata. Comprende `eac5cbf` (grafici delle prove in `output/IC/`) e
+`3b3020b`. Strumenti utili per i riempimenti: `strumenti/confronto_spinup.jl`
+(`<cartella dei grafici> <cartella 1> <cartella 2> ...`) e `strumenti/confronto_simulazioni.jl`
+(stessi argomenti, per le simulazioni).

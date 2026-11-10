@@ -1,13 +1,13 @@
 # Evoluzione del riempimento (spin-up) fino a convergenza: figura e animazione dai file IC_*.csv.
 # Legge da settings.txt geometria e cartella degli output, e salva in <cartella degli output>/grafici
 # 12_spinup_convergenza.png e 13_spinup_animazione.gif. Non lancia nessuna simulazione.
-# Uso, dalla cartella del progetto:  julia --project=. strumenti/grafici_spinup.jl
+# Uso, dalla cartella del progetto:  julia --project=. strumenti/grafici_spinup.jl [cartella degli output] [cartella dei grafici]
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
 const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
 const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[22])   # cartella degli output (riga 22, o primo argomento)
-const OUT = joinpath(D, "grafici"); mkpath(OUT)
+const OUT = length(ARGS) >= 2 ? joinpath(R, ARGS[2]) : joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const VER = "#1baf7a"; const ROS = "#d55181"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)
 
@@ -21,7 +21,8 @@ Q = mat("IC_Q.csv"); E = mat("IC_eta.csv"); H = mat("IC_h.csv")
 Qs = 0.5 .* (Q[:, 1:end-1] .+ Q[:, 2:end])
 n = length(t); Qf = Q[n, 1]
 
-# Criterio di arresto del modello (a parte la durata minima): |q - qn| < 0,01 e uscita = ingresso entro lo 0,1%
+# Parte del criterio di arresto del modello: |q - qn| < 0,01 e uscita = ingresso entro lo 0,1%. Il modello
+# chiede anche una durata minima e il livello fermo per 30 min: la fine del riempimento è l'ultimo istante salvato
 # Il bilancio del modello è uscita = monte + affluenti - sfioro: gli IC_*.csv non contengono affluenti e
 # sfioro, quindi si confronta l'uscita con quella finale (a convergenza coincidono; senza affluenti e
 # senza sfioro è lo stesso criterio del modello)
@@ -34,7 +35,7 @@ dQ = vec(maximum(abs.(Q .- Q[n, :]'); dims = 2)); dE = vec(maximum(abs.(E .- E[n
 sQ, sE = round(0.01 * Q[n, end]; sigdigits = 1), 0.01  # soglie: circa 1% della portata finale in uscita, 1 cm
 primo_sotto(d, s) = (k = findlast(>=(s), d); t[k === nothing ? 1 : min(k + 1, n)])
 tQ = primo_sotto(dQ, sQ); tE = primo_sotto(dE, sE)
-@printf("criterio del modello soddisfatto da t = %.0f s (%.2f h)\n", ts[kc], tc)
+@printf("portata ferma e bilancio chiuso da t = %.0f s (%.2f h); fine del riempimento a %.2f h\n", ts[kc], tc, t[end])
 @printf("|Q-Qfin| < %.2f da %.2f h; |eta-etafin| < %.2f da %.2f h\n", sQ, tQ, sE, tE)
 @printf("uscita minima %.2f m3/s a %.2f h; Q(t=5s) in [%.2f, %.2f]\n", minimum(Q[:, end]), t[argmin(Q[:, end])], extrema(Q[1, :])...)
 
@@ -52,7 +53,8 @@ for (j, i) in enumerate(sez)
     plot!(b, t, H[:, i]; label = nomi(i), color = cols[j], linewidth = 1.8)
 end
 for p in (a, b)
-    vline!(p, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("criterio di arresto soddisfatto (%.2f h)", tc))
+    vline!(p, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("portata ferma e bilancio chiuso (%.2f h)", tc))
+    vline!(p, [t[end]]; color = :black, linestyle = :dot, linewidth = 1, label = @sprintf("fine del riempimento (%.2f h)", t[end]))
 end
 mask(v) = v .>= 1e-5
 ylog(v) = (1e-5, 10.0^ceil(log10(max(10.0, maximum(v)))))   # asse log: almeno fino a 10, di più se serve
@@ -81,7 +83,7 @@ function scena(k)
     c = plot(t, Q[:, end]; label = false, color = GRI, linewidth = 1, alpha = 0.5, ylims = (0, Qmax), xlims = (0, t[end]),
              ylabel = "portata [m³/s]", xlabel = "tempo di riempimento [h]", legend = :bottomright, title = @sprintf("Portata in uscita (x = %.1f km)", x[end]), st...)
     plot!(c, t[1:k], Q[1:k, end]; label = false, color = ARA, linewidth = 2)
-    vline!(c, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("criterio di arresto soddisfatto (%.2f h)", tc))
+    vline!(c, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("portata ferma e bilancio chiuso (%.2f h)", tc))
     scatter!(c, [t[k]], [Q[k, end]]; color = ARA, markersize = 6, markerstrokecolor = :white, label = false)
     stato = ts[k] >= ts[kc] ? "convergenza raggiunta" : "in convergenza"
     plot(a, b, c; layout = @layout([a{0.42h}; b{0.33h}; c]), size = (1000, 820), dpi = 100, left_margin = 6Plots.mm, bottom_margin = 2Plots.mm,

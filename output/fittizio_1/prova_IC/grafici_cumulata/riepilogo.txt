@@ -1,0 +1,3 @@
+prova_IC   tirante alla partenza da 0.359 a 1.319 m | minimo nel riempimento 0.359 m | uscita minima 5.07 m3/s | criterio soddisfatto a 1.77 h | fine a 2.50 h
+fittizio_1 tirante alla partenza da 0.377 a 0.792 m | minimo nel riempimento 0.265 m | uscita minima 2.02 m3/s | criterio soddisfatto a 2.95 h | fine a 6.00 h
+fittizio_1 - prova_IC: stato finale, scarto massimo di quota 0.0000 m
