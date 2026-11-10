@@ -1,9 +1,15 @@
 using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator
 
-const InputFolderParent = "calcolo_tabelle_daBM/input"
-const InputFolderSections = "sections_ns_channel_S0200_S6000"
-const OutputFolder = "calcolo_tabelle_daBM/output"
-const FilePrefix = "ns_channel_"
+# Caso da elaborare (lanciare dalla cartella 1D_Brenta). La cartella di input contiene i file delle
+# sezioni (FilePrefix*nome*Format), sections_dx.csv e bankpoints.csv
+# Sezioni ogni 50 m
+const InputFolder = "calcolo_tabelle_daBM/input/S_0050_6000"
+const OutputFolder = "calcolo_tabelle_daBM/output/S_50m"
+const FilePrefix = "ns_50_scalini_"
+# Sezioni ogni 200 m
+# const InputFolder = "calcolo_tabelle_daBM/input/S_0200_6000"
+# const OutputFolder = "calcolo_tabelle_daBM/output/S_200m"
+# const FilePrefix = "ns_channel_"
 const Format = ".csv"
 const g = 9.81      # [m/s^2]
 
@@ -81,6 +87,27 @@ function free_surface_slope(WSE, wet, s)
         iWSE[k, j] = (WSE[k, up] - WSE[k, dn]) / (s[dn] - s[up])
     end
     return iWSE
+end
+
+#= PENDENZE NON POSITIVE
+    Con portate molto basse i livelli di sezioni vicine possono essere quasi uguali e la pendenza
+    può risultare nulla o negativa (es. S5950 a 0,86 m3/s con le sezioni ogni 50 m). Il Ks e la
+    ricostruzione delle righe asciutte non sarebbero definiti, quindi la pendenza viene sostituita
+    con quella del livello bagnato successivo della stessa sezione che sia positiva.
+    Restituisce l'elenco delle sostituzioni, da segnalare tra i controlli.
+=#
+function fix_slope!(iWSE, wet, nomi)
+    avvisi = String[]
+    nlevels, nsections = size(iWSE)
+    for j in 1:nsections, k in 1:nlevels
+        (wet[k, j] && !(iWSE[k, j] > 0.0)) || continue
+        kn = findfirst(m -> wet[m, j] && iWSE[m, j] > 0.0, k+1:nlevels)
+        kn === nothing && error("Sezione $(nomi[j]): nessuna pendenza positiva sopra la riga $k")
+        push!(avvisi, @sprintf("%-6s riga %d  iWSE=%.6f non positiva, sostituita con %.6f (riga %d)",
+            nomi[j], k, iWSE[k, j], iWSE[k+kn, j], k+kn))
+        iWSE[k, j] = iWSE[k+kn, j]
+    end
+    return avvisi
 end
 
 #= CALCOLO DI KS
@@ -187,26 +214,29 @@ end
 function main(; dosave::Bool=false, doplot::Bool=false)
     # leggi il file riguardante tutte le sezioni, ordinandole da monte verso valle
     InputFile = "sections_dx.csv"
-    InputPath = joinpath(InputFolderParent, InputFile)
+    InputPath = joinpath(InputFolder, InputFile)
     sections_all = sort(CSV.read(InputPath, DataFrame), "s_m")
 
     # leggi i dati delle sezioni del canale principale, cioè quelle elencate in sections_dx.csv
     nomi = String.(sections_all[!, "nome"])
-    SectionsPath = joinpath(InputFolderParent, InputFolderSections)
-    dati = Dict(nome => load_section(joinpath(SectionsPath, FilePrefix*nome*Format)) for nome in nomi)
-    t_ref = dati[first(nomi)][1][!, "t [s]"]
+    dati = Dict(nome => load_section(joinpath(InputFolder, FilePrefix*nome*Format)) for nome in nomi)
+    # le righe di sezioni diverse devono essere gli stessi scalini: stesso numero di righe e, se c'è
+    # la colonna del tempo, stessi istanti
+    ref = dati[first(nomi)][1]
     for nome in nomi
-        dati[nome][1][!, "t [s]"] == t_ref || error("La sezione $nome ha istanti diversi dalle altre")
+        d = dati[nome][1]
+        nrow(d) == nrow(ref) || error("La sezione $nome ha un numero di righe diverso dalle altre")
+        "t [s]" in names(d) && (d[!, "t [s]"] == ref[!, "t [s]"] || error("La sezione $nome ha istanti diversi dalle altre"))
     end
 
     # calcola la pendenza della superficie libera per ogni sezione e per ogni WSE
     WSE_all = reduce(hcat, [dati[nome][1][!, "Mean wse [m]"] for nome in nomi])
     wet_all = reduce(hcat, [dati[nome][2] for nome in nomi])
     iWSE_all = free_surface_slope(WSE_all, wet_all, sections_all[!, "s_m"])
+    avvisi = fix_slope!(iWSE_all, wet_all, nomi)
 
     # ciclo sulle sezioni, da monte verso valle
     tabelle = Dict{String,DataFrame}()
-    avvisi = String[]
     @printf("%-10s %6s %17s %17s\n", "Sezione", "n WSE", "iWSE [-]", "Ks [m^(1/3)/s]")
     for (j, nome) in enumerate(nomi)
         data, wet = dati[nome]
@@ -214,6 +244,17 @@ function main(; dosave::Bool=false, doplot::Bool=false)
 
         # sostituisci le righe asciutte con valori ricostruiti
         rebuild_dry!(data, wet, iWSE)
+
+        # il modello 1D vuole livelli crescenti: scarta le righe con livello non superiore al massimo
+        # dei precedenti (es. S0050 ogni 50 m, dove negli ultimi scalini il livello scende)
+        WSE = data[!, "Mean wse [m]"]
+        tieni = [k == 1 || WSE[k] > maximum(WSE[1:k-1]) for k in eachindex(WSE)]
+        for k in findall(.!tieni)
+            push!(avvisi, @sprintf("%-6s WSE=%8.3f  Q=%7.3f  livello non crescente: riga scartata", nome, WSE[k], data[k, "Discharge [m3/s]"]))
+        end
+        data = data[tieni, :]
+        iWSE = iWSE[tieni]
+
         table = section_table(data, iWSE)
         tabelle[nome] = table
 
@@ -250,7 +291,7 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     # di uscita: uso la pendenza media del fondo sull'intero tratto
     local_slope[end] = (talweg[end] - talweg[begin]) / (s[end] - s[begin])
     # quote degli argini destro e sinistro di ogni sezione, dai punti in bankpoints.csv
-    bankpoints = CSV.read(joinpath(InputFolderParent, "bankpoints"*Format), DataFrame)
+    bankpoints = CSV.read(joinpath(InputFolder, "bankpoints"*Format), DataFrame)
     z_argine = Dict(String(r["nome"]) => r["z_dtm"] for r in eachrow(bankpoints))
     argine_dx = [z_argine[nome*"_dx"] for nome in nomi]
     argine_sx = [z_argine[nome*"_sx"] for nome in nomi]
