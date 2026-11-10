@@ -22,12 +22,18 @@ Qs = 0.5 .* (Q[:, 1:end-1] .+ Q[:, 2:end])
 n = length(t); Qf = Q[n, 1]
 
 # Criterio di arresto del modello (a parte la durata minima): |q - qn| < 0,01 e uscita = ingresso entro lo 0,1%
-ok = [maximum(abs.(Q[k, 1:imax] .- Q[k-1, 1:imax])) < 1e-2 && abs(Q[k, 1] - Q[k, end]) < 1e-3 * Q[k, 1] for k in 2:n]
-kc = findlast(!, ok) + 2; tc = t[kc]
+# Il bilancio del modello è uscita = monte + affluenti - sfioro: gli IC_*.csv non contengono affluenti e
+# sfioro, quindi si confronta l'uscita con quella finale (a convergenza coincidono; senza affluenti e
+# senza sfioro è lo stesso criterio del modello)
+ok = [maximum(abs.(Q[k, 1:imax] .- Q[k-1, 1:imax])) < 1e-2 && abs(Q[k, end] - Q[n, end]) < 1e-3 * Q[n, end] for k in 2:n]
+# primo istante da cui il criterio resta soddisfatto; se non lo è nemmeno all'ultimo istante salvato
+# (il modello controlla dopo aver salvato) si usa l'ultimo istante
+ik = findlast(!, ok); kc = ik === nothing ? 2 : min(ik + 2, n); tc = t[kc]
 
 dQ = vec(maximum(abs.(Q .- Q[n, :]'); dims = 2)); dE = vec(maximum(abs.(E .- E[n, :]'); dims = 2))
-sQ, sE = round(0.01 * Qf; digits = 2), 0.01  # soglie: 1% della portata finale, 1 cm
-tQ = t[findlast(>=(sQ), dQ) + 1]; tE = t[findlast(>=(sE), dE) + 1]
+sQ, sE = round(0.01 * Q[n, end]; sigdigits = 1), 0.01  # soglie: circa 1% della portata finale in uscita, 1 cm
+primo_sotto(d, s) = (k = findlast(>=(s), d); t[k === nothing ? 1 : min(k + 1, n)])
+tQ = primo_sotto(dQ, sQ); tE = primo_sotto(dE, sE)
 @printf("criterio del modello soddisfatto da t = %.0f s (%.2f h)\n", ts[kc], tc)
 @printf("|Q-Qfin| < %.2f da %.2f h; |eta-etafin| < %.2f da %.2f h\n", sQ, tQ, sE, tE)
 @printf("uscita minima %.2f m3/s a %.2f h; Q(t=5s) in [%.2f, %.2f]\n", minimum(Q[:, end]), t[argmin(Q[:, end])], extrema(Q[1, :])...)
@@ -49,10 +55,11 @@ for p in (a, b)
     vline!(p, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("criterio di arresto soddisfatto (%.2f h)", tc))
 end
 mask(v) = v .>= 1e-5
-c = plot(t[mask(dQ)], dQ[mask(dQ)]; yscale = :log10, ylims = (1e-5, 10), xlims = (0, t[end]), color = BLU, linewidth = 2, label = "massimo sulle interfacce",
+ylog(v) = (1e-5, 10.0^ceil(log10(max(10.0, maximum(v)))))   # asse log: almeno fino a 10, di più se serve
+c = plot(t[mask(dQ)], dQ[mask(dQ)]; yscale = :log10, ylims = ylog(dQ), xlims = (0, t[end]), color = BLU, linewidth = 2, label = "massimo sulle interfacce",
          title = "Distanza dallo stato finale: portata", ylabel = "max |Q − Q_finale| [m³/s]", xlabel = "tempo di riempimento [h]", legend = :topright, st...)
 hline!(c, [sQ]; color = GRI, linestyle = :dot, label = @sprintf("%.2f m³/s (1%%), da %.2f h", sQ, tQ))
-d = plot(t[mask(dE)], dE[mask(dE)]; yscale = :log10, ylims = (1e-5, 10), xlims = (0, t[end]), color = ARA, linewidth = 2, label = "massimo sulle sezioni",
+d = plot(t[mask(dE)], dE[mask(dE)]; yscale = :log10, ylims = ylog(dE), xlims = (0, t[end]), color = ARA, linewidth = 2, label = "massimo sulle sezioni",
          title = "Distanza dallo stato finale: livello", ylabel = "max |η − η_finale| [m]", xlabel = "tempo di riempimento [h]", legend = :topright, st...)
 hline!(d, [sE]; color = GRI, linestyle = :dot, label = @sprintf("1 cm, da %.2f h", tE))
 savefig(plot(a, b, c, d; layout = @layout([a{0.34h}; b{0.34h}; [c d]]), size = (1050, 980), dpi = 130, left_margin = 6Plots.mm, bottom_margin = 2Plots.mm,
@@ -68,7 +75,7 @@ function scena(k)
              ylabel = "tirante [m]", legend = :topright, title = "Tirante lungo il tratto", st...)
     plot!(a, x, H[1, :]; label = "partenza (t = 5 s)", color = ARA, linestyle = :dash, linewidth = 1.2)
     plot!(a, x, H[k, :]; label = "stato corrente", color = BLU, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
-    b = plot(x, fill(Qf, imax); label = "portata di monte", color = GRI, linewidth = 3, alpha = 0.55, ylims = (0, Qmax), xlims = (0, 1.03 * x[end]),
+    b = plot(x, Qs[n, :]; label = "stato finale", color = GRI, linewidth = 3, alpha = 0.55, ylims = (0, Qmax), xlims = (0, 1.03 * x[end]),
              ylabel = "portata [m³/s]", xlabel = "distanza [km]", legend = :topright, title = "Portata lungo il tratto", st...)
     plot!(b, x, Qs[k, :]; label = "stato corrente", color = BLU, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
     c = plot(t, Q[:, end]; label = false, color = GRI, linewidth = 1, alpha = 0.5, ylims = (0, Qmax), xlims = (0, t[end]),

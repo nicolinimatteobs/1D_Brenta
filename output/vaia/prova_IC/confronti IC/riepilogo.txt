@@ -1,0 +1,5 @@
+Y_min_10   tirante alla partenza da 0.110 a 0.741 m | minimo nel riempimento 0.072 m | uscita minima 0.43 m3/s | criterio soddisfatto a 7.18 h | fine a 7.35 h
+Y_min_05   tirante alla partenza da 0.072 a 0.741 m | minimo nel riempimento 0.058 m | uscita minima 0.36 m3/s | criterio soddisfatto a 7.20 h | fine a 7.37 h
+Y_min_0    tirante alla partenza da 0.072 a 0.741 m | minimo nel riempimento 0.058 m | uscita minima 0.36 m3/s | criterio soddisfatto a 7.20 h | fine a 7.37 h
+Y_min_05 - Y_min_10: stato finale, scarto massimo di quota 0.0000 m
+Y_min_0 - Y_min_10: stato finale, scarto massimo di quota 0.0000 m

@@ -98,8 +98,10 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
 - Le colonne `_s` sono le pendenze rispetto alla quota, usate per l'interpolazione lineare.
 - `jden = Ks²·RH^(4/3)/g` è il denominatore del termine d'attrito (γ = |u|/jden). La scabrezza usata
   in moto vario è quindi **quella contenuta nelle tabelle**: in quelle da `calcolo_tabelle_daBM` è
-  il Ks equivalente ricavato dal 2D, livello per livello. Il Ks di `settings.txt` serve solo per lo
-  stato iniziale (`UNIFORM_LEVEL`) e per la condizione di moto uniforme all'uscita.
+  il Ks equivalente ricavato dal 2D, livello per livello. Anche lo stato iniziale usa l'attrito delle
+  tabelle (`UNIFORM_DISCHARGE`, `Q = A·√(g·jden·S)`). Il Ks di `settings.txt` serve ormai solo per
+  la condizione di moto uniforme all'uscita, che quindi non è coerente con le tabelle (nell'ultima
+  sezione del Test_Brenta la tabella dà circa 18 contro 33).
 
 **Geometria**: `section, local_slope, x_coord_[m], talweg_[m]`, una riga per sezione. La pendenza
 locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
@@ -132,9 +134,18 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
 
 ## Condizioni iniziali (riempimento)
 
-1. In ogni sezione si parte dal **tirante di moto uniforme** (Manning, pendenza locale) per la prima
-   portata dell'idrogramma di monte, calcolato da `UNIFORM_LEVEL` per bisezione sulla tabella,
-   con un tirante minimo `y_ini = 0.10` m. La vecchia partenza (velo costante) è commentata.
+1. In ogni sezione si parte dal **tirante di moto uniforme** (pendenza locale, attrito delle tabelle)
+   per la prima portata dell'idrogramma di monte, calcolato da `UNIFORM_LEVEL` per bisezione sulla
+   tabella, con un tirante minimo `y_ini = 0.10` m. Anche la portata iniziale si calcola con
+   l'attrito delle tabelle (`UNIFORM_DISCHARGE`). La vecchia partenza (velo costante) è commentata.
+   - Prima si usava Manning con il Ks di `settings.txt` (33), mentre nelle tabelle del Test_Brenta
+     il Ks ai tiranti iniziali va da 1,9 a 50 (mediana 16). Nel fittizio_1 lo stato iniziale era
+     lontano dall'equilibrio del modello: al primo passo la portata crollava fino a 0,19 m³/s e poi
+     si ricaricava da monte verso valle, con il criterio di arresto soddisfatto a 2,95 h.
+   - Con l'attrito delle tabelle la portata al primo passo resta tra 3,98 e 6,43 m³/s, l'uscita non
+     scende sotto 5,07 m³/s e il criterio è soddisfatto a 1,77 h. Lo stato finale è identico.
+   - La bisezione suppone che la portata di moto uniforme cresca con la quota: con il Ks variabile
+     delle tabelle non è garantito, ma sul Test_Brenta ha funzionato.
 2. Rampa di `T_riempimento = 21600` s con passo massimo `dt_riempimento = 5` s: la portata di monte
    va al primo valore dell'idrogramma (con la partenza da moto uniforme resta già costante) e gli
    affluenti salgono da 0 al loro primo valore (`r_IC`).
@@ -308,5 +319,10 @@ Ci sono ulteriori aspetti che non abbiamo ancora considerato:
 
 ## Ultimo commit descritto
 
-`720d533` (2026-11-09, "aggiunti i 4 scenari, confronto da fare"), più le modifiche committate insieme
-a questa versione del file: grafici degli scenari fittizi e argomenti facoltativi degli script in `strumenti/`.
+`7ba5b92` ("confronti fittizi 1D 2D"), più le modifiche committate insieme a questa versione del
+file: stato iniziale calcolato con l'attrito delle tabelle (`UNIFORM_DISCHARGE`, `UNIFORM_LEVEL`);
+`strumenti/grafici_spinup.jl` funziona anche con gli affluenti (il criterio confronta l'uscita con
+quella finale invece che con la sola portata di monte) e la portata di riferimento nell'animazione è
+quella dello stato finale; nuovo `strumenti/confronto_spinup.jl`, che confronta più riempimenti
+(`julia --project=. strumenti/confronto_spinup.jl <cartella dei grafici> <cartella 1> <cartella 2> ...`),
+usato per `output/vaia/prova_IC/confronti IC` (tirante minimo iniziale 0, 0,05 e 0,10 m).

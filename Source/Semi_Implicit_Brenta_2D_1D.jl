@@ -53,7 +53,7 @@
     # ----- PARAMETRI PER RIEMPIMENTO ----
     Qin_idro      = Qk_cald[1]  # Portata in ingresso iniziale
     Qin_IC_target = Qin_idro   # Portata obiettivo per condizioni iniziali
-    y_ini          = 0.10    # Tirante minimo iniziale [m] (si parte dal moto uniforme, ma non sotto y_ini)
+    y_ini          = 0.0    # Tirante minimo iniziale [m] (si parte dal moto uniforme, ma non sotto y_ini)
     T_riempimento  = 21600.0  # Durata della rampa di riempimento [s]
     dt_riempimento = 5.0    # Passo massimo durante la rampa [s]
 
@@ -100,9 +100,11 @@
 
     # Stato iniziale: in ogni sezione tirante di moto uniforme per la prima portata dell'idrogramma
     # di monte (almeno y_ini), con la portata di moto uniforme locale. Così la portata di monte
-    # non cambia durante il riempimento
+    # non cambia durante il riempimento. L'attrito è quello delle tabelle (jden), lo stesso usato
+    # dopo in moto vario: con il Ks di settings lo stato iniziale era lontano dall'equilibrio del
+    # modello e lo spin-up più lungo
     @inbounds for i in 1:imax
-        eta[i] = UNIFORM_LEVEL(data_depth, ys, first_row, last_row, i, Qin_IC_target, Ks, bx[i]; y_min = y_ini)
+        eta[i] = UNIFORM_LEVEL(data_depth, ys, first_row, last_row, i, Qin_IC_target, bx[i]; y_min = y_ini)
     end
     # Alternativa: velo d'acqua costante di y_ini in tutte le sezioni
     #eta .= b_min .+ y_ini
@@ -111,7 +113,7 @@
         sec = READ_VALUES(data_depth, ys, first_row, last_row, i, eta[i])
         A_b[i]  = sec.A
         rh_b[i] = sec.rh
-        q[i]    = A_b[i]*Ks*sqrt(abs(bx[i]))*rh_b[i]^(exp_dt)
+        q[i]    = UNIFORM_DISCHARGE(A_b[i], sec.den, bx[i])
         if i == imax
             q[i+1] += q[i]  # Aggiunta portata in ingresso
         end
@@ -245,131 +247,131 @@
         # AFFLUENTI DISATTIVATI (prova su un tratto di Brenta reale): togliere i # dai due blocchi qui sotto per riattivarli
         ####  INSERIMENTO AFFLUENTI CONDIZIONI INIZIALI
         # Ogni affluente entra nella sezione sez_aff e, se ha portata alta, nelle due vicine
-        #if IC == 1
-        #    @inbounds @simd for i in 1:imax
-        #        if abs(i - sez_aff[1]) <= semi_aff[1]
-        #            Q_aff[i] += (Q_brenta1_IC) / ncel_aff[1]
-        #        end
-        #        if abs(i - sez_aff[2]) <= semi_aff[2]
-        #            Q_aff[i] += (Q_brenta2_IC) / ncel_aff[2]
-        #        end
-        #        if abs(i - sez_aff[3]) <= semi_aff[3]
-        #            Q_aff[i] += (Q_brenta3_IC) / ncel_aff[3]
-        #        end
-        #        if abs(i - sez_aff[4]) <= semi_aff[4]
-        #            Q_aff[i] += (Q_brenta4_IC) / ncel_aff[4]
-        #        end
-        #        if abs(i - sez_aff[5]) <= semi_aff[5]
-        #            Q_aff[i] += (Q_brenta5_IC) / ncel_aff[5]
-        #        end
-        #        if abs(i - sez_aff[6]) <= semi_aff[6]
-        #            Q_aff[i] += (Q_brenta6_IC) / ncel_aff[6]
-        #        end
-        #        # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
-        #        if abs(i - sez_aff[7]) <= semi_aff[7]
-        #            Q_aff[i] += (Q_brenta_new_IC) / ncel_aff[7]
-        #        end
-        #        if abs(i - sez_aff[8]) <= semi_aff[8]
-        #            Q_aff[i] += (Q_brenta_v1_IC) / ncel_aff[8]
-        #        end
-        #        if abs(i - sez_aff[9]) <= semi_aff[9]
-        #            Q_aff[i] += (Q_brenta_v2_IC) / ncel_aff[9]
-        #        end
-        #        if abs(i - sez_aff[10]) <= semi_aff[10]
-        #            Q_aff[i] += (Q_brenta_v3_IC) / ncel_aff[10]
-        #        end
-        #        if abs(i - sez_aff[11]) <= semi_aff[11]
-        #            Q_aff[i] += (Q_brenta_v4_IC) / ncel_aff[11]
-        #        end
-        #        if abs(i - sez_aff[12]) <= semi_aff[12]
-        #            Q_aff[i] += (Q_ceggio_IC) / ncel_aff[12]
-        #        end
-        #        if abs(i - sez_aff[13]) <= semi_aff[13]
-        #            Q_aff[i] += (Q_levico_IC) / ncel_aff[13]
-        #        end
-        #        if abs(i - sez_aff[14]) <= semi_aff[14]
-        #            Q_aff[i] += (Q_centa_IC) / ncel_aff[14]
-        #        end
-        #        if abs(i - sez_aff[15]) <= semi_aff[15]
-        #            Q_aff[i] += (Q_chieppena_IC) / ncel_aff[15]
-        #        end
-        #        if abs(i - sez_aff[16]) <= semi_aff[16]
-        #            Q_aff[i] += (Q_grigno_IC) / ncel_aff[16]
-        #        end
-        #        if abs(i - sez_aff[17]) <= semi_aff[17]
-        #            Q_aff[i] += (Q_maso_IC) / ncel_aff[17]
-        #        end
-        #        if abs(i - sez_aff[18]) <= semi_aff[18]
-        #            Q_aff[i] += (Q_moggio_IC) / ncel_aff[18]
-        #        end
-        #        rhs[i] += dt/dx_int[i] * r_IC * Q_aff[i]
-        #    end
-        #end
+        if IC == 1
+            @inbounds @simd for i in 1:imax
+                if abs(i - sez_aff[1]) <= semi_aff[1]
+                    Q_aff[i] += (Q_brenta1_IC) / ncel_aff[1]
+                end
+                if abs(i - sez_aff[2]) <= semi_aff[2]
+                    Q_aff[i] += (Q_brenta2_IC) / ncel_aff[2]
+                end
+                if abs(i - sez_aff[3]) <= semi_aff[3]
+                    Q_aff[i] += (Q_brenta3_IC) / ncel_aff[3]
+                end
+                if abs(i - sez_aff[4]) <= semi_aff[4]
+                    Q_aff[i] += (Q_brenta4_IC) / ncel_aff[4]
+                end
+                if abs(i - sez_aff[5]) <= semi_aff[5]
+                    Q_aff[i] += (Q_brenta5_IC) / ncel_aff[5]
+                end
+                if abs(i - sez_aff[6]) <= semi_aff[6]
+                    Q_aff[i] += (Q_brenta6_IC) / ncel_aff[6]
+                end
+                # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
+                if abs(i - sez_aff[7]) <= semi_aff[7]
+                    Q_aff[i] += (Q_brenta_new_IC) / ncel_aff[7]
+                end
+                if abs(i - sez_aff[8]) <= semi_aff[8]
+                    Q_aff[i] += (Q_brenta_v1_IC) / ncel_aff[8]
+                end
+                if abs(i - sez_aff[9]) <= semi_aff[9]
+                    Q_aff[i] += (Q_brenta_v2_IC) / ncel_aff[9]
+                end
+                if abs(i - sez_aff[10]) <= semi_aff[10]
+                    Q_aff[i] += (Q_brenta_v3_IC) / ncel_aff[10]
+                end
+                if abs(i - sez_aff[11]) <= semi_aff[11]
+                    Q_aff[i] += (Q_brenta_v4_IC) / ncel_aff[11]
+                end
+                if abs(i - sez_aff[12]) <= semi_aff[12]
+                    Q_aff[i] += (Q_ceggio_IC) / ncel_aff[12]
+                end
+                if abs(i - sez_aff[13]) <= semi_aff[13]
+                    Q_aff[i] += (Q_levico_IC) / ncel_aff[13]
+                end
+                if abs(i - sez_aff[14]) <= semi_aff[14]
+                    Q_aff[i] += (Q_centa_IC) / ncel_aff[14]
+                end
+                if abs(i - sez_aff[15]) <= semi_aff[15]
+                    Q_aff[i] += (Q_chieppena_IC) / ncel_aff[15]
+                end
+                if abs(i - sez_aff[16]) <= semi_aff[16]
+                    Q_aff[i] += (Q_grigno_IC) / ncel_aff[16]
+                end
+                if abs(i - sez_aff[17]) <= semi_aff[17]
+                    Q_aff[i] += (Q_maso_IC) / ncel_aff[17]
+                end
+                if abs(i - sez_aff[18]) <= semi_aff[18]
+                    Q_aff[i] += (Q_moggio_IC) / ncel_aff[18]
+                end
+                rhs[i] += dt/dx_int[i] * r_IC * Q_aff[i]
+            end
+        end
         ###  FINE INSERIMENTO AFFLUENTI CONDIZIONI INIZIALI
 
     
         ####  INSERIMENTO AFFLUENTI SIMULAZIONE
         # Stesse sezioni delle condizioni iniziali (sez_aff)
-        #if IC == 0
-        #    @inbounds @simd for i in 1:imax
-        #        if abs(i - sez_aff[1]) <= semi_aff[1]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta1), tk_brenta1, Qk_brenta1, time, dt)) / ncel_aff[1]
-        #        end
-        #        if abs(i - sez_aff[2]) <= semi_aff[2]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta2), tk_brenta2, Qk_brenta2, time, dt)) / ncel_aff[2]
-        #        end
-        #        if abs(i - sez_aff[3]) <= semi_aff[3]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta3), tk_brenta3, Qk_brenta3, time, dt)) / ncel_aff[3]
-        #        end
-        #        if abs(i - sez_aff[4]) <= semi_aff[4]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta4), tk_brenta4, Qk_brenta4, time, dt)) / ncel_aff[4]
-        #        end
-        #        if abs(i - sez_aff[5]) <= semi_aff[5]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta5), tk_brenta5, Qk_brenta5, time, dt)) / ncel_aff[5]
-        #        end
-        #        if abs(i - sez_aff[6]) <= semi_aff[6]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta6), tk_brenta6, Qk_brenta6, time, dt)) / ncel_aff[6]
-        #        end
-        #        # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
-        #        if abs(i - sez_aff[7]) <= semi_aff[7]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_new), tk_brenta_new, Qk_brenta_new, time, dt)) / ncel_aff[7]
-        #        end
-        #        if abs(i - sez_aff[8]) <= semi_aff[8]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v1), tk_brenta_v1, Qk_brenta_v1, time, dt)) / ncel_aff[8]
-        #        end
-        #        if abs(i - sez_aff[9]) <= semi_aff[9]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v2), tk_brenta_v2, Qk_brenta_v2, time, dt)) / ncel_aff[9]
-        #        end
-        #        if abs(i - sez_aff[10]) <= semi_aff[10]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v3), tk_brenta_v3, Qk_brenta_v3, time, dt)) / ncel_aff[10]
-        #        end
-        #        if abs(i - sez_aff[11]) <= semi_aff[11]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v4), tk_brenta_v4, Qk_brenta_v4, time, dt)) / ncel_aff[11]
-        #        end
-        #        if abs(i - sez_aff[12]) <= semi_aff[12]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_ceggio), tk_ceggio, Qk_ceggio, time, dt)) / ncel_aff[12]
-        #        end
-        #        if abs(i - sez_aff[13]) <= semi_aff[13]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_levico), tk_levico, Qk_levico, time, dt)) / ncel_aff[13]
-        #        end
-        #        if abs(i - sez_aff[14]) <= semi_aff[14]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_centa), tk_centa, Qk_centa, time, dt)) / ncel_aff[14]
-        #        end
-        #        if abs(i - sez_aff[15]) <= semi_aff[15]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_chieppena), tk_chieppena, Qk_chieppena, time, dt)) / ncel_aff[15]
-        #        end
-        #        if abs(i - sez_aff[16]) <= semi_aff[16]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_grigno), tk_grigno, Qk_grigno, time, dt)) / ncel_aff[16]
-        #        end
-        #        if abs(i - sez_aff[17]) <= semi_aff[17]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_maso), tk_maso, Qk_maso, time, dt)) / ncel_aff[17]
-        #        end
-        #        if abs(i - sez_aff[18]) <= semi_aff[18]
-        #            Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_moggio), tk_moggio, Qk_moggio, time, dt)) / ncel_aff[18]
-        #        end
-        #        rhs[i] += dt/dx_int[i] * Q_aff[i]
-        #    end
-        #end
+        if IC == 0
+            @inbounds @simd for i in 1:imax
+                if abs(i - sez_aff[1]) <= semi_aff[1]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta1), tk_brenta1, Qk_brenta1, time, dt)) / ncel_aff[1]
+                end
+                if abs(i - sez_aff[2]) <= semi_aff[2]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta2), tk_brenta2, Qk_brenta2, time, dt)) / ncel_aff[2]
+                end
+                if abs(i - sez_aff[3]) <= semi_aff[3]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta3), tk_brenta3, Qk_brenta3, time, dt)) / ncel_aff[3]
+                end
+                if abs(i - sez_aff[4]) <= semi_aff[4]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta4), tk_brenta4, Qk_brenta4, time, dt)) / ncel_aff[4]
+                end
+                if abs(i - sez_aff[5]) <= semi_aff[5]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta5), tk_brenta5, Qk_brenta5, time, dt)) / ncel_aff[5]
+                end
+                if abs(i - sez_aff[6]) <= semi_aff[6]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta6), tk_brenta6, Qk_brenta6, time, dt)) / ncel_aff[6]
+                end
+                # brenta7: da riattivare quando Brenta7.csv viene aggiunto (aumentare n_aff)
+                if abs(i - sez_aff[7]) <= semi_aff[7]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_new), tk_brenta_new, Qk_brenta_new, time, dt)) / ncel_aff[7]
+                end
+                if abs(i - sez_aff[8]) <= semi_aff[8]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v1), tk_brenta_v1, Qk_brenta_v1, time, dt)) / ncel_aff[8]
+                end
+                if abs(i - sez_aff[9]) <= semi_aff[9]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v2), tk_brenta_v2, Qk_brenta_v2, time, dt)) / ncel_aff[9]
+                end
+                if abs(i - sez_aff[10]) <= semi_aff[10]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v3), tk_brenta_v3, Qk_brenta_v3, time, dt)) / ncel_aff[10]
+                end
+                if abs(i - sez_aff[11]) <= semi_aff[11]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_brenta_v4), tk_brenta_v4, Qk_brenta_v4, time, dt)) / ncel_aff[11]
+                end
+                if abs(i - sez_aff[12]) <= semi_aff[12]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_ceggio), tk_ceggio, Qk_ceggio, time, dt)) / ncel_aff[12]
+                end
+                if abs(i - sez_aff[13]) <= semi_aff[13]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_levico), tk_levico, Qk_levico, time, dt)) / ncel_aff[13]
+                end
+                if abs(i - sez_aff[14]) <= semi_aff[14]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_centa), tk_centa, Qk_centa, time, dt)) / ncel_aff[14]
+                end
+                if abs(i - sez_aff[15]) <= semi_aff[15]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_chieppena), tk_chieppena, Qk_chieppena, time, dt)) / ncel_aff[15]
+                end
+                if abs(i - sez_aff[16]) <= semi_aff[16]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_grigno), tk_grigno, Qk_grigno, time, dt)) / ncel_aff[16]
+                end
+                if abs(i - sez_aff[17]) <= semi_aff[17]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_maso), tk_maso, Qk_maso, time, dt)) / ncel_aff[17]
+                end
+                if abs(i - sez_aff[18]) <= semi_aff[18]
+                    Q_aff[i] += (LAGRANGE_INTERPOLATION!(length(tk_moggio), tk_moggio, Qk_moggio, time, dt)) / ncel_aff[18]
+                end
+                rhs[i] += dt/dx_int[i] * Q_aff[i]
+            end
+        end
         ##  FINE INSERIMENTO AFFLUENTI
 
         ####  PORTATA USCENTE PER ESONDAZIONE

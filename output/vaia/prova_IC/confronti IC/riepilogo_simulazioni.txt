@@ -1,0 +1,5 @@
+Y_min_10   colmo in uscita 98.264 m3/s a 45.77 h | tirante massimo nel tratto 3.851 m
+Y_min_05   colmo in uscita 98.264 m3/s a 45.77 h | tirante massimo nel tratto 3.851 m
+Y_min_0    colmo in uscita 98.264 m3/s a 45.77 h | tirante massimo nel tratto 3.851 m
+Y_min_05 - Y_min_10: su tutta la simulazione max |ΔQ| 0.0012 m3/s, max |Δη| 0.0000 m
+Y_min_0 - Y_min_10: su tutta la simulazione max |ΔQ| 0.0012 m3/s, max |Δη| 0.0000 m
