@@ -1,6 +1,6 @@
 # Confronto tra le portate del modello 1D e un riferimento 2D in reference/ (colonne Q_S<ascissa>,
 # dati ogni 15 min; a t = 0 vale zero ed è escluso). Idrogramma nell'ultima sezione e colmo in tutte
-# le sezioni; le colonne sono associate alle sezioni arrotondando l'ascissa ai 200 m.
+# le sezioni; le colonne sono associate alle sezioni arrotondando l'ascissa ai 50 m.
 # Tutti i confronti sono fatti sul periodo comune: se il riferimento finisce prima della simulazione,
 # il colmo si cerca solo fino alla sua fine e, nelle sezioni in cui il riferimento non ha ancora
 # raggiunto il colmo (massimo all'ultimo istante disponibile), il colmo non viene confrontato.
@@ -52,7 +52,7 @@ function confronto(i, nome)
             rmse = sqrt(sum(e.^2)/length(e)), emax = maximum(abs.(e)), nse,
             vr = vol(tt, qr), vm = vol(tt, qm))
 end
-nomecol(xi) = @sprintf("Q_S%04d [m3/s]", round(Int, xi/200)*200)
+nomecol(xi) = @sprintf("Q_S%04d [m3/s]", round(Int, xi/50)*50)
 
 nome_u = nomecol(x[end]); c = confronto(length(x), nome_u)
 p1 = plot(; title = "Sezione $(nome_u[3:7]): portata", ylabel = "portata [m³/s]", legend = :topright, st...)
