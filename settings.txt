@@ -11,7 +11,7 @@ input/idrogrammi/vaia/BrentaVecchio1.csv
 input/idrogrammi/vaia/BrentaVecchio2.csv
 input/idrogrammi/vaia/BrentaVecchio3.csv
 input/idrogrammi/vaia/BrentaVecchio4.csv
-input/idrogrammi/vaia/Caldonazzo.csv
+input/idrogrammi/fittizio_2/piena.csv
 input/idrogrammi/vaia/Ceggio.csv
 input/idrogrammi/vaia/Levico.csv
 input/idrogrammi/vaia/Centa.csv
@@ -19,7 +19,7 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-output/rettangolare/Y_min_0
+output/fittizio_2
 33.00
 0
 60
