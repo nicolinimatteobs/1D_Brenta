@@ -42,13 +42,29 @@ julia --project=. strumenti/grafici_simulazione.jl output/S_50m/fittizio_1 input
 julia --project=. strumenti/grafici_spinup.jl      output/S_50m/fittizio_1
 julia --project=. strumenti/confronto_reference.jl output/S_50m/fittizio_1 reference/ns_50_fittizio_1_discharge.csv
 julia --project=. strumenti/animazioni_2D.jl       output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv
+julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv
 ```
 
-`animazioni_2D.jl` (argomenti obbligatori) crea `10_piena_2D.gif` (solo 2D) e `11_piena_1D_2D.gif` (1D e
-2D sovrapposti, con la differenza di quota): il 1D è interpolato negli istanti del 2D (ogni 15 min) e le
-sezioni 2D ancora asciutte non sono disegnate. Stampa media, scarto quadratico medio e massimo della
-differenza di quota, ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è
-significativo.
+Numerazione dei grafici in `<output>/grafici`:
+
+| N. | File | Script |
+|---|---|---|
+| 1-6 | condizioni iniziali, idrogrammi, tiranti, profili, estrapolazione, mappe | `grafici_simulazione.jl` |
+| 7-8 | `7_confronto_S6000.png`, `8_colmo_lungo_il_tratto.png` (e `confronto_S6000.txt`) | `confronto_reference.jl` |
+| 9 | `9_piena_1D_2D.gif` | `animazioni_2D.jl` |
+| 10-11 | `10_spinup_convergenza.png`, `11_spinup_animazione.gif` | `grafici_spinup.jl` |
+| 12 | `12_confronto_valle_tirante_portata.png` (e `confronto_valle.txt`) | `confronto_valle.jl` |
+
+La GIF della piena del solo 1D (vecchio 7) e quella del solo 2D (vecchio 10) sono state tolte. Le cartelle
+`output/tratto_brenta*`, `output/rettangolare` e `output/vaia` hanno ancora la numerazione vecchia.
+
+`animazioni_2D.jl` (argomenti obbligatori) crea `9_piena_1D_2D.gif` (1D e 2D sovrapposti, con la
+differenza di quota): il 1D è interpolato negli istanti del 2D (ogni 15 min) e le sezioni 2D ancora
+asciutte non sono disegnate. Stampa media, scarto quadratico medio e massimo della differenza di quota,
+ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è significativo.
+
+`confronto_valle.jl` (argomenti obbligatori) confronta tirante e portata nel tempo nell'ultima sezione.
+Il tirante 2D è il livello 2D meno il talweg della geometria 1D; gli istanti 2D asciutti sono esclusi.
 
 `confronto_reference.jl` confronta solo il periodo comune tra simulazione e riferimento e, sezione per
 sezione, scarta gli istanti in cui il riferimento ha portata nulla (2D che parte da alveo asciutto).
@@ -292,9 +308,8 @@ perché lo sfioro limita la portata a circa 70 m³/s.
 
 **Risultati salvati e confronto con il 2D.** Le simulazioni 1D con sfioro con la **geometria a 200 m**
 (fatte con il codice di `7ba5b92`, partenza da moto uniforme con rampa di 6 h) sono in
-`output/S_200m/fittizio_1` … `fittizio_4`, ciascuna con la sua cartella `grafici/`: grafici 1-7 e GIF di
-`grafici_simulazione.jl`, 8-9 e `confronto_S6000.txt` di `confronto_reference.jl`, 10-11 di
-`animazioni_2D.jl`, 12-13 di `grafici_spinup.jl`. Lo stesso vale per `output/S_50m/`.
+`output/S_200m/fittizio_1` … `fittizio_4`, ciascuna con la sua cartella `grafici/` (grafici 1-12, vedi
+"Come si usa"). Lo stesso vale per `output/S_50m/`.
 
 **Tempi di calcolo** (`log_tempi.txt` in ogni cartella dei fittizi, a 200 e a 50 m). Rimisurati su copie
 temporanee con il codice che ha prodotto ciascun risultato, aggiungendo solo le stampe dei tempi: i
@@ -310,7 +325,7 @@ A 50 m la simulazione costa 4-7 volte di più (4 volte le sezioni e passo da 60 
 condizioni iniziali costano circa lo stesso perché il nuovo arresto dimezza il tempo simulato. La
 prima esecuzione, con la compilazione, aggiunge 0,1-0,2 s.
 
-**Differenza di quota 1D − 2D** (animazioni 11, dalle 3 h in poi, dopo l'arrivo del fronte 2D):
+**Differenza di quota 1D − 2D** (animazioni 9, dalle 3 h in poi, dopo l'arrivo del fronte 2D):
 
 | Scenario | 200 m: media / scarto quadratico medio | 50 m: media / scarto quadratico medio |
 |---|---|---|
@@ -342,7 +357,7 @@ seconda, a tratto già bagnato, il colmo 2D cala fino a 66-67 m³/s nei primi 3,
 78-80 m³/s tra 3,6 e 4,2 km: è lo stesso rientro del `fittizio_3`. Il 1D dà 70,49 m³/s in entrambe le
 onde. Il ritardo del colmo dalla prima all'ultima sezione è di 165 min nel 2D e 27-28 nel 1D, per
 entrambe le onde. **Attenzione:** `confronto_reference.jl` cerca un solo colmo su tutta la simulazione,
-quindi per il `fittizio_4` il grafico 9 e il "ritardo di 1065 min" di `confronto_S6000.txt` mescolano le
+quindi per il `fittizio_4` il grafico 8 e il "ritardo di 1065 min" di `confronto_S6000.txt` mescolano le
 due onde (a monte il massimo è nella prima, a valle nella seconda). I valori per onda qui sopra sono
 calcolati a parte, dividendo a 14,5 h.
 
@@ -390,7 +405,108 @@ geometria da `settings.txt`).
   quindi da 3,6 km in poi resta circa 13 m³/s sotto. È lo stesso rientro dei `fittizio_3` e
   `fittizio_4`, qui molto più evidente: con le sezioni a 50 m pesa ancora di più la mancanza del rientro.
 - Sfiorano 12 sezioni tra 0,25 e 3,55 km (9 nel `fittizio_2`), contro 5 tra 0,6 e 2 km a 200 m.
-- Anche qui, per il `fittizio_4`, grafico 9 e ritardo in `confronto_S6000.txt` mescolano le due onde.
+- Anche qui, per il `fittizio_4`, grafico 8 e ritardo in `confronto_S6000.txt` mescolano le due onde.
+
+### Tirante e portata nella sezione di valle (grafico 12)
+
+| Caso | Tirante massimo in S6000, 1D − 2D | Scarto quadratico medio del tirante |
+|---|---|---|
+| 200 m | da −8 a +15 cm | 7-8 cm |
+| 50 m | da −22 a +2 cm | 7-12 cm |
+
+A 50 m il 1D raggiunge in S6000 quasi lo stesso tirante del 2D con molta meno portata (`fittizio_1`:
+1,89 m con 55 m³/s contro 1,92 m con 68 m³/s). Non dipende dallo sfioro: vedi la sezione seguente.
+
+### Livelli 1D e 2D a parità di portata
+
+Le tabelle vengono dal 2D, quindi ci si aspetterebbe che a parità di portata il 1D dia gli stessi livelli
+del 2D. Nel grafico 12 non succede neanche sotto i 40 m³/s, dove non c'è esondazione e le portate
+coincidono. Analisi fatta su copie temporanee (nessuna modifica al codice).
+
+**Prima di tutto: confrontare a parità di portata, non allo stesso istante.** Sul ramo crescente il
+1D arriva prima del 2D (laminazione e ritardo minori), quindi allo stesso istante è più alto anche se la
+sua relazione livello-portata fosse esatta. Parte di ciò che si vede nel grafico 12 è solo questo
+sfasamento.
+
+**Verifica 1: piena dei fittizi**, istanti con portata 2D tra 5 e 40 m³/s (`fittizio_1`), in ogni sezione:
+- livello della piena 2D − livello degli scalini 2D alla stessa portata: a 50 m in media 0,5 cm.
+  **Il 2D è coerente con le tabelle** e non c'è effetto del moto vario (isteresi);
+- livello 1D − livello degli scalini alla portata 1D: in media 1,7 cm nelle sezioni interne, ma
+  **+9 cm in S6000** (+8 cm sul 2D). Lo scarto nasce nell'ultima sezione;
+- a 200 m lo scarto medio tra 1D e 2D è di 3 cm, ma in parte viene dal riferimento: le tabelle a
+  200 m sono costruite dagli scalini di `ns_channel`, mentre la piena di riferimento viene da `ns_50`, e le
+  due simulazioni 2D non danno la stessa relazione livello-portata (fino a 11 cm in S4200 e S0800).
+
+**Verifica 2: moto permanente.** Il 1D è stato portato all'equilibrio con portata costante di 20 e
+40 m³/s (fase di riempimento) e il profilo è stato confrontato con gli scalini 2D alla stessa portata:
+
+| Prova | Tirante in S6000 | Scarto medio sul tratto | Scarto massimo |
+|---|---|---|---|
+| 50 m, Ks 33 | +10 / +13 cm | 1,8-2,0 cm | +15 / +18 cm (S5900) |
+| 50 m, Ks d'uscita tarato (40,2 / 39,4) | 0 | 1,8 cm | +9 / +10 cm (S5900) |
+| 200 m, Ks 33 | 0 / +1 cm | 1,7 cm | −5 / −7 cm |
+
+**Causa 1: la condizione di uscita (lo scarto in S6000).**
+- Nell'ultima sezione il livello non lo decide la tabella ma la portata di moto uniforme
+  `Q = A·Ks·√i·Rh^(2/3)`, con il Ks di `settings.txt` (33) e la pendenza media del fondo (0,00213).
+- Nel 2D, verso la fine del tratto, il pelo libero scende molto più ripido: tra S5950 e S6000 cala di
+  26 cm in 50 m, cioè circa 0,005. Probabilmente è il richiamo dell'uscita del dominio 2D.
+- Con Ks 33 e 0,00213 il 1D dà quindi tiranti troppo alti: a 50 m 8-13 cm tra 10 e 40 m³/s.
+- Il Ks d'uscita che riproduce il livello 2D in S6000 è circa 39,5 a 50 m, quasi costante da 15 a
+  80 m³/s. A 200 m è 32,7-33,9: lì Ks 33 è giusto per caso, e per questo il problema non si vedeva.
+- L'effetto risale per qualche centinaio di metri: con il Ks tarato lo scarto medio sugli ultimi 2 km
+  scende da 2,0-2,3 a 1,8-1,9 cm.
+- **Si è scelto di non correggere per ora la condizione di valle.** Le possibilità sono imporre in S6000
+  la scala di deflusso degli scalini 2D (modifica al codice) oppure Ks 39,5 alla riga 23 di
+  `settings.txt` per i 50 m (taratura a mano).
+
+**Causa 2: il Ks equivalente delle tabelle (lo scarto che resta nel tratto, 1-2 cm in media).**
+- `calcolo_tabelle_daBM` ricava il Ks dalla pendenza del pelo libero calcolata tra le due sezioni
+  vicine, a monte e a valle, e trascura la variazione dell'altezza cinetica `u²/2g`.
+- Il 1D invece mette l'attrito sull'interfaccia, con `jden` della cella a monte (upwind), e risolve
+  anche il termine convettivo. A moto permanente impone quindi tra due sezioni un dislivello che non
+  coincide con quello del 2D da cui è stato ricavato il Ks.
+- A 50 m `u²/2g` cambia in media di 2 cm tra sezioni vicine, fino a 8,5 cm.
+- Il profilo 2D del livello medio sulla linea di sezione (`Mean wse`) è irregolare: tra S5850 e S5900
+  cala di 39 cm, tra S5900 e S5950 risale di 1 cm.
+- A moto permanente il 1D non può far risalire il pelo libero con il solo attrito, e in questi punti
+  sbaglia di 5-10 cm (S5900, S2400, S2950). Gli errori non si sommano lungo il tratto: in media si
+  compensano.
+- Per ridurlo servirebbe ricavare il Ks dalla pendenza dell'energia (pelo libero più `u²/2g`), oppure
+  tarare `jden` direttamente sullo schema discreto del 1D. Prima andrebbero rese più regolari le
+  sezioni in cui il profilo 2D non è monotono.
+
+### Rientro dell'acqua nel 2D
+
+Nel 2D in alcune sezioni la portata cresce rispetto alla sezione subito a monte: l'acqua uscita più a
+monte rientra. Analisi delle portate `reference/ns_50_fittizio_*_discharge.csv`, ogni 50 m. Una sezione
+è segnata quando cresce il colmo (più di 0,3 m³/s) o il volume transitato in tutto l'evento (più dello
+0,3% del volume entrato).
+
+Il segno più sicuro è una crescita **mentre la piena sta ancora salendo** (portata da monte in
+aumento). In quella fase il tratto si riempie e trattiene acqua, quindi senza ingressi laterali la
+portata cala andando verso valle: se cresce, l'acqua arriva dal lato. Quando la piena cala, invece, il
+tratto restituisce l'acqua immagazzinata e la portata cresce verso valle anche senza rientro.
+
+| Sezioni | Crescita del colmo [m³/s] | Scenari | Note |
+|---|---|---|---|
+| S0400 | +1,1 / +1,8 | tutti | anche con la piena in salita; dopo le uscite di S0150-S0350 |
+| S0950 (e S1100) | +0,4 / +0,8 | tutti | |
+| S1600-S1700 | fino a +3,1 (S1700) | tutti (S1600 non nel `fittizio_2`) | anche con la piena in salita; dopo le uscite di S1000-S1400 |
+| S3000 | +1,4 / +1,6 | tutti | anche con la piena in salita; il 2D perde 25-66 mila m³ in S2950 e li recupera 50 m dopo |
+| S3550 (e S3600) | +2,3 / +4,6 | 1, 3, 4 | nel `fittizio_2` S3550 perde acqua |
+| S2700, S3700-S3750, S4000 | fino a +1,3 | 3, 4 | |
+| **S4150** | +6,5 / +7,2 | 3, 4 (nel 1 solo +11 000 m³ di volume) | il rientro maggiore, fino a 167 000 m³; il colmo sale da circa 74 a 83 m³/s |
+| S4250-S4700, S5650-S5700 | fino a +2,5 | 3, 4 | |
+
+Nel `fittizio_4` crescono anche con la piena in salita S0850 e S0950. Rientra circa metà dell'acqua
+persa nel `fittizio_1` (175 000 m³ su 356 000) e circa l'80% nel `fittizio_3` (879 000 su 1 093 000).
+Nel 1D a 50 m, invece, S2950 da sola sfiora 191 000 m³ che non tornano.
+
+Due avvertenze:
+- le portate 2D sono misurate su linee di sezione: un aumento può anche voler dire che l'acqua ha
+  aggirato la sezione precedente passando per la piana. Per il 1D è comunque acqua che esce e torna;
+- l'abbinamento tra uscite e rientri è dedotto dalla vicinanza delle sezioni, non tracciato.
 
 ## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
 
@@ -441,18 +557,19 @@ le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
 - **Criterio di arresto del riempimento:** la tolleranza assoluta 0,01 m³/s su `|q − qn|` è poco
   adatta alle portate molto basse; `T_assestamento`, `T_fermo` e `tol_fermo` sono provati solo su
   Test_Brenta (6 km) e rettangolare (30 km).
-- **Condizione al contorno di valle** con il Ks di `settings.txt`, non coerente con le tabelle.
+- **Rientro dell'acqua sfiorata:** nel 2D l'acqua uscita rientra più a valle (vedi "Rientro dell'acqua
+  nel 2D"); nel 1D esce e non torna. Da capire come includerlo.
+- **Affluenti e sfioro** insieme: non ancora provati.
+- **Condizione al contorno di valle** con il Ks di `settings.txt`, non coerente con le tabelle: a 50 m
+  dà in S6000 tiranti 8-13 cm più alti del 2D (vedi "Livelli 1D e 2D a parità di portata"). Per ora
+  non si corregge.
+- **Ks equivalente delle tabelle** ricavato dalla pendenza del pelo libero senza l'altezza cinetica:
+  lascia scarti di 1-2 cm in media e fino a 10 cm dove il profilo 2D è irregolare.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
   - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
     minimo di 10 cm, non con la partenza cumulata.
-
-## Considerazione finale per lunedì
-I risultati sono incoraggianti, il modello 1D si è avvicinato molto a quello che riusciamo a misurare con il 2D. Non sono convinto che le le informazioni estratte dal 2D siano effettivamente utilizzate in maniera appropriata nell'1D, per lo meno però possiamo fare un confronto.  
-Ci sono ulteriori aspetti che non abbiamo ancora considerato:
-- Unire gli affluenti allo sfioro;
-- Nel 2D, considerando tutto il fiume, si vede chiaramente che l'acqua tende a rientrare dopo un certo punto. Attualmente non abbiamo questa dinamica, perchè l'acqua che facciamo uscire poi non rientra più. La S6000 mostra un copmportamento che fa pensare che l'acqua sia rientrata, perchè non solo il picco si è ridotto, ma è anche in ritardo. Dobbiamo cercare di capire come includere questo aspetto in maniera intelligiente.
 
 ## Ultimo commit descritto
 
