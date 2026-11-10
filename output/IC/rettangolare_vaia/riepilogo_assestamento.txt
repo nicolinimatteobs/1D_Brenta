@@ -1,0 +1,15 @@
+Canale rettangolare con 18 affluenti, dt 5 s. Equilibrio = stato a 30 h di ciascun riempimento.
+Scarto tra i due equilibri: max |Δη| 0.00e+00 m, max |ΔQ| 0.00e+00 m3/s
+
+                                     η < 1 cm   η < 5 mm   η < 1 mm      Q < 0,1     Q < 0,01 criterio modello
+rampa (6 h) + assestamento             9.58 h     9.88 h    10.39 h      10.07 h      10.69 h          10.37 h
+portate cumulate + assestamento        1.25 h     3.27 h     4.67 h       4.11 h       5.00 h           2.76 h
+
+Risparmio con le portate cumulate:
+  livello entro 10 mm: 1.25 h invece di 9.58 h, 8.33 h in meno (87%)
+  livello entro 5 mm: 3.27 h invece di 9.88 h, 6.61 h in meno (67%)
+  livello entro 1 mm: 4.67 h invece di 10.39 h, 5.71 h in meno (55%)
+  portata entro 0.10 m3/s: 4.11 h invece di 10.07 h, 5.96 h in meno
+  portata entro 0.01 m3/s: 5.00 h invece di 10.69 h, 5.68 h in meno
+
+Deriva nell'ultima ora (controllo che a 30 h l'equilibrio sia raggiunto): rampa 0.00e+00 m, cumulata 0.00e+00 m

@@ -1,0 +1,9 @@
+Test_Brenta con 18 affluenti: portata totale (monte + affluenti) 35.969 m3/s
+
+rampa, dt 5 s                ok, 62.4 s di calcolo
+    fine del riempimento 7.37 h (4402 passi salvati) | uscita = ingressi entro 0,2% e q ferma da 7.18 h | tirante minimo 0.058 m | uscita finale 35.935 m3/s
+    al primo passo: uscita 0.430 m3/s, portata fra 0.217 e 0.682 m3/s
+portate cumulate, dt 5 s     ok, 4.9 s di calcolo
+    fine del riempimento 1.74 h (1254 passi salvati) | uscita = ingressi entro 0,2% e q ferma da 1.56 h | tirante minimo 0.183 m | uscita finale 35.933 m3/s
+    al primo passo: uscita 50.015 m3/s, portata fra 0.436 e 50.015 m3/s
+    rispetto a rampa, dt 5 s: max |Δη| 0.0001 m, max |ΔQ| 0.0021 m3/s

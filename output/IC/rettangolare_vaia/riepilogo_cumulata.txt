@@ -1,0 +1,9 @@
+Canale rettangolare con 18 affluenti: portata totale (monte + affluenti) 35.969 m3/s
+
+rampa, dt 5 s                ok, 92.2 s di calcolo
+    fine del riempimento 10.37 h (4592 passi salvati) | uscita = ingressi entro 0,2% e q ferma da 10.15 h | tirante minimo 0.108 m | uscita finale 35.934 m3/s
+    al primo passo: uscita 0.434 m3/s, portata fra 0.434 e 0.436 m3/s
+portate cumulate, dt 5 s     ok, 9.0 s di calcolo
+    fine del riempimento 2.76 h (1989 passi salvati) | uscita = ingressi entro 0,2% e q ferma da 2.41 h | tirante minimo 0.108 m | uscita finale 35.933 m3/s
+    al primo passo: uscita 35.968 m3/s, portata fra 0.430 e 35.981 m3/s
+    rispetto a rampa, dt 5 s: max |Δη| 0.0061 m, max |ΔQ| 0.1260 m3/s
