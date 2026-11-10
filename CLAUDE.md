@@ -60,11 +60,11 @@ Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 | `Source/struct.jl` | `struct Parametri` |
 | `Source/writing.jl` | `INIT_OUTPUT` e funzioni di salvataggio |
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
-| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria |
+| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta due spaziature, `Test_Brenta/S_200m/` e `Test_Brenta/S_50m/` |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
 | `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici |
 | `reference/` | Risultati del modello 2D usati come riferimento (`ns_channel_piena_discharge.csv`) |
-| `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata |
+| `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata (vedi "Costruzione delle tabelle") |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
 
@@ -74,8 +74,8 @@ Letto **per posizione** (26 righe, non spostarle; dalla riga 27 in poi sono note
 
 | Riga | Contenuto |
 |---|---|
-| 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/tabella_sezioni.csv`) |
-| 2 | Geometria (es. `input/geometria/Test_Brenta/localslope_xcoord.csv`) |
+| 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/S_200m/tabella_sezioni.csv`) |
+| 2 | Geometria (es. `input/geometria/Test_Brenta/S_200m/localslope_xcoord.csv`) |
 | 3-13 | Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4 |
 | 14 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
 | 15-21 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
@@ -106,7 +106,7 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
 **Geometria**: `section, local_slope, x_coord_[m], talweg_[m]`, una riga per sezione. La pendenza
 locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
 `argine_dx_[m], argine_sx_[m]`, quote assolute degli argini (in `calcolo_tabelle_daBM` vengono da
-`input/bankpoints.csv`). I file a 4 colonne restano validi: gli argini valgono `Inf` e non c'è sfioro.
+`bankpoints.csv` nella cartella di input del caso). I file a 4 colonne restano validi: gli argini valgono `Inf` e non c'è sfioro.
 
 **Output** (separati da spazi, una riga per passo temporale):
 - `Q.csv`: portate alle **interfacce** (imax+1 valori: l'ultimo è l'uscita);
@@ -197,7 +197,8 @@ al valore iniziale da subito (`r_IC = 1`), nessuna durata minima, solo condizion
 ## Stato attuale e risultati
 
 **Test_Brenta** (configurazione corrente di `settings.txt`):
-- tratto di 6 km, 30 sezioni ogni 200 m (S0200-S6000);
+- tratto di 6 km, 30 sezioni ogni 200 m (S0200-S6000), in `input/geometria/Test_Brenta/S_200m/`;
+  tutti i risultati qui sotto sono con questa geometria (quella a 50 m non è ancora stata simulata);
 - tabelle da `calcolo_tabelle_daBM`;
 - idrogramma `input/idrogrammi/prova_tratto_brenta/piena.csv` (5,07 → 83,34 m³/s a 7 h, durata 24 h);
 - Ks 33, dt massimo 60 s, upwind, nessun affluente;
@@ -217,7 +218,7 @@ sono invece **senza sfioro**):
 - animazioni della piena 2D in `output/tratto_brenta_sfioro/grafici/`: `10_piena_2D.gif` (solo 2D) e
   `11_piena_1D_2D.gif` (1D con sfioro e 2D insieme, con la differenza di quota). Fatte una tantum:
   livelli e portate 2D vengono da `../Test_Brenta/results/inputs/ns_channel_piena_results.h5`
-  (30 sezioni, un'uscita ogni 900 s), perché `calcolo_tabelle_daBM/input/sections_ns_channel_S0200_S6000/`
+  (30 sezioni, un'uscita ogni 900 s), perché `calcolo_tabelle_daBM/input/S_0200_6000/`
   contiene gli **scalini di portata** per le tabelle, non la piena. Differenza di quota 1D − 2D:
   scarto quadratico medio 6 cm, massimo 27 cm (x = 5,8 km, t = 11,25 h, 1D più basso);
 - evoluzione del riempimento in `output/tratto_brenta_sfioro/grafici/`: `12_spinup_convergenza.png` e
@@ -278,19 +279,74 @@ I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` hanno colonne ogni 5
 e sono diversi da `ns_channel_piena_discharge.csv`:
 - il 2D **parte da alveo asciutto**: in S6000 la portata è nulla fino a 2,5 h, quando arriva il fronte,
   mentre il 1D parte con la portata di base;
-- **alcuni sono incompleti**: `fittizio_2` arriva a 1,75 h, `fittizio_3` a 5 h e `fittizio_4` a 24 h
-  (su 39 h di simulazione); solo `fittizio_1` copre tutta la piena.
+- tutti e quattro coprono ormai tutta la piena (`fittizio_1` è rimasto quello del commit `7ba5b92`;
+  rilanciato con il codice di quel commit, il 1D dà gli stessi file byte per byte).
 
 | Scenario | Riferimento fino a | Colmo in S6000, 2D → 1D | RMSE [m³/s] | NSE | Volume 1D − 2D |
 |---|---|---|---|---|---|
 | `fittizio_1` | 24 h (completo) | 68,14 a 9,75 h → 70,49 a 7,45 h (+3,5%, 138 min prima) | 3,22 | 0,981 | +0,7% |
-| `fittizio_2` | 1,75 h | nessun confronto: S6000 è ancora asciutta | – | – | – |
-| `fittizio_3` | 5 h | non raggiunto (48,08 → 49,28 m³/s a 5 h) | 0,48 | 0,999 | −0,3% |
-| `fittizio_4` | 24 h | non raggiunto (secondo colmo ancora in salita: 78,04 m³/s a 24 h) | 3,97 | 0,964 | +1,1% |
+| `fittizio_2` | 24 h (completo) | 64,16 a 8,00 h → 69,50 a 7,48 h (+8,3%, 31 min prima) | 2,30 | 0,988 | +2,9% |
+| `fittizio_3` | 30 h (completo) | 81,71 a 13,50 h → 70,50 a 8,68 h (−13,7%, 289 min prima) | 6,14 | 0,954 | −5,3% |
+| `fittizio_4` | 39 h (completo) | 1ª onda 68,14 a 9,75 h → 70,49 a 7,45 h (+3,4%, 138 min prima); 2ª onda 78,54 a 24,75 h → 70,49 a 22,40 h (−10,2%, 141 min prima) | 4,32 | 0,967 | −1,9% |
 
 Nel `fittizio_1` il ritardo del colmo dalla prima all'ultima sezione è di 165 min nel 2D e 28 nel 1D.
-Nel `fittizio_4` il 2D a 24 h è già a 78 m³/s in S6000, sopra i circa 70 m³/s a cui lo sfioro limita
-il 1D.
+Nel `fittizio_4` la prima onda del 2D è uguale al `fittizio_1` (68,14 m³/s a 9,75 h in S6000). Nella
+seconda, a tratto già bagnato, il colmo 2D cala fino a 66-67 m³/s nei primi 3,4 km e poi risale fino a
+78-80 m³/s tra 3,6 e 4,2 km: è lo stesso rientro del `fittizio_3`. Il 1D dà 70,49 m³/s in entrambe le
+onde. Il ritardo del colmo dalla prima all'ultima sezione è di 165 min nel 2D e 27-28 nel 1D, per
+entrambe le onde. **Attenzione:** `confronto_reference.jl` cerca un solo colmo su tutta la simulazione,
+quindi per il `fittizio_4` il grafico 9 e il "ritardo di 1065 min" di `confronto_S6000.txt` mescolano le
+due onde (a monte il massimo è nella prima, a valle nella seconda). I valori per onda qui sopra sono
+calcolati a parte, dividendo a 14,5 h.
+
+Nel `fittizio_2` il colmo 2D cala da 74,3 a 64,2 m³/s nei primi 2,4 km e poi resta costante, senza
+risalite: con questa portata non si vede il rientro del `fittizio_3`. Il 1D lamina meno (69,5 m³/s da
+1,2 km in poi) e il ritardo del colmo dalla prima all'ultima sezione è di 60 min nel 2D e 29 nel 1D.
+Anche qui il confronto è stato rifatto senza rilanciare la simulazione (vedi sotto).
+
+Nel `fittizio_3` il 2D in S6000 resta a 62-66 m³/s fino a circa 9,5 h (sotto il 1D), poi sale fino a
+81,7 m³/s, quasi tutta la portata in ingresso (83,3), e la mantiene fino a circa 15,5 h. Il colmo 2D
+lungo il tratto risale da 67 a 82 m³/s tra 3,4 e 4,2 km. Con il picco lungo le aree esondate sembrano
+riempirsi e l'acqua rientra nel canale a valle: il 1D non lo riproduce, perché l'acqua sfiorata non
+rientra. Il ritardo del colmo dalla prima all'ultima sezione è di 360 min nel 2D e 56 nel 1D.
+Il confronto è stato rifatto senza rilanciare la simulazione: con il codice attuale (affluenti attivi,
+`y_ini = 0`) e `settings.txt` sul canale rettangolare, un nuovo run di `fittizio_3` non sarebbe
+confrontabile con il 2D. Anche `confronto_reference.jl` legge la geometria dalla riga 2 di
+`settings.txt`: con la configurazione attuale va lanciato da una copia con la geometria del Test_Brenta.
+
+## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
+
+`julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Il caso si sceglie con
+le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
+
+| Caso | Input | Prefisso dei file | Output | Sezioni |
+|---|---|---|---|---|
+| 50 m (attivo) | `input/S_0050_6000/` | `ns_50_scalini_` | `output/S_50m/` | 120, S0050-S6000 |
+| 200 m | `input/S_0200_6000/` | `ns_channel_` | `output/S_200m/` | 30, S0200-S6000 |
+
+- Ogni cartella di input contiene i file delle sezioni, `sections_dx.csv` (nome e ascissa) e
+  `bankpoints.csv` (quote degli argini). Le sezioni BC e P17 non sono usate.
+- I file a 50 m non hanno la colonna `t [s]`: il controllo che le sezioni abbiano gli stessi scalini
+  usa il numero di righe, più il tempo quando c'è.
+- In output: una cartella per sezione (`tabella.csv` e grafici, riscritti solo se la tabella cambia),
+  `tabella_sezioni.csv` e `localslope_xcoord.csv`, da copiare in `input/geometria/Test_Brenta/S_<passo>m/`.
+- **Correzioni automatiche**, segnalate tra gli avvisi a fine esecuzione (a 200 m non intervengono e
+  i risultati sono identici a prima):
+  - una pendenza del pelo libero nulla o negativa viene sostituita con quella del livello bagnato
+    successivo della stessa sezione (a 50 m solo S5950 a 0,86 m³/s: −3,2·10⁻⁵ → 1,2·10⁻⁴); altrimenti
+    Ks e `jden` sarebbero NaN e la ricostruzione delle righe asciutte fallirebbe;
+  - le righe con livello non superiore al massimo dei precedenti vengono scartate, perché il modello
+    vuole quote crescenti (a 50 m le ultime due di S0050, a 94,8 e 99,9 m³/s, dove il livello scende).
+
+**Geometria a 50 m** (`input/geometria/Test_Brenta/S_50m/`, 22 livelli per sezione, 20 in S0050):
+- nessun NaN e valori positivi; Ks mediano 20,4 (20,9 a 200 m), con la stessa proporzione di valori
+  fuori da 10-50; restano Ks di 3-9 in alcune sezioni tra 0,6 e 1,25 km a livelli intermedi e 139
+  nell'ultima riga di S0100;
+- **pendenze del fondo molto più irregolari**: 23 sezioni in contropendenza e 6 con |pendenza| sotto
+  2·10⁻⁴, fino a 7·10⁻⁶ in S1800 (l'ultima sezione usa sempre la pendenza media, −0,00213). Lo stato
+  iniziale usa il moto uniforme con `|local_slope|`: a 5,07 m³/s il tirante supera 1,5 m in 7 sezioni
+  (massimo 1,32 m a 200 m) e in S1800 il livello andrebbe oltre la tabella. Prima di simulare conviene
+  valutare una pendenza più regolare per lo stato iniziale.
 
 ## Problemi aperti e prossimi passi possibili
 
