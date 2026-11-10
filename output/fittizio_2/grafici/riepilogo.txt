@@ -1,0 +1,4 @@
+picco ingresso 74.83 m3/s a 7.00 h
+picco metà     69.52 m3/s a 7.18 h
+picco uscita   69.50 m3/s a 7.48 h
+sezione 10 (x = 2.00 km): livello massimo 0.01 m sopra l'ultima quota della tabella

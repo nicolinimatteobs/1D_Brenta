@@ -1,0 +1,4 @@
+Confronto S6000 (modello 1D - riferimento ns_50_fittizio_2_discharge.csv), dati ogni 15 min
+ATTENZIONE: il riferimento arriva a 6300 s (1.75 h), la simulazione a 86400 s (24.00 h): tutti i valori sono sul periodo comune
+nessun confronto in S6000: il riferimento vi è asciutto (portata nulla) per tutto il periodo disponibile
+colmo lungo il tratto: confrontabile in 0 sezioni su 30 (nelle altre il riferimento non lo ha ancora raggiunto)

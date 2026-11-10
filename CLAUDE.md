@@ -16,7 +16,10 @@ o su branch personali che poi vengono uniti.
 - Se compare un NaN il modello si ferma da solo (`CHECK_NAN`): riportare fase, passo, tempo e posizioni.
 - Nel repository i file sono salvati con fine riga **LF** (su Windows possono comparire CRLF nella
   copia locale): mantieni quello che trovi nel file.
-- **`CLAUDE.md` va tenuto aggiornato** a mano a mano che si lavora.
+- **`CLAUDE.md` descrive lo stato committato del progetto** e va aggiornato insieme a ogni commit che
+  cambia codice, input, configurazione o risultati. Il lavoro in corso non committato non va descritto.
+  In fondo, "Ultimo commit descritto" indica fino a dove arriva la descrizione: per aggiornarla si
+  parte da `git log <quel commit>..HEAD`.
 - Per i grafici si usa `Plots.jl`, con testi in italiano e unità di misura.
 
 ## Come si usa
@@ -31,6 +34,18 @@ julia --project=. strumenti/confronto_reference.jl     # confronto con il 2D in 
 ```
 
 Tutti i comandi vanno lanciati dalla cartella del progetto: i percorsi in `settings.txt` sono relativi.
+Gli script dei grafici accettano argomenti facoltativi, per lavorare su una cartella diversa da quella
+della riga 22 di `settings.txt` senza modificarlo:
+
+```bash
+julia --project=. strumenti/grafici_simulazione.jl output/fittizio_1 input/idrogrammi/fittizio_1/piena.csv
+julia --project=. strumenti/grafici_spinup.jl      output/fittizio_1
+julia --project=. strumenti/confronto_reference.jl output/fittizio_1 reference/ns_50_fittizio_1_discharge.csv
+```
+
+`confronto_reference.jl` confronta solo il periodo comune tra simulazione e riferimento e, sezione per
+sezione, scarta gli istanti in cui il riferimento ha portata nulla (2D che parte da alveo asciutto).
+Se il riferimento non ha ancora raggiunto il colmo quando finisce, il colmo non viene confrontato.
 Una simulazione del Test_Brenta (30 sezioni, 24 h) richiede circa 15 s.
 
 ## Struttura
@@ -131,6 +146,24 @@ In un tratto **non prismatico** il moto uniforme sezione per sezione non è l'eq
 riempimento il tratto si assesta (rigurgiti) e trattiene acqua. Sul Test_Brenta il tirante medio
 passa da 0,60 a 0,85 m. Per partire più vicini all'equilibrio servirebbe un profilo di moto permanente.
 
+**Prova senza rampa** (solo in copie temporanee, il codice non è cambiato). Affluenti e portata di monte
+al valore iniziale da subito (`r_IC = 1`), nessuna durata minima, solo condizioni iniziali:
+
+| Caso | Con la rampa | Senza rampa, dt 5 s | Senza rampa, dt 60 s |
+|---|---|---|---|
+| Canale rettangolare con 18 affluenti | 37 335 s | 19 710 s | NaN a 7 587 s |
+| Test_Brenta con sfioro, senza affluenti | 21 600 s | 10 615 s | 10 959 s |
+
+- Lo stato finale coincide con quello con la rampa (scarti sotto 1 mm di quota e 0,01 m³/s).
+- Il criterio di arresto non scatta subito nemmeno senza durata minima: nel Test_Brenta si ferma a
+  2,95 h, quando il tratto si è assestato.
+- Con gli affluenti che entrano tutti insieme nel velo iniziale serve un passo piccolo: con 60 s il
+  canale rettangolare va in NaN. Anche nel Test_Brenta con 60 s il tirante minimo durante il
+  riempimento scende a 6 cm, contro i 26 cm con 5 s.
+- La rampa serve quindi soprattutto quando ci sono affluenti e lo stato di partenza non li contiene.
+  Con la partenza dalla portata cumulata (affluenti già nella portata e nel tirante iniziali) non
+  dovrebbe servire, ma non è ancora provato.
+
 ## Affluenti
 
 - 18 affluenti distribuiti uniformemente: `sez_aff = round(k*imax/19)`.
@@ -225,6 +258,29 @@ copia temporanea, 1D con sfioro:
 Nel 1D l'esondazione inizia intorno a 66 m³/s (S1000). Il colmo a valle cambia poco tra gli scenari
 perché lo sfioro limita la portata a circa 70 m³/s.
 
+**Risultati salvati e confronto con il 2D.** Le simulazioni 1D con sfioro sono in `output/fittizio_1`
+… `fittizio_4`, ciascuna con la sua cartella `grafici/`: grafici 1-7 e GIF di `grafici_simulazione.jl`,
+8-9 e `confronto_S6000.txt` di `confronto_reference.jl`, 12-13 di `grafici_spinup.jl`. Mancano i
+grafici 10-11 (piena 2D), che richiedono i livelli 2D: per i fittizi ci sono solo le portate.
+
+I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` hanno colonne ogni 50 m (S0050-S6000)
+e sono diversi da `ns_channel_piena_discharge.csv`:
+- il 2D **parte da alveo asciutto**: in S6000 la portata è nulla fino a 2,5 h, quando arriva il fronte,
+  mentre il 1D parte con la portata di base;
+- **alcuni sono incompleti**: `fittizio_2` arriva a 1,75 h, `fittizio_3` a 5 h e `fittizio_4` a 24 h
+  (su 39 h di simulazione); solo `fittizio_1` copre tutta la piena.
+
+| Scenario | Riferimento fino a | Colmo in S6000, 2D → 1D | RMSE [m³/s] | NSE | Volume 1D − 2D |
+|---|---|---|---|---|---|
+| `fittizio_1` | 24 h (completo) | 68,14 a 9,75 h → 70,49 a 7,45 h (+3,5%, 138 min prima) | 3,22 | 0,981 | +0,7% |
+| `fittizio_2` | 1,75 h | nessun confronto: S6000 è ancora asciutta | – | – | – |
+| `fittizio_3` | 5 h | non raggiunto (48,08 → 49,28 m³/s a 5 h) | 0,48 | 0,999 | −0,3% |
+| `fittizio_4` | 24 h | non raggiunto (secondo colmo ancora in salita: 78,04 m³/s a 24 h) | 3,97 | 0,964 | +1,1% |
+
+Nel `fittizio_1` il ritardo del colmo dalla prima all'ultima sezione è di 165 min nel 2D e 28 nel 1D.
+Nel `fittizio_4` il 2D a 24 h è già a 78 m³/s in S6000, sopra i circa 70 m³/s a cui lo sfioro limita
+il 1D.
+
 ## Problemi aperti e prossimi passi possibili
 
 - **Esondazione, il punto principale per avvicinare il 1D al riferimento.** Includere le golene nelle
@@ -241,10 +297,16 @@ perché lo sfioro limita la portata a circa 70 m³/s.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
-  - `Brenta7.csv` non esiste ancora.
+  - Brenta7 è stato tolto da `settings.txt` e da `INITIAL_SETTINGS!` (commit `64e12cb`), ma il commento
+    in testa a `INITIAL_SETTINGS!` e la legenda in fondo a `settings.txt` descrivono ancora il formato a 27 righe.
 
 ## Considerazione finale per lunedì
 I risultati sono incoraggianti, il modello 1D si è avvicinato molto a quello che riusciamo a misurare con il 2D. Non sono convinto che le le informazioni estratte dal 2D siano effettivamente utilizzate in maniera appropriata nell'1D, per lo meno però possiamo fare un confronto.  
 Ci sono ulteriori aspetti che non abbiamo ancora considerato:
 - Unire gli affluenti allo sfioro;
 - Nel 2D, considerando tutto il fiume, si vede chiaramente che l'acqua tende a rientrare dopo un certo punto. Attualmente non abbiamo questa dinamica, perchè l'acqua che facciamo uscire poi non rientra più. La S6000 mostra un copmportamento che fa pensare che l'acqua sia rientrata, perchè non solo il picco si è ridotto, ma è anche in ritardo. Dobbiamo cercare di capire come includere questo aspetto in maniera intelligiente.
+
+## Ultimo commit descritto
+
+`720d533` (2026-11-09, "aggiunti i 4 scenari, confronto da fare"), più le modifiche committate insieme
+a questa versione del file: grafici degli scenari fittizi e argomenti facoltativi degli script in `strumenti/`.
