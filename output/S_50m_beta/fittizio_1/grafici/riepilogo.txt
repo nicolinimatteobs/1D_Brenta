@@ -1,0 +1,3 @@
+picco ingresso 83.34 m3/s a 6.99 h
+picco metà     58.34 m3/s a 7.19 h
+picco uscita   55.33 m3/s a 7.49 h

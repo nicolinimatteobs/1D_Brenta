@@ -1,26 +1,52 @@
-using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator
+using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator, HDF5
 
 # Caso da elaborare (lanciare dalla cartella 1D_Brenta). La cartella di input contiene i file delle
-# sezioni (FilePrefix*nome*Format), sections_dx.csv e bankpoints.csv
+# sezioni (FilePrefix*nome*Format), sections_dx.csv, bankpoints.csv, la mesh del modello 2D (MeshFile)
+# e i suoi risultati (ResultsFile), da cui si calcola β.
 # Sezioni ogni 50 m
 const InputFolder = "calcolo_tabelle_daBM/input/S_0050_6000"
 const OutputFolder = "calcolo_tabelle_daBM/output/S_50m"
 const FilePrefix = "ns_50_scalini_"
-# Sezioni ogni 200 m
-# const InputFolder = "calcolo_tabelle_daBM/input/S_0200_6000"
-# const OutputFolder = "calcolo_tabelle_daBM/output/S_200m"
-# const FilePrefix = "ns_channel_"
+const MeshFile = "test_brenta_ns_50_computational-mesh.2dm"
+const ResultsFile = "ns_50_scalini_results.h5"
+# Il caso a 200 m (input/S_0200_6000, prefisso ns_channel_) non ha mesh e risultati 2D: con il calcolo
+# di β non si può più elaborare.
 const Format = ".csv"
 const g = 9.81      # [m/s^2]
 
 # Limiti dei valori ritenuti ragionevoli, usati solo per i controlli
 const iWSE_lim = (0.0005, 0.005)    # [-], la pendenza media del fondo è circa 0.002
 const Ks_lim = (10.0, 50.0)         # [m^(1/3)/s]
+const β_lim = (1.0, 1.5)            # [-]
+const Qrel_lim = 0.10               # scarto relativo massimo tra la portata degli elementi e quella della sezione
 
 # Valori usati per ricostruire le righe asciutte
 const h_dry = 0.01      # [m], tirante
 const Q_dry = 0.1       # [m3/s], portata
 const Ks_dry = 20.0     # [m^(1/3)/s], Ks imposto
+
+#= CONTROLLO DEI FILE DI INPUT
+    Prima di elaborare controlla che ci siano tutti i file: quelli fissi della cartella di input e
+    quelli delle sezioni elencate in sections_dx.csv. Se ne manca qualcuno li elenca tutti e si ferma.
+=#
+function check_input_files()
+    mancanti = String[]
+    for f in ("sections_dx.csv", "bankpoints.csv", MeshFile, ResultsFile)
+        isfile(joinpath(InputFolder, f)) || push!(mancanti, joinpath(InputFolder, f))
+    end
+    sezioni = joinpath(InputFolder, "sections_dx.csv")
+    if isfile(sezioni)
+        for nome in String.(CSV.read(sezioni, DataFrame)[!, "nome"])
+            f = joinpath(InputFolder, FilePrefix*nome*Format)
+            isfile(f) || push!(mancanti, f)
+        end
+    end
+    isempty(mancanti) && return nothing
+    msg = "AVVISO: mancano $(length(mancanti)) file di input (la cartella di lavoro deve essere 1D_Brenta):\n  " *
+          join(mancanti, "\n  ")
+    printstyled(msg, "\n"; color=:red, bold=true)
+    error("File di input mancanti: elaborazione interrotta")
+end
 
 function slope!(slope, y, x)
     @. slope[begin:end-1] = (y[begin+1:end] - y[begin:end-1]) / (x[begin+1:end] - x[begin:end-1])
@@ -47,8 +73,9 @@ end
         Q = Ks * Ω * (Ω/W)^(2/3) * sqrt(i)  =>  Ω = (Q * W^(2/3) / (Ks * sqrt(i)))^(3/5)
     L'area non è W*h_dry, altrimenti RH sarebbe h_dry e il Ks sarebbe irragionevole.
     Eventuali altre righe asciutte sono interpolate fino al primo livello bagnato.
+    Larghezza, pendenza e β sono quelli del primo livello bagnato.
 =#
-function rebuild_dry!(data, wet, iWSE)
+function rebuild_dry!(data, wet, iWSE, β)
     k1 = findfirst(wet)
     all(wet[k1:end]) || error("Sono presenti righe asciutte dopo il primo livello bagnato")
     WSE, Q, Ω, W = data[!, "Mean wse [m]"], data[!, "Discharge [m3/s]"], data[!, "Wetted area [m2]"], data[!, "Wetted geometric length [m]"]
@@ -64,7 +91,8 @@ function rebuild_dry!(data, wet, iWSE)
     end
     W[begin:k1-1] .= W[k1]
     iWSE[begin:k1-1] .= iWSE[k1]
-    return data, iWSE
+    β[begin:k1-1] .= β[k1]
+    return data, iWSE, β
 end
 
 #= CALCOLO DELLA PENDENZA DELLA SUPERFICIE LIBERA
@@ -110,6 +138,143 @@ function fix_slope!(iWSE, wet, nomi)
     return avvisi
 end
 
+#= LETTURA DELLA MESH (.2dm)
+    Restituisce le coordinate dei nodi, i triangoli (nodi in ordine, numerati come nel file) e le
+    nodestring (elenco dei nodi da un estremo all'altro). Nel file una nodestring è una riga
+    "NS n1 n2 ... -nk nome": l'ultimo nodo ha il segno meno ed è seguito dal nome.
+=#
+function read_mesh(path)
+    nodes = Dict{Int,NTuple{2,Float64}}()
+    tri = NTuple{3,Int}[]
+    strings = Dict{String,Vector{Int}}()
+    cur = Int[]
+    for line in eachline(path)
+        t = split(line)
+        isempty(t) && continue
+        if t[1] == "ND"
+            nodes[parse(Int, t[2])] = (parse(Float64, t[3]), parse(Float64, t[4]))
+        elseif t[1] == "E3T"
+            parse(Int, t[2]) == length(tri) + 1 || error("$path: triangoli non numerati in ordine")
+            push!(tri, (parse(Int, t[3]), parse(Int, t[4]), parse(Int, t[5])))
+        elseif t[1] == "NS"
+            for v in t[2:end]
+                n = tryparse(Int, v)
+                if n === nothing
+                    strings[v] = cur
+                    cur = Int[]
+                else
+                    push!(cur, abs(n))
+                end
+            end
+        end
+    end
+    return nodes, tri, strings
+end
+
+#= ELEMENTI A MONTE DI UNA NODESTRING
+    Ogni tratto della nodestring è un lato della mesh, condiviso da due triangoli: si prende quello
+    dalla parte di monte. Nel modello 2D ogni nodestring ha "upstream_direction" (right o left), cioè
+    da che parte sta monte percorrendo la nodestring dal primo all'ultimo nodo. Per ogni tratto
+    restituisce il triangolo, la lunghezza del lato e la normale unitaria verso valle.
+=#
+function upstream_elements(ns, nodes, tri, edges, σ)
+    elementi = Tuple{Int,Float64,NTuple{2,Float64}}[]
+    for (p, q) in zip(ns[begin:end-1], ns[begin+1:end])
+        (xp, yp), (xq, yq) = nodes[p], nodes[q]
+        dx, dy = xq - xp, yq - yp
+        L = hypot(dx, dy)
+        lato = get(edges, minmax(p, q), Int[])
+        # σ = +1 se monte è a destra: il baricentro del triangolo di monte ha prodotto vettoriale negativo
+        monte = filter(lato) do e
+            xc = sum(nodes[k][1] for k in tri[e]) / 3
+            yc = sum(nodes[k][2] for k in tri[e]) / 3
+            σ * (dx * (yc - yp) - dy * (xc - xp)) < 0
+        end
+        length(monte) == 1 || error("Nodestring: nessun triangolo (o più di uno) a monte del lato $p-$q")
+        push!(elementi, (monte[1], L, (-σ * dy / L, σ * dx / L)))
+    end
+    return elementi
+end
+
+#= COEFFICIENTE DI QUANTITÀ DI MOTO β DAL MODELLO 2D
+    Come nel metodo di Engelund (eq. 13 delle slide):
+        β = Ω/Q² ∫ u² Y dy
+    ma con le velocità del modello 2D al posto di quelle di moto uniforme striscia per striscia.
+    Le strisce sono i triangoli appena a monte dei lati della nodestring: tirante Y = quota del pelo
+    libero - quota del fondo dell'elemento, portata specifica normale alla sezione qn = q·n, larghezza
+    ΔL = lunghezza del lato. Quindi u² Y = qn²/Y e
+        Ω = Σ Y ΔL,   Q = Σ qn ΔL,   β = Ω Σ(qn²/Y ΔL) / Q²
+    Ω coincide con l'area bagnata dei file delle sezioni: BASEMENT la calcola con gli stessi elementi.
+    Q invece no, perché BASEMENT la calcola dai flussi sui lati e non dai valori nelle celle
+    (in mediana gli elementi danno il 2% in più). Per β si usa la Q degli elementi, così con
+    velocità uniforme vale esattamente 1 e non è mai minore di 1.
+    Gli elementi con tirante non superiore al minimo del modello 2D sono asciutti (portata nulla).
+    Restituisce β, una riga per scalino e una colonna per sezione (NaN se la sezione è asciutta),
+    e gli avvisi sulla portata degli elementi.
+=#
+function beta_2D(nomi, dati, wet_all)
+    nodes, tri, strings = read_mesh(joinpath(InputFolder, MeshFile))
+    edges = Dict{Tuple{Int,Int},Vector{Int}}()
+    for (e, t) in enumerate(tri), (p, q) in ((t[1], t[2]), (t[2], t[3]), (t[3], t[1]))
+        push!(get!(edges, minmax(p, q), Int[]), e)
+    end
+    avvisi = String[]
+    h5open(joinpath(InputFolder, ResultsFile)) do f
+        # i triangoli devono essere le celle del file dei risultati (che numera i nodi da 0)
+        topo = read(f["CellsAll/Topology"])
+        size(topo, 2) == length(tri) && all(topo[:, e] == collect(tri[e]) .- 1 for e in eachindex(tri)) ||
+            error("La mesh $MeshFile non corrisponde a quella di $ResultsFile")
+        zb = vec(read(f["CellsAll/BottomEl"]))
+        hmin = only(read(f["Parameters/MinWaterDepth"]))
+        model = read(f[".config/model"])
+        ns_h5 = read(f["NodeStrg/StrNames"])
+        uscite = sort(keys(f["RESULTS/CellsAll/HydState"]))
+        nlevels = nrow(dati[first(nomi)][1])
+        length(uscite) == nlevels || error("$ResultsFile ha $(length(uscite)) uscite, i file delle sezioni $nlevels righe")
+        H  = [read(f["RESULTS/CellsAll/HydState/"*u]) for u in uscite]   # quota, qx, qy per cella
+        SV = [read(f["RESULTS/NodeStrg/StateVar/"*u]) for u in uscite]   # come i file delle sezioni
+        β = fill(NaN, nlevels, length(nomi))
+        for (j, nome) in enumerate(nomi)
+            haskey(strings, nome) || error("La nodestring $nome non è in $MeshFile")
+            js = findfirst(==(nome), ns_h5)
+            js === nothing && error("La nodestring $nome non è in $ResultsFile")
+            m = match(Regex("\"name\":\"$nome\",\"upstream_direction\":\"(right|left)\""), model)
+            m === nothing && error("Direzione di monte della nodestring $nome non trovata in $ResultsFile")
+            elementi = upstream_elements(strings[nome], nodes, tri, edges, m[1] == "right" ? 1 : -1)
+            data = dati[nome][1]
+            for k in 1:nlevels
+                # le righe del file della sezione devono essere le uscite del file dei risultati (portata,
+                # area e, se bagnata, livello: in quelle asciutte load_section lo ha cambiato)
+                stessa = isapprox(SV[k][2, js], data[k, "Discharge [m3/s]"]; rtol=1e-6, atol=1e-6) &&
+                         isapprox(SV[k][3, js], data[k, "Wetted area [m2]"]; rtol=1e-6, atol=1e-6) &&
+                         (!wet_all[k, j] || isapprox(SV[k][1, js], data[k, "Mean wse [m]"]; rtol=1e-9))
+                stessa || error("$nome riga $k: il file della sezione non corrisponde all'uscita $(uscite[k]) di $ResultsFile")
+                wet_all[k, j] || continue
+                Ω = Qe = M = 0.0
+                for (e, L, (nx, ny)) in elementi
+                    Y = H[k][1, e] - zb[e]
+                    Y > hmin || continue
+                    qn = H[k][2, e] * nx + H[k][3, e] * ny
+                    Ω += Y * L
+                    Qe += qn * L
+                    M += qn^2 / Y * L
+                end
+                # tolleranza per gli arrotondamenti di BASEMENT: a 50 m gli scarti arrivano a 1,4e-4, un
+                # elemento sbagliato cambierebbe l'area di qualche percento
+                isapprox(Ω, data[k, "Wetted area [m2]"]; rtol=1e-3, atol=1e-3) ||
+                    error(@sprintf("%s riga %d: area degli elementi %.4f diversa da quella della sezione %.4f",
+                                   nome, k, Ω, data[k, "Wetted area [m2]"]))
+                Qe > 0.0 || error("$nome riga $k: portata degli elementi non positiva")
+                Qs = data[k, "Discharge [m3/s]"]
+                abs(Qe / Qs - 1) <= Qrel_lim || push!(avvisi, @sprintf("%-6s Q=%7.3f  portata degli elementi %7.3f (%+.1f%%)",
+                                                                       nome, Qs, Qe, 100 * (Qe / Qs - 1)))
+                β[k, j] = Ω * M / Qe^2
+            end
+        end
+        return β, avvisi
+    end
+end
+
 #= CALCOLO DI KS
     Non è banale. La pendenza della superficie libera va calcolata per ogni sezione e per
     ogni valore di WSE. Per semplicità assumo che sia unica per tutte le portate, cioè
@@ -126,7 +291,7 @@ function Ks_equivalent(Q, Ω, RH, iWSE)
 end
 
 # Calcola le caratteristiche geometriche/idrauliche di una sezione, una riga per ogni WSE
-function section_table(data, iWSE)
+function section_table(data, iWSE, β)
     Q   = data[!, "Discharge [m3/s]"]
     WSE = data[!, "Mean wse [m]"]
 
@@ -135,8 +300,7 @@ function section_table(data, iWSE)
     Ω_s = similar(Ω)
     slope!(Ω_s, Ω, WSE)
 
-    # compila il coefficiente per la correzione della velocità, per ora sempre 1
-    β   = ones(length(WSE))
+    # compila il coefficiente di quantità di moto, calcolato dal modello 2D (beta_2D)
     β_s = similar(β)
     slope!(β_s, β, WSE)
 
@@ -178,9 +342,11 @@ end
 =#
 function check_section(nome, table, Q)
     avvisi = String[]
-    WSE, iWSE, Ks = table[!, "WSE"], table[!, "iWSE"], table[!, "Ks"]
+    WSE, iWSE, Ks, β = table[!, "WSE"], table[!, "iWSE"], table[!, "Ks"], table[!, "β"]
     for k in 2:nrow(table)
         Q[k] > Q[k-1] || push!(avvisi, @sprintf("%-6s WSE=%8.3f  Q non crescente: %.3f -> %.3f", nome, WSE[k], Q[k-1], Q[k]))
+        # β vale almeno 1: sotto, di poco, solo per arrotondamento (un solo elemento bagnato)
+        β_lim[1] - 1e-9 <= β[k] <= β_lim[2] || push!(avvisi, @sprintf("%-6s WSE=%8.3f  Q=%7.3f  β=%.3f", nome, WSE[k], Q[k], β[k]))
         iWSE_lim[1] <= iWSE[k] <= iWSE_lim[2] || push!(avvisi, @sprintf("%-6s WSE=%8.3f  Q=%7.3f  iWSE=%.5f", nome, WSE[k], Q[k], iWSE[k]))
         Ks_lim[1] <= Ks[k] <= Ks_lim[2] || push!(avvisi, @sprintf("%-6s WSE=%8.3f  Q=%7.3f  Ks=%.2f", nome, WSE[k], Q[k], Ks[k]))
     end
@@ -195,6 +361,7 @@ function plot_section(table, nome, Folder; dosave::Bool=false, doplot::Bool=fals
         (:RH,   "raggio.idraulico",    "Raggio idraulico",       "Raggio [m]"),
         (:iWSE, "pendenza_wse",        "Pendenza sup. libera",   "Pendenza [-]"),
         (:Ks,   "ks",                  "Ks equivalente",         "Ks [m^(1/3)/s]"),
+        (:β,    "beta",                "Coefficiente β",         "β [-]"),
         (:jden, "jden",                "jden",                   "jden [m]"),
     ]
     for (colonna, file, titolo, xlabel) in grafici
@@ -212,6 +379,8 @@ function plot_section(table, nome, Folder; dosave::Bool=false, doplot::Bool=fals
 end
 
 function main(; dosave::Bool=false, doplot::Bool=false)
+    check_input_files()
+
     # leggi il file riguardante tutte le sezioni, ordinandole da monte verso valle
     InputFile = "sections_dx.csv"
     InputPath = joinpath(InputFolder, InputFile)
@@ -235,15 +404,20 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     iWSE_all = free_surface_slope(WSE_all, wet_all, sections_all[!, "s_m"])
     avvisi = fix_slope!(iWSE_all, wet_all, nomi)
 
+    # calcola β per ogni sezione e per ogni WSE dai risultati del modello 2D
+    β_all, avvisi_β = beta_2D(nomi, dati, wet_all)
+    append!(avvisi, avvisi_β)
+
     # ciclo sulle sezioni, da monte verso valle
     tabelle = Dict{String,DataFrame}()
-    @printf("%-10s %6s %17s %17s\n", "Sezione", "n WSE", "iWSE [-]", "Ks [m^(1/3)/s]")
+    @printf("%-10s %6s %17s %17s %17s\n", "Sezione", "n WSE", "iWSE [-]", "Ks [m^(1/3)/s]", "β [-]")
     for (j, nome) in enumerate(nomi)
         data, wet = dati[nome]
         iWSE = iWSE_all[:, j]
+        β = β_all[:, j]
 
         # sostituisci le righe asciutte con valori ricostruiti
-        rebuild_dry!(data, wet, iWSE)
+        rebuild_dry!(data, wet, iWSE, β)
 
         # il modello 1D vuole livelli crescenti: scarta le righe con livello non superiore al massimo
         # dei precedenti (es. S0050 ogni 50 m, dove negli ultimi scalini il livello scende)
@@ -254,14 +428,15 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         end
         data = data[tieni, :]
         iWSE = iWSE[tieni]
+        β = β[tieni]
 
-        table = section_table(data, iWSE)
+        table = section_table(data, iWSE, β)
         tabelle[nome] = table
 
         i_ok = table[!, "iWSE"]
         K_ok = table[!, "Ks"]
-        @printf("%-10s %6d %8.5f %8.5f %8.2f %8.2f\n", nome, nrow(table),
-            minimum(i_ok), maximum(i_ok), minimum(K_ok), maximum(K_ok))
+        @printf("%-10s %6d %8.5f %8.5f %8.2f %8.2f %8.3f %8.3f\n", nome, nrow(table),
+            minimum(i_ok), maximum(i_ok), minimum(K_ok), maximum(K_ok), minimum(β), maximum(β))
         append!(avvisi, check_section(nome, table, data[!, "Discharge [m3/s]"]))
 
         # salva tabella e grafici solo se la tabella è diversa da quella già salvata
