@@ -1,0 +1,14 @@
+Tirante 1D − 2D (= differenza di quota), istanti 2D ogni 15 min dalle 3 h in poi, sezioni 2D bagnate.
+Errore medio assoluto = media di |1D − 2D|; scostamento medio = media con segno (negativo: 1D più basso).
+
+scenario    sezioni    n valori   scost. medio err. medio assoluto       RMSE
+fittizio_1  S_200m         2550       -0.002 m            0.051 m    0.069 m
+fittizio_1  S_50m         10200       -0.047 m            0.061 m    0.106 m
+fittizio_2  S_200m         2550       +0.007 m            0.042 m    0.055 m
+fittizio_2  S_50m         10200       -0.028 m            0.045 m    0.076 m
+fittizio_3  S_200m         3270       -0.023 m            0.068 m    0.103 m
+fittizio_3  S_50m         13080       -0.101 m            0.112 m    0.203 m
+fittizio_4  S_200m         4350       -0.013 m            0.057 m    0.083 m
+fittizio_4  S_50m         17400       -0.065 m            0.077 m    0.140 m
+tutti       S_200m        12720       -0.009 m            0.055 m    0.081 m
+tutti       S_50m         50880       -0.063 m            0.076 m    0.144 m
