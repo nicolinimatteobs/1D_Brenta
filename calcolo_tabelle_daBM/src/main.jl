@@ -3,9 +3,16 @@ using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator, HDF5
 # Caso da elaborare (lanciare dalla cartella 1D_Brenta). La cartella di input contiene i file delle
 # sezioni (FilePrefix*nome*Format), sections_dx.csv, bankpoints.csv, la mesh del modello 2D (MeshFile)
 # e i suoi risultati (ResultsFile), da cui si calcola β.
+# β calcolato dal modello 2D (true) oppure β = 1 (false); con β = 1 mesh e risultati 2D non servono.
+# Il modello usa le tabelle con β = 1 (input/geometria/Test_Brenta/S_50m): con β dal 2D i risultati
+# cambiano poco, quindi quelle tabelle sono tenute da parte (input/geometria/Test_Brenta/S_50m_beta).
+const β_dal_2D = false
 # Sezioni ogni 50 m
 const InputFolder = "calcolo_tabelle_daBM/input/S_0050_6000"
-const OutputFolder = "calcolo_tabelle_daBM/output/S_50m"
+const OutputFolder = β_dal_2D ? "calcolo_tabelle_daBM/output/S_50m_beta" : "calcolo_tabelle_daBM/output/S_50m"
+# Cartella degli input del modello 1D: tabella_sezioni.csv e localslope_xcoord.csv vengono scritti anche qui,
+# così il modello usa sempre le tabelle appena calcolate (righe 1-2 di settings.txt)
+const ModelFolder = β_dal_2D ? "input/geometria/Test_Brenta/S_50m_beta" : "input/geometria/Test_Brenta/S_50m"
 const FilePrefix = "ns_50_scalini_"
 const MeshFile = "test_brenta_ns_50_computational-mesh.2dm"
 const ResultsFile = "ns_50_scalini_results.h5"
@@ -26,12 +33,14 @@ const Q_dry = 0.1       # [m3/s], portata
 const Ks_dry = 20.0     # [m^(1/3)/s], Ks imposto
 
 #= CONTROLLO DEI FILE DI INPUT
-    Prima di elaborare controlla che ci siano tutti i file: quelli fissi della cartella di input e
-    quelli delle sezioni elencate in sections_dx.csv. Se ne manca qualcuno li elenca tutti e si ferma.
+    Prima di elaborare controlla che ci siano tutti i file: quelli fissi della cartella di input (mesh e
+    risultati 2D solo se β viene dal 2D) e quelli delle sezioni elencate in sections_dx.csv. Se ne manca
+    qualcuno li elenca tutti e si ferma.
 =#
 function check_input_files()
     mancanti = String[]
-    for f in ("sections_dx.csv", "bankpoints.csv", MeshFile, ResultsFile)
+    fissi = β_dal_2D ? ("sections_dx.csv", "bankpoints.csv", MeshFile, ResultsFile) : ("sections_dx.csv", "bankpoints.csv")
+    for f in fissi
         isfile(joinpath(InputFolder, f)) || push!(mancanti, joinpath(InputFolder, f))
     end
     sezioni = joinpath(InputFolder, "sections_dx.csv")
@@ -300,7 +309,7 @@ function section_table(data, iWSE, β)
     Ω_s = similar(Ω)
     slope!(Ω_s, Ω, WSE)
 
-    # compila il coefficiente di quantità di moto, calcolato dal modello 2D (beta_2D)
+    # compila il coefficiente di quantità di moto: dal modello 2D (beta_2D) o 1, secondo β_dal_2D
     β_s = similar(β)
     slope!(β_s, β, WSE)
 
@@ -364,6 +373,7 @@ function plot_section(table, nome, Folder; dosave::Bool=false, doplot::Bool=fals
         (:β,    "beta",                "Coefficiente β",         "β [-]"),
         (:jden, "jden",                "jden",                   "jden [m]"),
     ]
+    β_dal_2D || filter!(gr -> gr[1] != :β, grafici)    # con β = 1 il grafico di β non serve
     for (colonna, file, titolo, xlabel) in grafici
         plt = plot(table[!, colonna], table[!, "WSE"];
             title="$titolo - $nome",
@@ -404,9 +414,22 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     iWSE_all = free_surface_slope(WSE_all, wet_all, sections_all[!, "s_m"])
     avvisi = fix_slope!(iWSE_all, wet_all, nomi)
 
-    # calcola β per ogni sezione e per ogni WSE dai risultati del modello 2D
-    β_all, avvisi_β = beta_2D(nomi, dati, wet_all)
-    append!(avvisi, avvisi_β)
+    # calcola β per ogni sezione e per ogni WSE dai risultati del modello 2D, oppure β = 1
+    if β_dal_2D
+        β_all, avvisi_β = beta_2D(nomi, dati, wet_all)
+        append!(avvisi, avvisi_β)
+    else
+        β_all = ones(size(WSE_all))
+    end
+
+    # geometria delle sezioni: la pendenza del fondo è calcolata come quella della superficie libera,
+    # ma con il segno usato dal modello 1D, negativo quando il fondo scende verso valle
+    s = sections_all[!, "s_m"]
+    talweg = [dati[nome][1][begin, "Reference elevation [m]"] for nome in nomi]
+    local_slope = -vec(free_surface_slope(permutedims(talweg), trues(1, length(nomi)), s))
+    # l'ultima sezione è in contropendenza, ma il modello 1D ne usa la pendenza per la portata di
+    # uscita: uso la pendenza media del fondo sull'intero tratto
+    local_slope[end] = (talweg[end] - talweg[begin]) / (s[end] - s[begin])
 
     # ciclo sulle sezioni, da monte verso valle
     tabelle = Dict{String,DataFrame}()
@@ -429,6 +452,19 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         data = data[tieni, :]
         iWSE = iWSE[tieni]
         β = β[tieni]
+
+        #= ULTIMA SEZIONE: CONDIZIONE DI USCITA
+            Il modello 1D calcola la portata in uscita come moto uniforme, Q = Ω·√(g·jden·S), con il jden
+            della tabella dell'ultima sezione e la sua pendenza locale S (la media del fondo, vedi sopra).
+            Qui quindi Ks e jden sono ricavati con quella pendenza invece che con la pendenza del pelo
+            libero: così, a ogni livello della tabella, il modello dà in uscita la portata degli scalini 2D.
+            La pendenza del pelo libero nel 2D tra le ultime due sezioni è molto più ripida (fino a 0,0075
+            contro 0,00213), probabilmente per il richiamo dell'uscita del dominio 2D: con quella e il Ks 33
+            di settings.txt il tirante in uscita era 10-13 cm più alto del 2D.
+        =#
+        if j == length(nomi)
+            iWSE = fill(abs(local_slope[end]), length(iWSE))
+        end
 
         table = section_table(data, iWSE, β)
         tabelle[nome] = table
@@ -454,17 +490,11 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     tabella_unica = reduce(vcat, [model_table(tabelle[nome], j) for (j, nome) in enumerate(nomi)])
     if dosave
         mkpath(OutputFolder)
+        mkpath(ModelFolder)
         CSV.write(joinpath(OutputFolder, "tabella_sezioni"*Format), tabella_unica)
+        CSV.write(joinpath(ModelFolder, "tabella_sezioni"*Format), tabella_unica)
     end
 
-    # geometria delle sezioni: la pendenza del fondo è calcolata come quella della superficie libera,
-    # ma con il segno usato dal modello 1D, negativo quando il fondo scende verso valle
-    s = sections_all[!, "s_m"]
-    talweg = [dati[nome][1][begin, "Reference elevation [m]"] for nome in nomi]
-    local_slope = -vec(free_surface_slope(permutedims(talweg), trues(1, length(nomi)), s))
-    # l'ultima sezione è in contropendenza, ma il modello 1D ne usa la pendenza per la velocità
-    # di uscita: uso la pendenza media del fondo sull'intero tratto
-    local_slope[end] = (talweg[end] - talweg[begin]) / (s[end] - s[begin])
     # quote degli argini destro e sinistro di ogni sezione, dai punti in bankpoints.csv
     bankpoints = CSV.read(joinpath(InputFolder, "bankpoints"*Format), DataFrame)
     z_argine = Dict(String(r["nome"]) => r["z_dtm"] for r in eachrow(bankpoints))
@@ -475,6 +505,8 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         "argine_dx_[m]" => argine_dx, "argine_sx_[m]" => argine_sx)
     if dosave
         CSV.write(joinpath(OutputFolder, "localslope_xcoord"*Format), geometria)
+        CSV.write(joinpath(ModelFolder, "localslope_xcoord"*Format), geometria)
+        println("Tabelle e geometria scritte in $OutputFolder e in $ModelFolder")
     end
 
     println("\nControlli: $(length(avvisi)) valori fuori dai limiti")

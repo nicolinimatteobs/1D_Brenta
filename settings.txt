@@ -1,5 +1,5 @@
-input/geometria/rettangolare_L30km_dx200/parametri_sezioni.txt
-input/geometria/rettangolare_L30km_dx200/localslope_xcoord.txt
+input/geometria/Test_Brenta/S_50m/tabella_sezioni.csv
+input/geometria/Test_Brenta/S_50m/localslope_xcoord.csv
 input/idrogrammi/vaia/Brenta1.csv
 input/idrogrammi/vaia/Brenta2.csv
 input/idrogrammi/vaia/Brenta3.csv
@@ -19,12 +19,12 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-output/rettangolare/prova_IC
+output/S_50m/fittizio_1
 33.00
 0
 60
 1e9
-si
+no
 
 CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 1      - Tabelle delle sezioni, con la quota del pelo libero in colonna 2, in input/geometria/<caso>/
@@ -33,7 +33,7 @@ CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 14     - Idrogramma in ingresso da monte
 15-21  - Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio (devono esistere tutti)
 22     - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste
-23     - Ks (usato solo nella condizione al contorno di valle)
+23     - Ks (non più usato: l'uscita usa la tabella dell'ultima sezione; la riga va lasciata)
 24     - Tempo iniziale
 25     - Passo temporale massimo [s]
 26     - Numero massimo di passi temporali

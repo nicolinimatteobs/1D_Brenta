@@ -1,7 +1,8 @@
 # Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
 # vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2
 # geometria, righe 3-21 idrogrammi (raccolti in hydro_files), riga 22 cartella degli output,
-# righe 23-26 Ks, tempo iniziale, passo massimo e numero massimo di passi, riga 27 affluenti
+# righe 23-26 Ks (non più usato: l'uscita usa la tabella dell'ultima sezione), tempo iniziale,
+# passo massimo e numero massimo di passi, riga 27 affluenti
 # attivi (si/no). Numero di righe e di colonne delle tabelle e numero di sezioni sono ricavati
 # direttamente dai file di input
 function INITIAL_SETTINGS!()
@@ -23,7 +24,7 @@ function INITIAL_SETTINGS!()
                    chieppena  = righe[18], grigno     = righe[19],
                    maso       = righe[20], moggio     = righe[21])
     output_dir        = righe[22]
-    Ks                = parse(Float64, righe[23])
+    Ks                = parse(Float64, righe[23])   # non più usato, la riga resta per non spostare le altre
     time              = parse(Float64, righe[24])
     dtmax             = parse(Float64, righe[25])
     Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi

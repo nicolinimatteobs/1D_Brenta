@@ -195,8 +195,13 @@
                     qstar[i] = Qin_idro
                 end
             elseif i == imax+1
-                uout = Ks*sqrt(abs(bx[imax]))*(rh_int[i]+tol)^exp_dt
-                qstar[i] = A_int[i]*uout
+                # Uscita: moto uniforme con l'attrito della tabella dell'ultima sezione (jden) e la sua
+                # pendenza locale. In calcolo_tabelle_daBM il jden dell'ultima sezione è ricavato proprio con
+                # questa pendenza, quindi la portata in uscita segue la scala di deflusso degli scalini 2D.
+                # Prima si usava Manning con il Ks di settings.txt (riga 23, ora non più usato):
+                #uout = Ks*sqrt(abs(bx[imax]))*(rh_int[i]+tol)^exp_dt
+                #qstar[i] = A_int[i]*uout
+                qstar[i] = UNIFORM_DISCHARGE(A_int[i], den_γ_int[i], bx[imax])
                 #@infiltrate
             else
                 fp = 0.5*(β_int[i]*uf[i]*q[i] + β_int[i+1]*uf[i+1]*q[i+1]) - 0.5*2*max(smax[i], smax[i+1])*(q[i+1]-q[i])

@@ -43,6 +43,7 @@ julia --project=. strumenti/grafici_spinup.jl      output/S_50m/fittizio_1
 julia --project=. strumenti/confronto_reference.jl output/S_50m/fittizio_1 reference/ns_50_fittizio_1_discharge.csv
 julia --project=. strumenti/animazioni_2D.jl       output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv
 julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv
+julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv S1000 S2150 S4000 S6000
 ```
 
 Numerazione dei grafici in `<output>/grafici`:
@@ -54,17 +55,27 @@ Numerazione dei grafici in `<output>/grafici`:
 | 9 | `9_piena_1D_2D.gif` | `animazioni_2D.jl` |
 | 10-11 | `10_spinup_convergenza.png`, `11_spinup_animazione.gif` | `grafici_spinup.jl` |
 | 12 | `12_confronto_valle_tirante_portata.png` (e `confronto_valle.txt`) | `confronto_valle.jl` |
+| 13 | `13_confronto_sezioni_tirante_portata.png` (e `confronto_sezioni.txt`) | `confronto_valle.jl` con i nomi delle sezioni |
 
 La GIF della piena del solo 1D (vecchio 7) e quella del solo 2D (vecchio 10) sono state tolte. Le cartelle
-`output/tratto_brenta*`, `output/rettangolare` e `output/vaia` hanno ancora la numerazione vecchia.
+`output/tratto_brenta*`, `output/rettangolare` e `output/vaia` hanno ancora la numerazione vecchia. Il
+grafico 13 e il terzo pannello del 12 ci sono solo in `output/S_50m/` (le altre cartelle hanno il 12 a
+due pannelli).
 
 `animazioni_2D.jl` (argomenti obbligatori) crea `9_piena_1D_2D.gif` (1D e 2D sovrapposti, con la
 differenza di quota): il 1D è interpolato negli istanti del 2D (ogni 15 min) e le sezioni 2D ancora
 asciutte non sono disegnate. Stampa media, scarto quadratico medio e massimo della differenza di quota,
 ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è significativo.
 
-`confronto_valle.jl` (argomenti obbligatori) confronta tirante e portata nel tempo nell'ultima sezione.
-Il tirante 2D è il livello 2D meno il talweg della geometria 1D; gli istanti 2D asciutti sono esclusi.
+`confronto_valle.jl` (tre argomenti obbligatori, poi eventuali nomi di sezioni) confronta 1D e 2D:
+- senza sezioni fa il grafico 12 nell'ultima sezione: tirante e portata nel tempo, più il tirante in
+  funzione della portata con la scala di deflusso degli scalini 2D (da `calcolo_tabelle_daBM/input/S_0050_6000/`);
+- con i nomi di una o più sezioni fa il grafico 13: una riga per sezione, tirante e portata nel tempo
+  affiancati (in `output/S_50m` S1000, S2150, S4000 e S6000, cioè 8 pannelli).
+- Il tirante 2D è il livello 2D meno il talweg della geometria 1D; gli istanti 2D asciutti sono esclusi.
+- Nei file di testo c'è anche lo scarto **a parità di portata**: tirante meno quello degli scalini 2D
+  alla stessa portata, per il 1D e per il 2D. È il confronto giusto per i livelli (vedi "Livelli 1D e 2D
+  a parità di portata"): allo stesso istante pesano anche lo sfasamento e la portata diversa.
 
 `confronto_reference.jl` confronta solo il periodo comune tra simulazione e riferimento e, sezione per
 sezione, scarta gli istanti in cui il riferimento ha portata nulla (2D che parte da alveo asciutto).
@@ -88,11 +99,11 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | `Source/struct.jl` | `struct Parametri` |
 | `Source/writing.jl` | `INIT_OUTPUT` e funzioni di salvataggio |
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
-| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta due spaziature, `Test_Brenta/S_200m/` e `Test_Brenta/S_50m/` |
+| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (quella in uso, β = 1) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
-| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/` e `output/S_50m/` |
+| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D) |
 | `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`, estratti da `../Test_Brenta/results/inputs/tmp/fittizi/ns_50_fittizio_N_results.h5`, gruppo `RESULTS/NodeStrg/StateVar`, colonna 1) |
-| `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata (vedi "Costruzione delle tabelle") |
+| `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata e le scrive anche negli input del modello (vedi "Costruzione delle tabelle") |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
 
@@ -102,13 +113,13 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
 
 | Riga | Contenuto |
 |---|---|
-| 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/S_200m/tabella_sezioni.csv`) |
-| 2 | Geometria (es. `input/geometria/Test_Brenta/S_200m/localslope_xcoord.csv`) |
+| 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/S_50m/tabella_sezioni.csv`) |
+| 2 | Geometria (es. `input/geometria/Test_Brenta/S_50m/localslope_xcoord.csv`) |
 | 3-13 | Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4 |
 | 14 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
 | 15-21 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
 | 22 | Cartella degli output (creata se non esiste) |
-| 23 | Ks (solo condizione al contorno di valle) |
+| 23 | Ks: **non più usato** (l'uscita usa la tabella dell'ultima sezione), ma la riga deve restare e contenere un numero |
 | 24 | Tempo iniziale |
 | 25 | Passo temporale massimo [s] |
 | 26 | Numero massimo di passi |
@@ -119,10 +130,11 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
 - Tutti gli idrogrammi indicati devono esistere, anche con gli affluenti spenti. `Brenta7.csv`, non
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
-- Il `settings.txt` committato punta al canale rettangolare con l'idrogramma `fittizio_1`, output in
-  `output/rettangolare/prova_IC` e affluenti accesi: controllare righe 1-2, 14, 22 e 27 prima di
-  lanciare. Per i fittizi sul Test_Brenta: righe 1-2 su `input/geometria/Test_Brenta/S_200m/` o
-  `S_50m/`, riga 22 su `output/S_<passo>m/fittizio_N`, riga 27 `no`.
+- Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m/`,
+  idrogramma `fittizio_1`, output in `output/S_50m/fittizio_1`, dt massimo 60 s, affluenti spenti.
+  Lanciare `main.jl` così riproduce byte per byte `output/S_50m/fittizio_1` (verificato). Per gli
+  altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
+  gli strumenti leggono tabelle e geometria dalle righe 1-2.
 
 ## Formato degli input
 
@@ -132,10 +144,14 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
 - Le colonne `_s` sono le pendenze rispetto alla quota, usate per l'interpolazione lineare.
 - `jden = Ks²·RH^(4/3)/g` è il denominatore del termine d'attrito (γ = |u|/jden). La scabrezza usata
   in moto vario è quindi **quella contenuta nelle tabelle**: in quelle da `calcolo_tabelle_daBM` è
-  il Ks equivalente ricavato dal 2D, livello per livello. Anche lo stato iniziale usa l'attrito delle
-  tabelle (`UNIFORM_DISCHARGE`, `Q = A·√(g·jden·S)`). Il Ks di `settings.txt` serve ormai solo per
-  la condizione di moto uniforme all'uscita, che quindi non è coerente con le tabelle (nell'ultima
-  sezione del Test_Brenta la tabella dà circa 18 contro 33).
+  il Ks equivalente ricavato dal 2D, livello per livello. Anche lo stato iniziale e la condizione di
+  uscita usano l'attrito delle tabelle (`UNIFORM_DISCHARGE`, `Q = A·√(g·jden·S)`).
+- **Ultima sezione:** il suo `jden` non descrive l'attrito ma la condizione di uscita. In
+  `calcolo_tabelle_daBM` il Ks è ricavato con la pendenza che il modello usa all'uscita (la `local_slope`
+  dell'ultima sezione, cioè la pendenza media del fondo), così `Q = A·√(g·jden·S)` riproduce la scala di
+  deflusso degli scalini 2D (vedi "Condizione al contorno di valle").
+- `β` è il coefficiente di quantità di moto: 1 nelle tabelle in uso, calcolato dal 2D in quelle di
+  `S_50m_beta` (vedi "Costruzione delle tabelle").
 
 **Geometria**: `section, local_slope, x_coord_[m], talweg_[m]`, una riga per sezione. La pendenza
 locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
@@ -165,6 +181,23 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
   - **Attenzione:** sul canale rettangolare di prova senza affluenti (velo di circa 10 cm su 30 km) l'upwind
     su area e attrito **insieme** è instabile e va in NaN. Upwind solo sull'area, solo sull'attrito
     o con la media è stabile. Sul Test_Brenta (tiranti di 0,4-3 m) funziona.
+- **β** entra nel flusso convettivo (`β·u·q`) e nella velocità d'onda di Rusanov (`β·|u|`): con β > 1
+  il passo temporale si accorcia (a 50 m da circa 25 a 21-23 s).
+
+### Condizione al contorno di valle
+
+- La portata in uscita è esplicita, di moto uniforme, con l'attrito della tabella dell'ultima sezione:
+  `qstar[imax+1] = UNIFORM_DISCHARGE(A_int, den_γ_int, bx[imax])`, cioè `Q = A·√(g·jden·S)`, con area e
+  `jden` dell'ultima sezione al passo precedente e S = `local_slope` dell'ultima sezione.
+- Siccome `calcolo_tabelle_daBM` ricava il `jden` dell'ultima sezione proprio con quella pendenza, la
+  portata in uscita segue la **scala di deflusso degli scalini 2D** in S6000, senza tarature a mano.
+- **Prima** si usava Manning con il Ks della riga 23 di `settings.txt` (33):
+  `Q = A·Ks·√S·Rh^(2/3)` (la riga è rimasta, commentata). A 50 m dava in S6000 tiranti 10-13 cm più alti
+  del 2D.
+- **Attenzione:** le tabelle delle altre geometrie (`S_200m`, rettangolare, `vaia`) hanno ancora il
+  `jden` dell'ultima sezione ricavato con la pendenza del pelo libero. Con il codice attuale la loro
+  uscita non è più quella dei risultati salvati (a 200 m la tabella dà un Ks di circa 18 invece di 33).
+  Prima di riusarle vanno ricostruite come quelle a 50 m.
 
 ## Condizioni iniziali (riempimento)
 
@@ -206,7 +239,8 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
   a 5,5 h nel rettangolare con affluenti, con lo stato finale entro 0,03 mm dall'equilibrio. Le
   simulazioni successive coincidono con quelle fatte con la rampa (scarti sotto 1 mm e 0,03 m³/s).
 - Nel Test_Brenta con affluenti al primo passo l'uscita arriva a 50 m³/s (contro 36): la condizione
-  al contorno di valle usa il Ks 33 di `settings.txt`, la tabella nell'ultima sezione circa 18.
+  al contorno di valle usava il Ks 33 di `settings.txt`, la tabella nell'ultima sezione circa 18
+  (prova fatta prima della condizione di valle attuale).
 
 ## Affluenti
 
@@ -231,13 +265,17 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 
 ## Stato attuale e risultati
 
-**Test_Brenta** (configurazione corrente di `settings.txt`):
+La configurazione di lavoro attuale è quella a 50 m (vedi "Scenari fittizi con la geometria a 50 m").
+I risultati di questa sezione e degli scenari a 200 m sono **precedenti** alla condizione di valle
+attuale: sono fatti con il Ks 33 di `settings.txt` all'uscita.
+
+**Test_Brenta a 200 m:**
 - tratto di 6 km, 30 sezioni ogni 200 m (S0200-S6000), in `input/geometria/Test_Brenta/S_200m/`;
   tutti i risultati qui sotto sono con questa geometria (con quella a 50 m ci sono solo gli scenari
   fittizi, vedi "Scenari fittizi con la geometria a 50 m");
 - tabelle da `calcolo_tabelle_daBM`;
 - idrogramma `input/idrogrammi/prova_tratto_brenta/piena.csv` (5,07 → 83,34 m³/s a 7 h, durata 24 h);
-- Ks 33, dt massimo 60 s, upwind, nessun affluente;
+- Ks 33 all'uscita, dt massimo 60 s, upwind, nessun affluente;
 - output in `output/tratto_brenta_sfioro/`, con lo sfioro sugli argini (configurazione corrente);
 - `output/tratto_brenta/` conserva i risultati **senza sfioro**: non va sovrascritta. Per rifarli
   serve una geometria a 4 colonne e un'altra cartella alla riga 22 di `settings.txt`.
@@ -319,23 +357,27 @@ risultati rilanciati sono identici byte per byte a quelli salvati. i9-9900K, Jul
 | Geometria | Condizioni iniziali | Simulazione |
 |---|---|---|
 | 200 m (rampa, 7ba5b92) | 6,0 h simulate, 4321 passi, 0,51-0,63 s | 0,27-0,32 s (24-39 h) |
-| 50 m (codice attuale) | 2,5 h simulate, 1801 passi, 0,57-0,58 s | 1,20 s (24 h) - 2,01 s (39 h) |
+| 50 m (21b8f7a, Ks 33 all'uscita) | 2,5 h simulate, 1801 passi, 0,57-0,58 s | 1,20 s (24 h) - 2,01 s (39 h) |
 
 A 50 m la simulazione costa 4-7 volte di più (4 volte le sezioni e passo da 60 a circa 28 s); le
 condizioni iniziali costano circa lo stesso perché il nuovo arresto dimezza il tempo simulato. La
-prima esecuzione, con la compilazione, aggiunge 0,1-0,2 s.
+prima esecuzione, con la compilazione, aggiunge 0,1-0,2 s. I `log_tempi.txt` di `output/S_50m` si
+riferiscono ai run con il Ks 33 all'uscita: con la condizione di valle attuale i passi sono circa il 2%
+in più (3519 invece di 3453 nel `fittizio_1`), i tempi non sono stati rimisurati.
 
-**Differenza di quota 1D − 2D** (animazioni 9, dalle 3 h in poi, dopo l'arrivo del fronte 2D):
+**Differenza di quota 1D − 2D** (dalle 3 h in poi, dopo l'arrivo del fronte 2D, su tutte le sezioni;
+a 50 m con la condizione di valle attuale):
 
 | Scenario | 200 m: media / scarto quadratico medio | 50 m: media / scarto quadratico medio |
 |---|---|---|
-| `fittizio_1` | −0,002 / 0,069 m | −0,047 / 0,106 m |
-| `fittizio_2` | +0,007 / 0,055 m | −0,028 / 0,076 m |
-| `fittizio_3` | −0,023 / 0,103 m | −0,101 / 0,203 m |
-| `fittizio_4` | −0,013 / 0,083 m | −0,065 / 0,140 m |
+| `fittizio_1` | −0,002 / 0,069 m | −0,051 / 0,109 m |
+| `fittizio_2` | +0,007 / 0,055 m | −0,032 / 0,078 m |
+| `fittizio_3` | −0,023 / 0,103 m | −0,105 / 0,207 m |
+| `fittizio_4` | −0,013 / 0,083 m | −0,069 / 0,143 m |
 
 A 50 m, a valle di 3 km il 1D sta circa 25 cm sotto il 2D: è l'acqua uscita da S2950 e S3550 che nel
-1D non rientra (vedi sotto).
+1D non rientra (vedi sotto). Con il Ks 33 all'uscita le medie erano 3-4 mm meno negative, perché
+l'uscita alzava i livelli degli ultimi chilometri.
 
 I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` hanno colonne ogni 50 m (S0050-S6000)
 e sono diversi da `ns_channel_piena_discharge.csv`:
@@ -371,30 +413,32 @@ Nel `fittizio_3` il 2D in S6000 resta a 62-66 m³/s fino a circa 9,5 h (sotto il
 lungo il tratto risale da 67 a 82 m³/s tra 3,4 e 4,2 km. Con il picco lungo le aree esondate sembrano
 riempirsi e l'acqua rientra nel canale a valle: il 1D non lo riproduce, perché l'acqua sfiorata non
 rientra. Il ritardo del colmo dalla prima all'ultima sezione è di 360 min nel 2D e 56 nel 1D.
-Il confronto è stato rifatto senza rilanciare la simulazione: con il codice attuale (affluenti attivi,
-`y_ini = 0`) e `settings.txt` sul canale rettangolare, un nuovo run di `fittizio_3` non sarebbe
-confrontabile con il 2D. Anche `confronto_reference.jl` legge la geometria dalla riga 2 di
-`settings.txt`: con la configurazione attuale va lanciato da una copia con la geometria del Test_Brenta.
+Il confronto è stato rifatto senza rilanciare la simulazione: con il codice attuale (partenza
+cumulata, `y_ini = 0`, condizione di valle dalla tabella) un nuovo run a 200 m non riprodurrebbe i
+risultati salvati. Gli strumenti leggono la geometria dalle righe 1-2 di `settings.txt`, che ora sono a
+50 m: per i risultati a 200 m vanno lanciati da una copia con la geometria `S_200m`.
 
 ### Scenari fittizi con la geometria a 50 m
 
-Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici, animazioni, confronti e tempi come a 200 m. Codice
-attuale (partenza dalle portate cumulate, nuovo arresto del riempimento), affluenti spenti (riga 27
-`no`), sfioro attivo, Ks 33, dt massimo 60 s. Lanciati da una copia del progetto con le righe 1-2 di
-`settings.txt` su `input/geometria/Test_Brenta/S_50m/`, e così anche gli strumenti (leggono la
-geometria da `settings.txt`).
+Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici 1-13, animazioni e confronti.
+Codice attuale: partenza dalle portate cumulate, nuovo arresto del riempimento, **condizione di valle
+dalla tabella dell'ultima sezione**, β = 1, affluenti spenti (riga 27 `no`), sfioro attivo, dt
+massimo 60 s. È la configurazione del `settings.txt` committato (con le righe 14 e 22 sullo scenario).
 
 - Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso entro lo 0,15%;
   il livello non supera mai la quota massima delle tabelle (a 200 m la superava di 1-2 cm). Le
   pendenze del fondo irregolari non hanno dato problemi nello stato iniziale.
+- Rispetto ai run precedenti con il Ks 33 all'uscita cambiano solo i livelli degli ultimi chilometri
+  (in S6000 il tirante massimo scende da 1,89 a 1,73 m): portate, colmi, NSE e sfioro restano uguali
+  entro 0,01 m³/s e qualche m³, perché l'uscita non influenza la parte a monte dove si esonda.
 - **In uscita la portata si ferma a circa 55 m³/s in tutti gli scenari**, contro circa 70 a 200 m:
 
 | Scenario | Colmo in S6000: 2D | 1D 200 m | 1D 50 m | NSE 50 m (200 m) | Volume sfiorato 50 m (200 m) |
 |---|---|---|---|---|---|
-| `fittizio_1` | 68,14 | 70,49 | 55,00 (−19%) | 0,935 (0,981) | 406 233 m³, 14,9% (4,4%) |
-| `fittizio_2` | 64,16 | 69,50 | 54,49 (−15%) | 0,965 (0,988) | 266 780 m³, 10,8% (1,5%) |
-| `fittizio_3` | 81,71 | 70,50 | 55,01 (−33%) | 0,785 (0,954) | 1 018 192 m³, 22,5% (8,8%) |
-| `fittizio_4` (2ª onda) | 78,54 | 70,49 | 55,00 (−30%) | 0,871 (0,967) | 817 613 m³, 15,6% (4,6%) |
+| `fittizio_1` | 68,14 | 70,49 | 55,01 (−19%) | 0,935 (0,981) | 406 232 m³, 14,9% (4,4%) |
+| `fittizio_2` | 64,16 | 69,50 | 54,49 (−15%) | 0,965 (0,988) | 266 779 m³, 10,8% (1,5%) |
+| `fittizio_3` | 81,71 | 70,50 | 55,01 (−33%) | 0,785 (0,954) | 1 018 174 m³, 22,5% (8,8%) |
+| `fittizio_4` (2ª onda) | 78,54 | 70,49 | 55,01 (−30%) | 0,871 (0,967) | 817 610 m³, 15,6% (4,6%) |
 
 - **Fino a 2,9 km il colmo 1D segue quasi esattamente il 2D** (circa 68 m³/s nel `fittizio_1`), molto
   meglio che a 200 m. Poi due sezioni che a 200 m non c'erano fanno uscire molta acqua:
@@ -407,21 +451,32 @@ geometria da `settings.txt`).
 - Sfiorano 12 sezioni tra 0,25 e 3,55 km (9 nel `fittizio_2`), contro 5 tra 0,6 e 2 km a 200 m.
 - Anche qui, per il `fittizio_4`, grafico 8 e ritardo in `confronto_S6000.txt` mescolano le due onde.
 
-### Tirante e portata nella sezione di valle (grafico 12)
+### Tirante e portata nelle sezioni (grafici 12 e 13)
 
-| Caso | Tirante massimo in S6000, 1D − 2D | Scarto quadratico medio del tirante |
-|---|---|---|
-| 200 m | da −8 a +15 cm | 7-8 cm |
-| 50 m | da −22 a +2 cm | 7-12 cm |
+Tirante 1D − scalini 2D **a parità di portata**, media nel tempo sugli istanti 2D bagnati (50 m,
+condizione di valle attuale; per confronto il 2D sta entro ±0,4 cm dagli scalini in tutte le sezioni):
 
-A 50 m il 1D raggiunge in S6000 quasi lo stesso tirante del 2D con molta meno portata (`fittizio_1`:
-1,89 m con 55 m³/s contro 1,92 m con 68 m³/s). Non dipende dallo sfioro: vedi la sezione seguente.
+| Sezione | `fittizio_1` | `fittizio_2` | `fittizio_3` | `fittizio_4` |
+|---|---|---|---|---|
+| S1000 | −0,5 cm | −0,2 cm | −1,0 cm | −0,5 cm |
+| S2150 | −0,6 cm | −0,5 cm | −1,1 cm | −0,9 cm |
+| S4000 | −2,6 cm | −2,6 cm | −2,6 cm | −2,8 cm |
+| S6000 | +0,1 cm | +0,2 cm | +0,1 cm | +0,1 cm |
 
-### Livelli 1D e 2D a parità di portata
+- In S6000 con il Ks 33 all'uscita lo stesso scarto era +11 / +12 cm.
+- **Allo stesso istante** in S1000 e S2150 1D e 2D coincidono quasi (tirante massimo 1-4 cm più basso,
+  portata massima entro 0,8 m³/s). In S4000 e S6000 il 1D sta 14-64 cm sotto al colmo, ma solo perché
+  ha meno portata (55 contro 64-82 m³/s): è l'acqua sfiorata a S2950 e S3550 che nel 1D non rientra.
+- Il tirante massimo in S6000 (1D − 2D) va da −14 a −38 cm, con scarto quadratico medio 6-19 cm; a
+  200 m (Ks 33) da −8 a +15 cm, 7-8 cm.
+
+### Livelli 1D e 2D a parità di portata (questione chiusa)
 
 Le tabelle vengono dal 2D, quindi ci si aspetterebbe che a parità di portata il 1D dia gli stessi livelli
-del 2D. Nel grafico 12 non succede neanche sotto i 40 m³/s, dove non c'è esondazione e le portate
-coincidono. Analisi fatta su copie temporanee (nessuna modifica al codice).
+del 2D. Con il Ks 33 all'uscita, nel grafico 12 non succedeva neanche sotto i 40 m³/s, dove non c'è
+esondazione e le portate coincidono. Analisi fatta su copie temporanee. **Conclusione:** lo scarto
+grande veniva dalla condizione di valle, ora corretta; quello che resta nel tratto è di 1-2 cm in
+media e dipende dal Ks equivalente delle tabelle, non da β.
 
 **Prima di tutto: confrontare a parità di portata, non allo stesso istante.** Sul ramo crescente il
 1D arriva prima del 2D (laminazione e ritardo minori), quindi allo stesso istante è più alto anche se la
@@ -444,21 +499,26 @@ sfasamento.
 |---|---|---|---|
 | 50 m, Ks 33 | +10 / +13 cm | 1,8-2,0 cm | +15 / +18 cm (S5900) |
 | 50 m, Ks d'uscita tarato (40,2 / 39,4) | 0 | 1,8 cm | +9 / +10 cm (S5900) |
+| 50 m, uscita dalla tabella (attuale) | 0 / 0 cm | 1,75 / 1,84 cm | +9 / +10 cm (S5900) |
+| 50 m, uscita dalla tabella e β dal 2D | 0 / 0 cm | 1,69 / 1,71 cm | +9 cm (S5900) |
 | 200 m, Ks 33 | 0 / +1 cm | 1,7 cm | −5 / −7 cm |
+
+La condizione di valle attuale dà lo stesso profilo del Ks d'uscita tarato a mano, ma la taratura
+viene dalla tabella.
 
 **Causa 1: la condizione di uscita (lo scarto in S6000).**
 - Nell'ultima sezione il livello non lo decide la tabella ma la portata di moto uniforme
   `Q = A·Ks·√i·Rh^(2/3)`, con il Ks di `settings.txt` (33) e la pendenza media del fondo (0,00213).
 - Nel 2D, verso la fine del tratto, il pelo libero scende molto più ripido: tra S5950 e S6000 cala di
   26 cm in 50 m, cioè circa 0,005. Probabilmente è il richiamo dell'uscita del dominio 2D.
-- Con Ks 33 e 0,00213 il 1D dà quindi tiranti troppo alti: a 50 m 8-13 cm tra 10 e 40 m³/s.
+- Con Ks 33 e 0,00213 il 1D dava quindi tiranti troppo alti: a 50 m 8-13 cm tra 10 e 40 m³/s.
 - Il Ks d'uscita che riproduce il livello 2D in S6000 è circa 39,5 a 50 m, quasi costante da 15 a
   80 m³/s. A 200 m è 32,7-33,9: lì Ks 33 è giusto per caso, e per questo il problema non si vedeva.
 - L'effetto risale per qualche centinaio di metri: con il Ks tarato lo scarto medio sugli ultimi 2 km
   scende da 2,0-2,3 a 1,8-1,9 cm.
-- **Si è scelto di non correggere per ora la condizione di valle.** Le possibilità sono imporre in S6000
-  la scala di deflusso degli scalini 2D (modifica al codice) oppure Ks 39,5 alla riga 23 di
-  `settings.txt` per i 50 m (taratura a mano).
+- **Corretta:** ora la portata in uscita usa il `jden` dell'ultima tabella, ricavato con la pendenza
+  d'uscita (Ks circa 39,5): vedi "Condizione al contorno di valle". In S6000 il 1D sta sulla scala di
+  deflusso degli scalini 2D (+0,1 / +0,2 cm nei fittizi) e il Ks della riga 23 non serve più.
 
 **Causa 2: il Ks equivalente delle tabelle (lo scarto che resta nel tratto, 1-2 cm in media).**
 - `calcolo_tabelle_daBM` ricava il Ks dalla pendenza del pelo libero calcolata tra le due sezioni
@@ -474,7 +534,19 @@ sfasamento.
   compensano.
 - Per ridurlo servirebbe ricavare il Ks dalla pendenza dell'energia (pelo libero più `u²/2g`), oppure
   tarare `jden` direttamente sullo schema discreto del 1D. Prima andrebbero rese più regolari le
-  sezioni in cui il profilo 2D non è monotono.
+  sezioni in cui il profilo 2D non è monotono. Per ora non si fa: 1-2 cm sono accettabili.
+
+**Ipotesi 3 (scartata): β = 1.** Le tabelle usavano β = 1 per ipotesi. β è stato calcolato dal 2D come
+nel metodo di Engelund (vedi "Costruzione delle tabelle"): vale in mediana 1,14, tra 1,0 e 1,7 sopra
+5 m³/s, e cambia molto tra sezioni vicine (1,05-1,4).
+- A moto permanente lo scarto medio cala solo di 0,5-1,4 mm (tabella sopra); localmente il livello
+  si sposta di ±2-3 cm (S3350-S3400, S3750), in un verso o nell'altro, e in media si compensa.
+- Nei fittizi (`output/S_50m_beta/`, fatti con il Ks 33 all'uscita e confrontati con i run di allora):
+  colmo in S6000 +0,2-0,3 m³/s, NSE +0,001-0,005, sfioro −1%, livelli spostati in media di 0,5 cm
+  (al massimo −4 cm in S0050 e +3,6 cm in S3350). Grafici di confronto in
+  `output/S_50m_beta/confronto_beta/fittizio_N.png`.
+- **Si resta con β = 1.** Le tabelle con β sono in `input/geometria/Test_Brenta/S_50m_beta/` (già con
+  la condizione di valle attuale), le simulazioni in `output/S_50m_beta/` no.
 
 ### Rientro dell'acqua nel 2D
 
@@ -510,20 +582,57 @@ Due avvertenze:
 
 ## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
 
-`julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Il caso si sceglie con
-le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
+`julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Lavora solo sul caso
+a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000). L'interruttore
+`β_dal_2D` in testa al file sceglie β:
 
-| Caso | Input | Prefisso dei file | Output | Sezioni |
-|---|---|---|---|---|
-| 50 m (attivo) | `input/S_0050_6000/` | `ns_50_scalini_` | `output/S_50m/` | 120, S0050-S6000 |
-| 200 m | `input/S_0200_6000/` | `ns_channel_` | `output/S_200m/` | 30, S0200-S6000 |
+| `β_dal_2D` | β | Output dello script | Input del modello (scritti direttamente) |
+|---|---|---|---|
+| `false` (attivo) | 1 | `calcolo_tabelle_daBM/output/S_50m/` | `input/geometria/Test_Brenta/S_50m/` |
+| `true` | dal 2D | `calcolo_tabelle_daBM/output/S_50m_beta/` | `input/geometria/Test_Brenta/S_50m_beta/` |
 
-- Ogni cartella di input contiene i file delle sezioni, `sections_dx.csv` (nome e ascissa) e
-  `bankpoints.csv` (quote degli argini). Le sezioni BC e P17 non sono usate.
+- `tabella_sezioni.csv` e `localslope_xcoord.csv` sono scritti sia nell'output dello script sia negli
+  input del modello (`ModelFolder`), quindi sono sempre uguali: non vanno più copiati a mano.
+  Rilanciato con i dati attuali lo script non cambia nessun file.
+- **Controllo dei file all'avvio:** se manca un file di input (`sections_dx.csv`, `bankpoints.csv`,
+  i file delle sezioni e, con β dal 2D, mesh e risultati 2D) lo script li elenca tutti in rosso e si ferma.
+- Il caso a 200 m (`input/S_0200_6000/`, prefisso `ns_channel_`) non è più configurato nello script:
+  le sue tabelle in `input/geometria/Test_Brenta/S_200m/` sono quelle vecchie (vedi "Condizione al
+  contorno di valle").
+- La cartella di input contiene i file delle sezioni, `sections_dx.csv` (nome e ascissa),
+  `bankpoints.csv` (quote degli argini) e, per β, la mesh `test_brenta_ns_50_computational-mesh.2dm`
+  e i risultati `ns_50_scalini_results.h5` del 2D a scalini. Le sezioni BC e P17 non sono usate.
 - I file a 50 m non hanno la colonna `t [s]`: il controllo che le sezioni abbiano gli stessi scalini
   usa il numero di righe, più il tempo quando c'è.
-- In output: una cartella per sezione (`tabella.csv` e grafici, riscritti solo se la tabella cambia),
-  `tabella_sezioni.csv` e `localslope_xcoord.csv`, da copiare in `input/geometria/Test_Brenta/S_<passo>m/`.
+- In output: una cartella per sezione (`tabella.csv` e grafici, riscritti solo se la tabella cambia;
+  `beta.svg` solo con β dal 2D), `tabella_sezioni.csv` e `localslope_xcoord.csv`.
+- **Ultima sezione:** Ks e `jden` sono ricavati con la pendenza d'uscita del modello (`local_slope`
+  dell'ultima sezione, pendenza media del fondo 0,00213) invece che con la pendenza del pelo libero
+  (in S6000 tra 0,0014 e 0,0075, molto ripida per il richiamo dell'uscita del dominio 2D). Così il
+  modello in uscita riproduce le portate degli scalini 2D. Il Ks che ne esce è circa 39,5 tra 15 e 80
+  m³/s (7 nella riga asciutta ricostruita, 19 a 0,85 m³/s; nessun avviso). Nella tabella della sezione
+  la colonna `iWSE` riporta quella pendenza.
+
+**β dal modello 2D** (`beta_2D`, solo con `β_dal_2D = true`), come nel metodo di Engelund
+(`β = Ω/Q² ∫ u² Y dy`) ma con le velocità del 2D:
+- dalla mesh si leggono nodi, triangoli e nodestring; ogni nodestring segue i lati della mesh
+  (3-12 lati per sezione, lunghi 2-5 m, solo il canale principale);
+- per ogni lato si prende il triangolo **a monte** (dalla parte indicata da `upstream_direction` nella
+  configurazione del 2D, `right` per tutte le sezioni); tirante Y = quota del pelo libero − fondo
+  dell'elemento, portata normale `qn = q·n`, larghezza ΔL = lunghezza del lato. Elementi con tirante
+  non oltre il minimo del 2D (0,05 m) esclusi;
+- `Ω = Σ Y ΔL`, `Q = Σ qn ΔL`, `β = Ω·Σ(qn²/Y·ΔL)/Q²`. Ω coincide con l'area dei file delle sezioni (scarti
+  sotto 1,4·10⁻⁴, arrotondamenti di BASEMENT): BASEMENT usa gli stessi elementi. Q no (in mediana il 2%
+  in più, in S5900 il 12-30%), perché BASEMENT la calcola dai flussi sui lati: si usa la Q degli
+  elementi, così β ≥ 1 e vale 1 con velocità uniforme;
+- controlli bloccanti: la mesh deve corrispondere ai risultati, le righe dei file delle sezioni alle
+  uscite dell'`.h5`, l'area degli elementi a quella delle sezioni. Avvisi: portata degli elementi oltre
+  il 10% da quella della sezione (47, quasi tutti sotto 5 m³/s, e S5900), β fuori da 1-1,5 (12, quasi
+  tutti a circa 1 m³/s; sopra 1,5 a 5-10 m³/s solo S3550, S3800, S4500, S5900);
+- righe asciutte ricostruite con il β del primo livello bagnato;
+- risultato: β mediano 1,14, fino a 4,2 nella prima riga bagnata (circa 1 m³/s). Il pacchetto `HDF5`
+  è nell'ambiente del progetto. L'effetto sul modello è trascurabile (vedi "Ipotesi 3" in "Livelli 1D
+  e 2D a parità di portata").
 - **Correzioni automatiche**, segnalate tra gli avvisi a fine esecuzione (a 200 m non intervengono e
   i risultati sono identici a prima):
   - una pendenza del pelo libero nulla o negativa viene sostituita con quella del livello bagnato
@@ -537,7 +646,8 @@ le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
   fuori da 10-50; restano Ks di 3-9 in alcune sezioni tra 0,6 e 1,25 km a livelli intermedi e 139
   nell'ultima riga di S0100;
 - **pendenze del fondo molto più irregolari**: 23 sezioni in contropendenza e 6 con |pendenza| sotto
-  2·10⁻⁴, fino a 7·10⁻⁶ in S1800 (l'ultima sezione usa sempre la pendenza media, −0,00213). Lo stato
+  2·10⁻⁴, fino a 7·10⁻⁶ in S1800 (l'ultima sezione usa sempre la pendenza media, −0,00213, che è anche
+  quella della condizione di uscita). Lo stato
   iniziale usa il moto uniforme con `|local_slope|`: a 5,07 m³/s il tirante supera 1,5 m in 7 sezioni
   (massimo 1,32 m a 200 m) e in S1800 il livello andrebbe oltre la tabella. Negli scenari fittizi il
   riempimento lo ha comunque assestato senza problemi (2,5 h); per portate iniziali diverse resta da
@@ -549,7 +659,8 @@ le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
   tabelle sarebbe la strategia migliore, ma non è banale, soprattutto dove l'acqua in golena arriva da
   monte invece di uscire in quella sezione. Si procede quindi, un passo alla volta, con una **portata
   laterale uscente** (vedi "Esondazione"). I dati 2D di riferimento non sono ancora definitivi: per
-  ora interessa l'effetto del termine, non far combaciare gli idrogrammi.
+  ora interessa l'effetto del termine, non far combaciare gli idrogrammi. La corrispondenza dei
+  livelli a parità di portata è invece considerata **chiusa** (vedi "Livelli 1D e 2D a parità di portata").
 - **Upwind:** l'instabilità con area e attrito insieme su veli sottili e tratti lunghi è da
   risolvere, oppure va scelto un upwind solo parziale.
 - **Stato iniziale vicino all'equilibrio** nei tratti non prismatici: profilo di moto permanente,
@@ -557,25 +668,78 @@ le costanti in testa al file (`InputFolder`, `OutputFolder`, `FilePrefix`):
 - **Criterio di arresto del riempimento:** la tolleranza assoluta 0,01 m³/s su `|q − qn|` è poco
   adatta alle portate molto basse; `T_assestamento`, `T_fermo` e `tol_fermo` sono provati solo su
   Test_Brenta (6 km) e rettangolare (30 km).
-- **Rientro dell'acqua sfiorata:** nel 2D l'acqua uscita rientra più a valle (vedi "Rientro dell'acqua
-  nel 2D"); nel 1D esce e non torna. Da capire come includerlo.
+- **Rientro dell'acqua sfiorata: il prossimo passo.** Nel 2D l'acqua uscita rientra più a valle (vedi
+  "Rientro dell'acqua nel 2D"); nel 1D esce e non torna, ed è ormai la causa principale dello scarto
+  con il 2D (da 3 km in poi il 1D ha circa 13 m³/s e 25 cm in meno). L'idea è includerlo **senza
+  modellare la piana alluvionale**. Ragionamenti fatti finora, niente è deciso:
+  - il meccanismo per far rientrare l'acqua c'è già: come gli affluenti, una portata laterale entrante
+    nella sola continuità (`rhs += dt/dx·Q`), senza quantità di moto;
+  - servono tre cose per ogni uscita: **dove** rientra (sezione o gruppo di sezioni a valle), **quanto**
+    (frazione del volume uscito: nel 2D circa metà nel `fittizio_1`, 80% nel `fittizio_3`; il resto va
+    perso altrove) e **quando** (ritardo);
+  - possibili schemi, dal più semplice: (1) rientro con ritardo puro, `Q_r(t) = α·Q_lat(t − τ)`;
+    (2) un **serbatoio virtuale** per ogni zona di uscita (solo un volume, senza geometria della piana)
+    che si svuota verso la sezione di rientro come serbatoio lineare, `Q_r = V/T`; (3) come il (2) ma
+    con lo svuotamento che dipende dal livello del fiume nella sezione di rientro (sfioro inverso, con
+    la stessa formula dello sfioro), così l'acqua torna solo quando il fiume si abbassa;
+  - nel 2D ci sono due comportamenti diversi: rientri a breve distanza già con la piena in salita
+    (S0400, S1600-S1700, S3000, cioè ritardo piccolo e poco accumulo) e il grande rientro di S4150 nei
+    `fittizio_3` e 4, che arriva solo dopo che le aree esondate si sono riempite (serve un accumulo).
+    Lo schema (1) basterebbe per i primi, per il secondo serve almeno il (2) o il (3);
+  - parametri (α, τ, T, abbinamento uscita-rientro) da ricavare dalle portate 2D sezione per sezione
+    (volumi persi e recuperati, istanti), oggi abbinati solo per vicinanza; il bilancio di massa del
+    riempimento e della simulazione dovrà includere i volumi nei serbatoi;
+  - il caso S2950 → S3000 (il 2D perde 25-66 mila m³ e li recupera 50 m dopo) sembra più acqua che
+    aggira la linea di sezione che una vera esondazione: dipende da come sono definite le nodestring
+    (punto seguente).
+- **Definizione delle nodestring del 2D.** Oggi ogni nodestring va da sponda a sponda del solo canale
+  principale (15-25 m, 3-12 lati di mesh): tabelle, Ks e portate 2D di riferimento descrivono solo il
+  canale, e per il 1D tutto ciò che supera gli argini è acqua uscita. L'alternativa è **prolungare la
+  nodestring nella piana fino a dove la pendenza del terreno cambia e l'acqua sceglie una direzione
+  anziché l'altra** (uno spartiacque locale): la parte di piana che scorre verso valle insieme al fiume
+  farebbe parte della sezione, quella oltre lo spartiacque sarebbe davvero persa. Ragionamenti:
+  - pro: l'acqua che aggira una sezione e rientra subito (S2950 → S3000 e simili) diventerebbe portata
+    della sezione, non uscita più rientro; le tabelle includerebbero la golena attiva (sezione
+    composta) e una parte del rientro sarebbe compresa senza modellare la piana; lo sfioro resterebbe
+    solo dove l'acqua se ne va davvero;
+  - contro e dubbi: serve rifare la simulazione 2D a scalini (e i riferimenti dei fittizi) con le nuove
+    nodestring; il punto in cui fermarle va definito con un criterio (DTM, linee di displuvio,
+    direzione delle velocità 2D agli scalini) e può cambiare con la portata; le nodestring non devono
+    incrociarsi e devono restare circa perpendicolari al moto; nelle sezioni composte il Ks
+    equivalente è più variabile, β diventa più importante (canale e golena hanno velocità molto
+    diverse: il calcolo di β dal 2D è già pronto) e l'ipotesi di pelo libero orizzontale lungo la
+    sezione regge meno; quote di sfioro (argini) e tabelle andrebbero ridefinite agli estremi nuovi;
+  - una via di mezzo: prolungare solo le nodestring dove il 2D mostra aggiramenti e rientri a breve
+    distanza.
 - **Affluenti e sfioro** insieme: non ancora provati.
-- **Condizione al contorno di valle** con il Ks di `settings.txt`, non coerente con le tabelle: a 50 m
-  dà in S6000 tiranti 8-13 cm più alti del 2D (vedi "Livelli 1D e 2D a parità di portata"). Per ora
-  non si corregge.
 - **Ks equivalente delle tabelle** ricavato dalla pendenza del pelo libero senza l'altezza cinetica:
-  lascia scarti di 1-2 cm in media e fino a 10 cm dove il profilo 2D è irregolare.
+  lascia scarti di 1-2 cm in media e fino a 10 cm dove il profilo 2D è irregolare. Per ora accettato.
+- **Geometrie non aggiornate alla condizione di valle attuale:** `S_200m`, rettangolare e `vaia` hanno
+  ancora l'ultima tabella con il Ks dalla pendenza del pelo libero; vanno ricostruite prima di
+  riusarle. Anche le simulazioni in `output/S_50m_beta/` sono state fatte con il Ks 33 all'uscita.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
   - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
-    minimo di 10 cm, non con la partenza cumulata.
+    minimo di 10 cm, non con la partenza cumulata, e stampa ancora il Ks della riga 23 come se fosse usato;
+  - `exp_dt` e il campo `Ks` di `Parametri` restano nel codice ma non sono più usati.
 
 ## Ultimo commit descritto
 
-`21b8f7a` ("gestione affluenti e IC cumulata su prima portata di idrogramma"): partenza dalle portate
-cumulate senza rampa, nuovo criterio di arresto del riempimento, affluenti dalla riga 27 di
-`settings.txt`, indentazione sistemata. Comprende `eac5cbf` (grafici delle prove in `output/IC/`) e
-`3b3020b`. Strumenti utili per i riempimenti: `strumenti/confronto_spinup.jl`
-(`<cartella dei grafici> <cartella 1> <cartella 2> ...`) e `strumenti/confronto_simulazioni.jl`
-(stessi argomenti, per le simulazioni).
+`e034518` ("aggiunto calcolo di beta"), più le modifiche successive non ancora committate quando
+questo file è stato scritto (12/11/2026), da committare insieme a esso:
+- condizione di valle dalla tabella dell'ultima sezione (`Source/Semi_Implicit_Brenta_2D_1D.jl`,
+  commenti in `Source/module.jl`), Ks della riga 23 non più usato;
+- `calcolo_tabelle_daBM/src/main.jl`: interruttore `β_dal_2D` (β = 1 di nuovo in uso), Ks dell'ultima
+  sezione con la pendenza d'uscita, scrittura diretta negli input del modello; tabelle rigenerate in
+  `calcolo_tabelle_daBM/output/S_50m*` e `input/geometria/Test_Brenta/S_50m*`;
+- `settings.txt` sulla configurazione a 50 m (`fittizio_1`, affluenti spenti);
+- fittizi a 50 m rifatti in `output/S_50m/` con i grafici 1-13; `strumenti/confronto_valle.jl` con il
+  grafico 13 e il confronto a parità di portata.
+
+Commit descritti in precedenza: fino a `21b8f7a`, poi `c753289`-`373ba48` (geometria a 50 m, risultati
+dei fittizi, grafici), `d7ee4e6` e `282eaf2` (analisi dei livelli e della condizione di valle),
+`e034518` (calcolo di β e prova `S_50m_beta`). Strumenti utili per i riempimenti:
+`strumenti/confronto_spinup.jl` (`<cartella dei grafici> <cartella 1> <cartella 2> ...`) e
+`strumenti/confronto_simulazioni.jl` (stessi argomenti, per le simulazioni; non distingue cartelle con
+lo stesso nome e salta le differenze se gli istanti sono diversi).
