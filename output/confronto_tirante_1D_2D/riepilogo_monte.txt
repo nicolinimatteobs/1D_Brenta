@@ -1,0 +1,18 @@
+Prime sezioni: livello − livello 2D della piena a parità di portata (fittizi 1-4, dalle 3 h, sezioni bagnate).
+1D = output salvati; scalini = 2D a portata costante (le tabelle vengono da qui); uniforme = moto uniforme con
+l'attrito delle tabelle, con la pendenza locale del 1D (usata solo nello stato iniziale) o con 0,003 (uniform_in del 2D).
+
+sezioni sez.   pend. loc.      punti           1D      scalini unif. locale  unif. 0,003
+S_200m  S0200   -0.00140        424   -3.6 ( 3.6)   -3.8 ( 3.8)  +14.0 (14.0)  -15.1 (15.1)
+S_200m  S0400   -0.00423        424   -2.5 ( 2.5)   -3.0 ( 3.3)  -26.7 (26.7)  -12.5 (12.5)
+
+S_50m   S0050   -0.00407        424   -3.2 ( 3.2)   -0.6 ( 1.1)  -24.0 (24.0)  -13.3 (13.3)
+S_50m   S0100   -0.00296        424   -2.1 ( 2.1)   -0.4 ( 0.9)  -28.8 (28.8)  -29.3 (29.3)
+S_50m   S0150   -0.00025        424   -5.2 ( 5.2)   -0.4 ( 0.7)  +79.2 (79.2)  -15.4 (15.4)
+S_50m   S0200   -0.00262        424   +1.8 ( 1.8)   -0.3 ( 0.7)   -0.8 ( 3.6)   -6.4 ( 6.4)
+S_50m   S0250   -0.00276        424   -0.9 ( 1.3)   -0.2 ( 0.7)  -15.7 (15.7)  -19.9 (19.9)
+S_50m   S0300   -0.00050        424   -0.5 ( 1.3)   -0.2 ( 0.6)  +69.8 (69.8)   -8.3 ( 8.3)
+S_50m   S0350   -0.00050        424   -0.1 ( 1.9)   -0.2 ( 0.8)  +77.6 (77.6)   -6.9 ( 6.9)
+S_50m   S0400   -0.00161        424   -1.8 ( 2.0)   -0.2 ( 0.7)  +45.9 (45.9)   -1.7 ( 4.1)
+
+Valori in cm: scostamento medio (tra parentesi errore medio assoluto) rispetto alla piena 2D.
