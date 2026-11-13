@@ -11,13 +11,20 @@
 # Il confronto a parità di portata usa la scala di deflusso degli scalini 2D (moto permanente, da cui vengono
 # le tabelle), letta da calcolo_tabelle_daBM/input/S_0050_6000 se c'è il file della sezione: lo scarto è il
 # tirante meno quello degli scalini alla stessa portata.
+# Con più sezioni, l'opzione --nome=<numero> cambia il numero del grafico e del file di testo
+# (es. --nome=13_1 dà 13_1_confronto_sezioni_tirante_portata.png e confronto_sezioni_13_1.txt), così
+# si possono tenere più gruppi di sezioni senza sovrascrivere il 13.
 # Uso, dalla cartella del progetto:
-#   julia --project=. strumenti/confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [sezioni...]
+#   julia --project=. strumenti/confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [--nome=13_1] [sezioni...]
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
 const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
-length(ARGS) >= 3 || error("Uso: confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [sezioni...]")
+length(ARGS) >= 3 || error("Uso: confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [--nome=13_1] [sezioni...]")
+const OPZ  = filter(a -> startswith(a, "--nome="), ARGS[4:end])
+const NUM  = isempty(OPZ) ? "13" : OPZ[end][8:end]               # numero del grafico con più sezioni
+const SEZ  = filter(a -> !startswith(a, "--"), ARGS[4:end])      # nomi delle sezioni
+isempty(OPZ) || !isempty(SEZ) || error("--nome serve solo con i nomi delle sezioni")
 const D    = joinpath(R, ARGS[1])
 const WSE2 = joinpath(R, ARGS[2])
 const Q2F  = joinpath(R, ARGS[3])
@@ -109,7 +116,7 @@ function pannelli(s, titolo)
     return a, b
 end
 
-if length(ARGS) == 3
+if isempty(SEZ)
     # sezione di valle: tirante e portata nel tempo, tirante in funzione della portata
     s = sezione(length(G))
     a, b = pannelli(s, "Sezione di valle $(s.nome)")
@@ -125,7 +132,7 @@ if length(ARGS) == 3
     write(joinpath(OUT, "confronto_valle.txt"), s.testo); print(s.testo)
 else
     # più sezioni: una riga per sezione, tirante a sinistra e portata a destra
-    idx = map(ARGS[4:end]) do n
+    idx = map(SEZ) do n
         i = findfirst(r -> nomesez(r[3]) == n, G)
         i === nothing && error("Sezione $n non trovata nella geometria $GEO")
         i
@@ -133,13 +140,13 @@ else
     S = sezione.(idx)
     P = Any[]
     for s in S
-        a, b = pannelli(s, @sprintf("%s (x = %.2f km)", s.nome, s.xv/1000))
-        push!(P, a, b)
+        pa, pb = pannelli(s, @sprintf("%s (x = %.2f km)", s.nome, s.xv/1000))
+        push!(P, pa, pb)
     end
     xlabel!(P[end-1], "tempo [h]"); xlabel!(P[end], "tempo [h]")
     n = length(S)
     savefig(plot(P...; layout = (n, 2), size = (1500, 380 * n), dpi = 110, left_margin = 6Plots.mm, bottom_margin = 3Plots.mm),
-            joinpath(OUT, "13_confronto_sezioni_tirante_portata.png"))
+            joinpath(OUT, "$(NUM)_confronto_sezioni_tirante_portata.png"))
     testo = join(getfield.(S, :testo), "\n")
-    write(joinpath(OUT, "confronto_sezioni.txt"), testo); print(testo)
+    write(joinpath(OUT, NUM == "13" ? "confronto_sezioni.txt" : "confronto_sezioni_$NUM.txt"), testo); print(testo)
 end

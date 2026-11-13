@@ -4,9 +4,13 @@
 # Tutti i confronti sono fatti sul periodo comune: se il riferimento finisce prima della simulazione,
 # il colmo si cerca solo fino alla sua fine e, nelle sezioni in cui il riferimento non ha ancora
 # raggiunto il colmo (massimo all'ultimo istante disponibile), il colmo non viene confrontato.
+# Nel grafico del colmo lungo il tratto sono segnate con il nome le sezioni del 1D che sfiorano in un tratto
+# (predefinito tra 2,5 e 4,0 km): il volume uscito da ogni argine è ricavato da eta.csv con la formula del
+# modello (sfioro libero, Cd = 0,385, lungo tutta la cella) ed è riportato anche nel file di testo. Serve
+# una geometria con le quote degli argini (6 colonne), altrimenti non viene segnato niente.
 # Grafici e numeri in <cartella degli output>/grafici.
 # Uso, dalla cartella del progetto:
-#   julia --project=. strumenti/confronto_reference.jl [cartella degli output] [file di riferimento]
+#   julia --project=. strumenti/confronto_reference.jl [cartella degli output] [file di riferimento] [km iniziale] [km finale]
 # Senza argomenti usa la cartella della riga 22 di settings.txt e reference/ns_channel_piena_discharge.csv.
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
@@ -14,6 +18,7 @@ const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
 const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[22])   # cartella degli output
 const REF = joinpath(R, length(ARGS) >= 2 ? ARGS[2] : joinpath("reference", "ns_channel_piena_discharge.csv"))
+const TRATTO = length(ARGS) >= 4 ? (parse(Float64, ARGS[3]), parse(Float64, ARGS[4])) : (2.5, 4.0)   # tratto con i nomi [km]
 const OUT = joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)
@@ -80,15 +85,39 @@ for i in eachindex(x)
     push!(cok, ci.colmo_ok)
 end
 prv = ifelse.(cok, pr, NaN); tprv = ifelse.(cok, tpr, NaN)       # colmi del riferimento non raggiunti: esclusi
+
+# Sfioro del 1D sezione per sezione: volume uscito dall'argine destro e dal sinistro in tutta la simulazione
+Vdx = zeros(length(x)); Vsx = zeros(length(x))
+if all(r -> length(r) >= 6, G)
+    E1  = mat("eta.csv"); dxb = diff(x)
+    dxc = [k == 1 ? dxb[1] : k == length(x) ? dxb[end] : 0.5*(dxb[k] + dxb[k-1]) for k in eachindex(x)]   # lunghezza della cella
+    qsf(η, z) = (Y = max(η - z, 0.0); 0.385*sqrt(2*9.81*Y^3))   # sfioro libero per unità di lunghezza [m²/s]
+    Vdx .= [vol(t, qsf.(E1[:, k], G[k][5]) .* dxc[k]) for k in eachindex(x)]
+    Vsx .= [vol(t, qsf.(E1[:, k], G[k][6]) .* dxc[k]) for k in eachindex(x)]
+end
+sfiora = findall(k -> TRATTO[1] <= x[k]/1000 <= TRATTO[2] && Vdx[k] + Vsx[k] > 1.0, eachindex(x))
+nomesez(xi) = @sprintf("S%04d", round(Int, xi/50)*50)
+lato(k) = Vdx[k] > 1.0 && Vsx[k] > 1.0 ? "due argini" : Vdx[k] > 1.0 ? "argine destro" : "argine sinistro"
+km_it(v) = replace(@sprintf("%g", v), "." => ",")
 nota = parz ? @sprintf(" (fino a %.2f h, fine del riferimento)", tfin/3600) : ""
-q1 = plot(; title = "Portata al colmo lungo il tratto" * nota, ylabel = "portata [m³/s]", legend = :topright, st...)
+q1 = plot(; title = "Portata al colmo lungo il tratto" * nota, ylabel = "portata [m³/s]", legend = isempty(sfiora) ? :topright : :bottomleft, st...)
 plot!(q1, x ./ 1000, prv; label = "riferimento 2D", color = :black, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 plot!(q1, x ./ 1000, pm; label = "modello 1D", color = BLU, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
+if !isempty(sfiora)
+    # nomi delle sezioni del 1D che sfiorano nel tratto indicato, a destra del punto
+    scatter!(q1, x[sfiora] ./ 1000, pm[sfiora]; label = "1D: sezioni con sfioro tra $(km_it(TRATTO[1])) e $(km_it(TRATTO[2])) km",
+             markershape = :diamond, markersize = 7, color = ARA, markerstrokecolor = :white, markerstrokewidth = 1)
+    alto = maximum(filter(!isnan, vcat(prv, pm))) - minimum(filter(!isnan, vcat(prv, pm)))
+    for k in sfiora
+        annotate!(q1, x[k]/1000 + 0.05, pm[k] + 0.015alto,
+                  text(@sprintf("%s (%s, %.0f mila m³ usciti)", nomesez(x[k]), lato(k), (Vdx[k] + Vsx[k])/1000), 8, :left, :bottom, :black))
+    end
+end
 q2 = plot(; title = "Istante del colmo" * nota, xlabel = "distanza [km]", ylabel = "tempo [h]", legend = :topleft, st...)
 plot!(q2, x ./ 1000, tprv ./ 3600; label = "riferimento 2D (dati ogni 15 min)", color = :black, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 plot!(q2, x ./ 1000, tpm ./ 3600; label = "modello 1D", color = BLU, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 if !all(cok)
-    annotate!(q1, x[1]/1000, minimum(pm), text("sezioni senza punto nero: il riferimento non ha ancora raggiunto il colmo", 8, :left, :bottom, GRI))
+    annotate!(q1, x[end]/1000, maximum(pm), text("sezioni senza punto nero: il riferimento non ha ancora raggiunto il colmo", 8, :right, :top, GRI))
 end
 savefig(plot(q1, q2; layout = (2, 1), size = (1000, 700), dpi = 130, left_margin = 6Plots.mm), joinpath(OUT, "8_colmo_lungo_il_tratto.png"))
 
@@ -117,5 +146,11 @@ else
     @printf(io, "colmo lungo il tratto: confrontabile in %d sezioni su %d (nelle altre il riferimento non lo ha ancora raggiunto)", count(cok), length(cok))
     any(cok) && @printf(io, "; differenza massima %.2f m3/s", maximum(abs.(pm[cok] .- pr[cok])))
     println(io)
+end
+if sum(Vdx) + sum(Vsx) > 1.0
+    @printf(io, "sfioro del 1D in tutta la simulazione (da eta.csv, formula del modello): %.0f m3 da %d sezioni\n",
+            sum(Vdx) + sum(Vsx), count(>(1.0), Vdx .+ Vsx))
+    @printf(io, "sezioni del 1D che sfiorano tra %s e %s km: %s\n", km_it(TRATTO[1]), km_it(TRATTO[2]), isempty(sfiora) ? "nessuna" :
+            join([@sprintf("%s %.0f m3 (%s)", nomesez(x[k]), Vdx[k] + Vsx[k], lato(k)) for k in sfiora], ", "))
 end
 s = String(take!(io)); write(joinpath(OUT, "confronto_S6000.txt"), s); println(s)

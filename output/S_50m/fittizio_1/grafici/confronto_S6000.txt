@@ -4,3 +4,5 @@ colmo riferimento 68.14 m3/s a 9.75 h | modello 55.01 m3/s a 7.48 h | differenza
 RMSE 5.934 m3/s, scarto massimo 14.664 m3/s, NSE 0.9349 (87 istanti)
 volume transitato nel periodo confrontato: riferimento 2536102 m3, modello 2265611 m3 (-10.67%)
 colmo lungo il tratto: differenza massima 13.26 m3/s; ritardo del colmo dalla prima all'ultima sezione: riferimento 165 min, modello 29 min
+sfioro del 1D in tutta la simulazione (da eta.csv, formula del modello): 406239 m3 da 12 sezioni
+sezioni del 1D che sfiorano tra 2,5 e 4 km: S2950 191386 m3 (argine destro), S3550 51663 m3 (argine sinistro)
