@@ -1,0 +1,204 @@
+diff -u a/Source/module.jl Source/module.jl
+--- a/Source/module.jl	2026-11-12 17:11:25.791449074 +0100
++++ b/Source/module.jl	2026-11-13 12:37:59.480434497 +0100
+@@ -8,7 +8,7 @@
+ function INITIAL_SETTINGS!()
+     # Legge esattamente 27 righe e rimuove spazi
+     righe = open("settings.txt", "r") do f
+-        [strip(readline(f)) for _ in 1:27]
++        [strip(readline(f)) for _ in 1:28]
+     end
+     # Parsing dei dati
+     parametri_sezioni = righe[1]
+@@ -30,12 +30,14 @@
+     Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi
+     con_affluenti     = PARSE_SI_NO(righe[27], "riga 27 di settings.txt (affluenti attivi)")
+ 
++    strutture         = String(righe[28])   # file delle strutture interne; riga vuota = nessuna
++
+     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
+     n_row, n_col = FILE_SIZE(parametri_sezioni)
+     imax, _      = FILE_SIZE(local_slope)
+ 
+     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
+-                     Ks, time, dtmax, Nmax, con_affluenti, n_row, imax, n_col)
++                     Ks, time, dtmax, Nmax, con_affluenti, strutture, n_row, imax, n_col)
+ end
+ 
+ # Legge un sì/no da settings.txt: accetta si, sì, no, true, false, 1, 0 (maiuscole o minuscole)
+diff -u a/Source/Semi_Implicit_Brenta_2D_1D.jl Source/Semi_Implicit_Brenta_2D_1D.jl
+--- a/Source/Semi_Implicit_Brenta_2D_1D.jl	2026-11-12 17:11:20.850231454 +0100
++++ b/Source/Semi_Implicit_Brenta_2D_1D.jl	2026-11-13 12:37:59.480664272 +0100
+@@ -20,6 +20,11 @@
+     ys         = copy(data_depth[2, :])  # quote del pelo libero (colonna 2); copy: con @views sarebbe una vista
+     SPATIAL_DOMAIN!(imax, x_b, dx_b, x_int, dx_int)
+ 
++    # --- STRUTTURE INTERNE: ponti con scala di deflusso (riga 28 di settings.txt) ---
++    # Per ogni struttura la sezione m è quella di monte e la m+1 quella di valle; l'interfaccia m+1 è il ponte
++    ponti = LOAD_STRUCTURES(params.strutture, imax, b_min)
++    diag_ponte  = zeros(5)  # PROTOTIPO: diagnostica del ponte (solo simulazione)
++
+     # --- CARICAMENTO IDROGRAMMI ---
+     hydro = LOAD_ALL_HYDROGRAPHS!(params)
+     tend  = HYDROGRAPH_END_TIME(hydro)
+@@ -171,6 +176,16 @@
+ 
+         end
+ 
++        # Strutture interne: all'interfaccia del ponte passa la stessa portata con due velocità diverse,
++        # quella della sezione di monte (uf) e quella della sezione di valle; per il passo conta la maggiore
++        for p in ponti
++            ip = p.m + 1
++            A_int[ip] = A_b[p.m]
++            uf[ip]    = q[ip] * A_int[ip]/(A_int[ip]^2 + tol)
++            uv        = q[ip] * A_b[ip]/(A_b[ip]^2 + tol)
++            smax[ip]  = max(abs(β_int[ip] * uf[ip]), abs(β_int[ip] * uv))
++        end
++
+         amax = maximum(smax)
+         dt_lim = IC == 1 ? dt_riempimento : dtmax
+         dt   = min(dt_lim, CFL*dx/(amax + tol))
+@@ -211,6 +226,20 @@
+             γ[i]       = abs(uf[i])/(den_γ_int[i] + 1e-14)
+             A_int_g[i] = A_int[i]/(1.0 + dt*γ[i])
+         end
++        # Strutture interne: all'interfaccia del ponte non si risolve la quantità di moto (qstar, γ e
++        # A_int_g nulli: le sezioni di monte e di valle non si vedono attraverso il gradiente di quota).
++        # Nell'interfaccia subito a valle il flusso convettivo della cella di valle usa la velocità del lato di valle
++        for p in ponti
++            ip = p.m + 1
++            i  = ip + 1
++            uv = q[ip] * A_b[ip]/(A_b[ip]^2 + tol)
++            fp = 0.5*(β_int[i]*uf[i]*q[i] + β_int[i+1]*uf[i+1]*q[i+1]) - 0.5*2*max(smax[i], smax[i+1])*(q[i+1]-q[i])
++            fm = 0.5*(β_int[ip]*uv*q[ip] + β_int[i]*uf[i]*q[i]) - 0.5*2*max(smax[ip], smax[i])*(q[i]-q[ip])
++            qstar[i]    = q[i] - dt/dx_b[i-1]*(fp - fm)
++            qstar[ip]   = 0.0
++            γ[ip]       = 0.0
++            A_int_g[ip] = 0.0
++        end
+         CHECK_NAN("calcolo di qstar", nCS, time, IC; qstar, γ, A_int_g)
+         # --- Aggiornamento geometrie e preparazione RHS per Thomas ---
+         A_bn .= A_b
+@@ -287,6 +316,21 @@
+                     ff[i] = 0.0
+                 end
+             end
++            # Strutture interne. Sezione di monte m: il livello è quello della scala di deflusso per la
++            # portata in arrivo q_m (interfaccia m, al nuovo passo: implicito). Sezione di valle m+1: riceve
++            # la stessa portata q_m e il suo livello viene dalla continuità con il tratto a valle
++            for p in ponti
++                m   = p.m
++                v   = m + 1
++                Km  = g*A_int[m]*dt/dx_b[m-1]
++                q_m = (qstar[m] - Km*(eta[m] - eta[m-1]))/(1.0 + dt*γ[m])
++                η_hq, dη = HQ_LEVEL(p.Q, p.η, q_m)
++                c_h   = dη*Km/(1.0 + dt*γ[m])
++                ff[m] = eta[m] - η_hq
++                aa[m] = -c_h
++                di[m] = 1.0 + c_h
++                ff[v] -= dt/dx_int[v]*q_m
++            end
+             res = sqrt(sum(ff.^2))
+             if res < tol
+                 break
+@@ -306,6 +350,11 @@
+ 
+         end
+ 
++        # Strutture interne: dal ponte esce la portata che arriva alla sezione di monte
++        for p in ponti
++            q[p.m+1] = q[p.m]
++        end
++
+         CHECK_NAN("aggiornamento delle portate", nCS, time, IC; q)
+ 
+         # --- Aggiornamento tempo e counter ---
+@@ -344,6 +393,18 @@
+             rh_b[i]    = sec.rh
+         end
+ 
++        # PROTOTIPO: diagnostica del ponte in simulazione (scarto dalla scala, Froude, livello di valle sopra monte)
++        if IC == 0
++            for p in ponti
++                m = p.m; v = m + 1
++                diag_ponte[1] = max(diag_ponte[1], abs(eta[m] - HQ_LEVEL(p.Q, p.η, q[m])[1]))
++                diag_ponte[2] = max(diag_ponte[2], abs(q[m])/A_b[m]/sqrt(g*A_b[m]/b[m]))
++                diag_ponte[3] = max(diag_ponte[3], abs(q[v+1])/A_b[v]/sqrt(g*A_b[v]/b[v]))
++                eta[v] >= eta[m] && (diag_ponte[4] += 1)
++                q[m] < 0.0 && (diag_ponte[5] += 1)
++            end
++        end
++
+         if IC == 1
+             IC_counter = 0
+             #Threads.@threads :static
+@@ -375,4 +436,6 @@
+             end
+         end
+     end
++    isempty(ponti) || @printf("PROTOTIPO ponte: scarto massimo dalla scala %.2e m, Froude massimo monte %.3f, valle %.3f, passi con livello di valle sopra monte %d, passi con portata negativa %d (su %d)\n",
++                              diag_ponte[1], diag_ponte[2], diag_ponte[3], diag_ponte[4], diag_ponte[5], nCS)
+ end
+diff -u a/Source/struct.jl Source/struct.jl
+--- a/Source/struct.jl	2026-11-10 15:16:18.271729828 +0100
++++ b/Source/struct.jl	2026-11-13 12:37:59.480370244 +0100
+@@ -10,6 +10,7 @@
+     dtmax              ::Float64
+     Nmax               ::Int
+     con_affluenti      ::Bool
++    strutture          ::String
+     n_row              ::Int
+     imax               ::Int
+     n_col              ::Int
+diff -u a/Source/subroutines.jl Source/subroutines.jl
+--- a/Source/subroutines.jl	2026-11-10 15:16:18.271865541 +0100
++++ b/Source/subroutines.jl	2026-11-13 12:37:59.480509682 +0100
+@@ -154,6 +154,48 @@
+ 
+ 
+ 
++# Legge il file delle strutture interne (ponti e manufatti con scala di deflusso): intestazione, poi una
++# riga per struttura con nome, numero della sezione a monte della struttura (come nella prima colonna
++# della geometria) e file della scala di deflusso (senza intestazione: quota [m s.l.m.], portata [m3/s]).
++# Alla scala viene aggiunto il punto a portata nulla, alla quota del talweg della sezione di monte.
++# Restituisce un vettore di (nome, m, Q, η); con filename vuoto il vettore è vuoto
++function LOAD_STRUCTURES(filename, imax, b_min)
++    ponti = @NamedTuple{nome::String, m::Int, Q::Vector{Float64}, η::Vector{Float64}}[]
++    isempty(filename) && return ponti
++    isfile(filename) || error("File delle strutture '$filename' non trovato (riga 28 di settings.txt)")
++    for (n, line) in enumerate(eachline(filename))
++        (n == 1 || isempty(strip(line))) && continue
++        campi = strip.(split(line, ','))
++        length(campi) == 3 || error("La riga $n di '$filename' non ha 3 colonne (nome, sezione di monte, scala di deflusso)")
++        nome = String(campi[1]); m = parse(Int, campi[2]); scala = String(campi[3])
++        2 <= m <= imax - 2 || error("Struttura $nome: la sezione di monte $m deve essere tra 2 e $(imax - 2)")
++        isfile(scala) || error("Struttura $nome: scala di deflusso '$scala' non trovata")
++        Q = [0.0]; η = [b_min[m]]
++        for l in eachline(scala)
++            isempty(strip(l)) && continue
++            val = parse.(Float64, split(strip(l), ','))
++            push!(η, val[1]); push!(Q, val[2])
++        end
++        all(diff(Q) .> 0.0) || error("Struttura $nome: le portate della scala '$scala' devono essere crescenti")
++        all(diff(η) .>= 0.0) || error("Struttura $nome: le quote della scala '$scala' non devono diminuire con la portata")
++        push!(ponti, (; nome, m, Q, η))
++        println("Struttura interna $nome: sezione di monte $m, sezione di valle $(m + 1), scala '$scala' ($(length(Q) - 1) punti)")
++    end
++    return ponti
++end
++
++# Quota del pelo libero della scala di deflusso (Qk, ηk) alla portata Q e pendenza dη/dQ del tratto,
++# con interpolazione lineare. Oltre l'ultimo punto estrapola con l'ultimo tratto; con portata negativa
++# restituisce la quota del primo punto (il talweg) e pendenza nulla
++@inline function HQ_LEVEL(Qk, ηk, Q)
++    Q <= 0.0 && return ηk[1], 0.0
++    j = clamp(searchsortedlast(Qk, Q), 1, length(Qk) - 1)
++    s = (ηk[j+1] - ηk[j])/(Qk[j+1] - Qk[j])
++    return ηk[j] + s*(Q - Qk[j]), s
++end
++
++
++
+ # Portata sfiorata da un argine per unità di lunghezza [m2/s], con la quota eta del pelo libero
+ # e la quota z_argine della cresta (free overflow, formula 16 di Siviglia et al., ASCE 2009).
+ # Vale zero se il livello non supera l'argine

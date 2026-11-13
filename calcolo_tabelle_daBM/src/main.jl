@@ -1,7 +1,7 @@
 using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator, HDF5
 
 # Caso da elaborare (lanciare dalla cartella 1D_Brenta). La cartella di input contiene i file delle
-# sezioni (FilePrefix*nome*Format), sections_dx.csv, bankpoints.csv, la mesh del modello 2D (MeshFile)
+# sezioni (FilePrefix*nome*Format), centerpoints.csv, bankpoints.csv, la mesh del modello 2D (MeshFile)
 # e i suoi risultati (ResultsFile), da cui si calcola β.
 # β calcolato dal modello 2D (true) oppure β = 1 (false); con β = 1 mesh e risultati 2D non servono.
 # Il modello usa le tabelle con β = 1 (input/geometria/Test_Brenta/S_50m): con β dal 2D i risultati
@@ -34,16 +34,16 @@ const Ks_dry = 20.0     # [m^(1/3)/s], Ks imposto
 
 #= CONTROLLO DEI FILE DI INPUT
     Prima di elaborare controlla che ci siano tutti i file: quelli fissi della cartella di input (mesh e
-    risultati 2D solo se β viene dal 2D) e quelli delle sezioni elencate in sections_dx.csv. Se ne manca
+    risultati 2D solo se β viene dal 2D) e quelli delle sezioni elencate in centerpoints.csv. Se ne manca
     qualcuno li elenca tutti e si ferma.
 =#
 function check_input_files()
     mancanti = String[]
-    fissi = β_dal_2D ? ("sections_dx.csv", "bankpoints.csv", MeshFile, ResultsFile) : ("sections_dx.csv", "bankpoints.csv")
+    fissi = β_dal_2D ? ("centerpoints.csv", "bankpoints.csv", MeshFile, ResultsFile) : ("centerpoints.csv", "bankpoints.csv")
     for f in fissi
         isfile(joinpath(InputFolder, f)) || push!(mancanti, joinpath(InputFolder, f))
     end
-    sezioni = joinpath(InputFolder, "sections_dx.csv")
+    sezioni = joinpath(InputFolder, "centerpoints.csv")
     if isfile(sezioni)
         for nome in String.(CSV.read(sezioni, DataFrame)[!, "nome"])
             f = joinpath(InputFolder, FilePrefix*nome*Format)
@@ -392,11 +392,11 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     check_input_files()
 
     # leggi il file riguardante tutte le sezioni, ordinandole da monte verso valle
-    InputFile = "sections_dx.csv"
+    InputFile = "centerpoints.csv"
     InputPath = joinpath(InputFolder, InputFile)
     sections_all = sort(CSV.read(InputPath, DataFrame), "s_m")
 
-    # leggi i dati delle sezioni del canale principale, cioè quelle elencate in sections_dx.csv
+    # leggi i dati delle sezioni del canale principale, cioè quelle elencate in centerpoints.csv
     nomi = String.(sections_all[!, "nome"])
     dati = Dict(nome => load_section(joinpath(InputFolder, FilePrefix*nome*Format)) for nome in nomi)
     # le righe di sezioni diverse devono essere gli stessi scalini: stesso numero di righe e, se c'è

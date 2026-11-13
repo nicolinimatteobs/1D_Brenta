@@ -1,0 +1,81 @@
+Prime prove della condizione al contorno interna del ponte P17 (13/11/2026)
+=========================================================================
+
+I risultati di questa cartella NON vengono dai sorgenti del progetto: sono fatti con un prototipo, in una
+copia temporanea, che aggiunge la condizione interna al codice del commit 5a4b1a0. Le modifiche del prototipo
+rispetto a Source/ sono in prototipo_ponte.diff (non applicate al progetto).
+
+Configurazione: quella di output/S_50m (geometria input/geometria/Test_Brenta/S_50m, dt massimo 60 s,
+affluenti spenti, sfioro attivo e invariato), più il ponte P17 con la scala input/hq_relations/hq_P17_dtm.csv.
+
+Come funziona la condizione (come in BASEMENT, regime subcritico):
+- il ponte sta sull'interfaccia tra S3000 (sezione 60, monte) e S3050 (sezione 61, valle);
+- S3000: il livello è quello della scala di deflusso per la portata in arrivo (interfaccia S2950|S3000),
+  risolto in modo implicito dentro il Newton al posto della continuità della cella;
+- S3050: riceve la stessa portata che arriva a S3000; il suo livello viene dalla continuità con il tratto a valle;
+- sull'interfaccia del ponte non si risolve la quantità di moto: monte e valle non si vedono attraverso
+  il gradiente di quota;
+- alla scala è aggiunto il punto a portata nulla, alla quota del talweg di S3000; oltre l'ultimo punto si
+  estrapola con l'ultimo tratto;
+- la cella di S3000 non entra nel bilancio di massa (il suo invaso segue la scala): sull'evento conta poche
+  decine di m3;
+- il file delle strutture (riga 28 di settings.txt nel prototipo) ha una riga per struttura:
+      nome,sezione_monte,scala_di_deflusso
+      P17,60,input/hq_relations/hq_P17_dtm.csv
+  Con la riga 28 vuota il prototipo dà gli stessi file di output/S_50m/fittizio_1, byte per byte.
+
+Contenuto:
+- fittizio_1 ... fittizio_4: risultati con il ponte (stessi file di output/S_50m), log_prototipo.txt e i
+  grafici 13_1 (S2400, S2800, S2900, S2950);
+- grafici/14_errore_tirante_sezioni.png ed errore_tirante_sezioni.txt: grafico 14 con il ponte;
+- grafici/14_confronto_ponte.png e confronto_grafico_14.txt: grafico 14 tra S2300 e S3200, senza e con il
+  ponte, e con la prova diagnostica qui sotto;
+- prova_senza_sfioro_S2950/: grafico 14 della prova diagnostica con l'argine destro di S2950 portato da
+  426,207 a 427,356 m (media di S2900 e S3000), con il ponte (errore_tirante_sezioni.txt) e senza
+  (errore_tirante_sezioni_senza_ponte.txt). Serve solo a separare l'effetto del ponte da quello dello
+  sfioro di S2950; i file dei risultati di questa prova non sono salvati.
+
+Esito in breve (scarto quadratico medio del grafico 14, media su S2600-S3000 e sui quattro scenari):
+  senza ponte 6,3 cm; con il ponte 5,8 cm; prova senza sfioro in S2950: senza ponte 3,1 cm, con il ponte 2,5 cm.
+
+
+Seconda prova: geometria nuova (13/11/2026), cartella nuova_geometria/
+====================================================================
+
+Stesso prototipo, con le tabelle e la geometria rifatte dagli scalini 2D nuovi (S2950 corretta; sono quelle ora
+in input/geometria/Test_Brenta/S_50m). Sfioro attivo e invariato: bankpoints.csv non è cambiato.
+
+Contenuto di nuova_geometria/:
+- fittizio_1 ... fittizio_4: risultati con il ponte e log_prototipo.txt;
+- 14_errore_tirante_sezioni.png ed errore_tirante_sezioni.txt: grafico 14 con il ponte;
+- 14_errore_tirante_sezioni_senza_ponte.png ed errore_tirante_sezioni_senza_ponte.txt: lo stesso senza il ponte
+  (i file dei risultati senza ponte non sono salvati);
+- 14_confronto_geometria_nuova.png e confronto_grafico_14.txt: media sui quattro scenari lungo tutto il tratto,
+  geometria vecchia e nuova, senza e con il ponte (confronto_g14_nuova.jl è lo script che li ha fatti).
+
+ATTENZIONE al riferimento: le piene 2D dei fittizi in reference/ sono ancora quelle fatte con la mesh e le
+nodestring vecchie, mentre le tabelle vengono dagli scalini nuovi. A parità di portata gli scalini nuovi danno
+livelli diversi dai vecchi in diverse sezioni (S2050 +10 cm, S2100 +6, S1200 +5, S2000 +4/+5, S1850 +3,5,
+S2900 e S2950 fino a -5,7 cm alle portate alte). Nel grafico 14 queste sezioni peggiorano solo per questo.
+Per questo nel confronto c'è anche un secondo pannello con un riferimento coerente con le tabelle: negli stessi
+istanti, il livello degli scalini 2D nuovi alla stessa portata (colonne Ec e Fc del testo). È un controllo
+indicativo; quello vero si fa rilanciando i fittizi 2D con la mesh nuova.
+
+Esito (scarto quadratico medio, media sui quattro scenari):
+  media su S2600-S3000: senza ponte 6,8 cm, con il ponte 5,9 cm (riferimento coerente: 6,3 e 5,5 cm);
+  S3000 2,2 -> 1,2 cm; S2950 8,6 -> 5,4 cm (10,0 con la geometria vecchia); S2600-S2900 migliorano di 0,3-0,9 cm;
+  S2400 resta a 10,5 cm (6,7 con il riferimento coerente); S2800-S2900 restano tra 7 e 11 cm, e nel fittizio_3
+  arrivano a 13-20 cm.
+
+Perché tra S2600 e S2950 resta lo scarto alle portate alte (analisi sui risultati di nuova_geometria/, nessuna
+simulazione in più):
+- i riferimenti non c'entrano: al ponte le piene 2D (mesh vecchia) stanno 3-5 cm sotto la scala di deflusso in
+  S3000, come gli scalini nuovi; con il riferimento coerente la media su S2600-S3000 cambia di 0,4 cm;
+- al ponte nel 1D arriva meno portata: nel fittizio_3 a regime (12 h) 54,7 m3/s contro 67,2 del 2D, mentre in
+  S2800 le due portate sono uguali (67,3 e 67,4). I 12,6 m3/s escono tutti dalla cella di S2950, argine destro
+  (426,207 m, livello 1D 28 cm sopra); nelle altre sezioni tra S2350 e S3100 il 1D non sfiora;
+- nel 2D il livello sta 62-66 cm sopra lo stesso punto, ma la portata resta la stessa da S2800 a S3050
+  (scalini nuovi: 69,05 -> 68,99 m3/s);
+- la scala dà 26 cm in meno a 54,7 che a 67,2 m3/s: è lo scarto che si vede a monte (S3000 -21, S2800 -24,
+  S2900 -34, S2950 -38 cm). Prima che inizi lo sfioro (4,5 h, 46 m3/s) il 1D con il ponte sta entro 2 cm dal 2D
+  da S2800 a S3000.
