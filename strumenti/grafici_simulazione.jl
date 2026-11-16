@@ -91,17 +91,6 @@ h1 = heatmap(x, t, Qs; title = "Portata [m³/s]", xlabel = "distanza [km]", ylab
 h2 = heatmap(x, t, H; title = "Tirante [m]", xlabel = "distanza [km]", ylabel = "tempo [h]", color = :Oranges, st...)
 savefig(plot(h1, h2; layout = (1, 2), size = (1200, 500), dpi = 130, left_margin = 5Plots.mm, bottom_margin = 5Plots.mm), joinpath(OUT, "6_mappe.png"))
 
-# 7) GIF del passaggio della piena
-qmax = 1.05 * maximum(Q)
-anim = @animate for k in 1:6:length(t)
-    a = plot(x, zb; label = "talweg", color = GRI, fillrange = minimum(zb) - 1, fillcolor = GRI, fillalpha = 0.15,
-             ylims = (minimum(zb) - 1, max(maximum(ztab), maximum(emax)) + 1), ylabel = "quota [m s.l.m.]", legend = :topright, st...)
-    plot!(a, x, emax; label = "inviluppo dei massimi", color = ROS, linestyle = :dash, linewidth = 1)
-    plot!(a, x, E[k, :]; label = "pelo libero", color = BLU, linewidth = 2)
-    b = plot(x, Qs[k, :]; ylims = (0, qmax), ylabel = "portata [m³/s]", xlabel = "distanza [km]", legend = false, color = ARA, linewidth = 2, st...)
-    plot(a, b; layout = (2, 1), size = (1000, 700), dpi = 100, left_margin = 5Plots.mm,
-         plot_title = @sprintf("t = %5.2f h, portata in ingresso %.1f m³/s", t[k], Q[k, 1]), plot_titlefontsize = 11)
-end
-gif(anim, joinpath(OUT, "7_piena.gif"); fps = 12)
+# La GIF della piena del solo 1D non si fa più: c'è quella con il 2D (9_piena_1D_2D.gif, animazioni_2D.jl)
 
 s = String(take!(riep)); write(joinpath(OUT, "riepilogo.txt"), s); println(s); println(readdir(OUT))

@@ -1,0 +1,22 @@
+Tempi di calcolo - fittizio_2, sezioni ogni 200 m
+Rimisurati il 2026-11-10 su una copia temporanea, con lo stesso codice che ha prodotto i risultati di
+questa cartella e con l'aggiunta delle sole stampe dei tempi: tutti i file IC_*.csv, Q, eta, h e time
+ottenuti sono identici byte per byte a quelli salvati qui.
+
+Codice: commit 7ba5b92 (partenza da moto uniforme con y_ini = 0,10 m e rampa di 6 h, dt massimo 5 s nel riempimento)
+Geometria: input/geometria/Test_Brenta/tabella_sezioni.csv e localslope_xcoord.csv di quel commit (ora in S_200m/), 30 sezioni
+Idrogramma: input/idrogrammi/fittizio_2/piena.csv; affluenti spenti; sfioro sugli argini attivo;
+Ks 33 (contorno di valle); dt massimo 60 s in simulazione; julia -O2, 1 thread
+Macchina: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz; julia version 1.12.6
+
+Fase                          tempo simulato   passi    tempo di calcolo [s]
+                                                        con compilazione   senza compilazione
+Condizioni iniziali (IC)        6.00 h          4321         0.65               0.51
+Simulazione                    24.00 h          1441         0.28               0.27
+Totale                                                        0.93               0.77
+
+"Con compilazione" è la prima esecuzione in un processo Julia nuovo: comprende la compilazione delle
+funzioni chiamate nel ciclo; non comprende l'avvio di Julia, il caricamento dei pacchetti e la lettura
+degli input (pochi secondi in tutto). "Senza compilazione" è una seconda esecuzione nello stesso
+processo. I tempi comprendono la scrittura dei file di output. Misura di @time sull'intero ciclo
+(seconda esecuzione): 0.773968 s (15.84 M allocations: 1.056 GiB, 21.17% gc time).

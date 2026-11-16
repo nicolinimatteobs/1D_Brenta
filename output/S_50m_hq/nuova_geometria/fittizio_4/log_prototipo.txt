@@ -1,0 +1,5 @@
+Struttura interna P17: sezione di monte 60, sezione di valle 61, scala 'input/hq_relations/hq_P17_dtm.csv' (13 punti)
+Attenzione: tempi finali diversi, uso tend = 140400.0
+Condizioni iniziali raggiunte al tempo: 1801, time = 9000.0
+  2.701772 seconds (27.25 M allocations: 3.847 GiB, 12.38% gc time, 1.98% compilation time)
+PROTOTIPO ponte: scarto massimo dalla scala 3.98e-13 m, Froude massimo monte 0.347, valle 0.340, passi con livello di valle sopra monte 0, passi con portata negativa 0 (su 5846)
