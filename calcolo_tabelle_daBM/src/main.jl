@@ -294,13 +294,28 @@ end
     La portata è quella locale della sezione, perché quella che resta nel canale
     principale dopo l'esondazione.
 =#
+#= DIFFERENZA DI PORTATA TRA SEZIONI ADIACENTI
+    Q e wet hanno una riga per ogni scalino e una colonna per ogni sezione, da monte verso valle.
+    ΔQ = Q della sezione − Q della sezione precedente, allo stesso scalino (moto permanente): è lo
+    scambio con la piana nel tratto tra le due sezioni, negativo se l'acqua esce e positivo se rientra.
+    Vale 0 nella prima sezione, che non ha una sezione a monte, e se una delle due sezioni è asciutta
+    (le righe asciutte ricostruite hanno quindi ΔQ = 0).
+=#
+function discharge_difference(Q, wet)
+    ΔQ = zeros(size(Q))
+    for j in 2:size(Q, 2), k in axes(Q, 1)
+        (wet[k, j] && wet[k, j-1]) && (ΔQ[k, j] = Q[k, j] - Q[k, j-1])
+    end
+    return ΔQ
+end
+
 function Ks_equivalent(Q, Ω, RH, iWSE)
     (iWSE > 0.0 && Ω > 0.0) || return NaN
     return sqrt( Q^2 / ((Ω * cbrt(RH)^2 )^2 * iWSE) )
 end
 
 # Calcola le caratteristiche geometriche/idrauliche di una sezione, una riga per ogni WSE
-function section_table(data, iWSE, β)
+function section_table(data, iWSE, β, ΔQ)
     Q   = data[!, "Discharge [m3/s]"]
     WSE = data[!, "Mean wse [m]"]
 
@@ -331,14 +346,19 @@ function section_table(data, iWSE, β)
     jden_s = similar(jden)
     slope!(jden_s, jden, WSE)
 
-    return DataFrame(; WSE, Ω, Ω_s, β, β_s, W, W_s, RH, RH_s, iWSE, Ks, jden, jden_s)
+    # differenza di portata rispetto alla sezione precedente (vedi discharge_difference)
+    ΔQ_s = similar(ΔQ)
+    slope!(ΔQ_s, ΔQ, WSE)
+
+    return DataFrame(; WSE, Ω, Ω_s, β, β_s, W, W_s, RH, RH_s, iWSE, Ks, jden, jden_s, ΔQ, ΔQ_s)
 end
 
-#= Prepara la tabella di una sezione nel formato letto da READ_VALUES! nel modello 1D: 12 colonne
-    fisse. In seconda colonna c'è il livello, non il tirante.
+#= Prepara la tabella di una sezione nel formato letto da READ_VALUES! nel modello 1D: le prime 12
+    colonne sono fisse e il modello legge solo quelle. In seconda colonna c'è il livello, non il
+    tirante. In fondo ci sono ΔQ e ΔQ_s (colonne 13 e 14), per ora non usate dal modello.
 =#
 function model_table(table, sezione)
-    colonne = ["WSE", "Ω", "Ω_s", "β", "β_s", "jden", "jden_s", "W", "W_s", "RH", "RH_s"]
+    colonne = ["WSE", "Ω", "Ω_s", "β", "β_s", "jden", "jden_s", "W", "W_s", "RH", "RH_s", "ΔQ", "ΔQ_s"]
     return insertcols(table[!, colonne], 1, :sezione => sezione)
 end
 
@@ -414,6 +434,10 @@ function main(; dosave::Bool=false, doplot::Bool=false)
     iWSE_all = free_surface_slope(WSE_all, wet_all, sections_all[!, "s_m"])
     avvisi = fix_slope!(iWSE_all, wet_all, nomi)
 
+    # differenza di portata rispetto alla sezione precedente, dai dati 2D originali (prima di
+    # ricostruire le righe asciutte)
+    ΔQ_all = discharge_difference(reduce(hcat, [dati[nome][1][!, "Discharge [m3/s]"] for nome in nomi]), wet_all)
+
     # calcola β per ogni sezione e per ogni WSE dai risultati del modello 2D, oppure β = 1
     if β_dal_2D
         β_all, avvisi_β = beta_2D(nomi, dati, wet_all)
@@ -438,6 +462,7 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         data, wet = dati[nome]
         iWSE = iWSE_all[:, j]
         β = β_all[:, j]
+        ΔQ = ΔQ_all[:, j]
 
         # sostituisci le righe asciutte con valori ricostruiti
         rebuild_dry!(data, wet, iWSE, β)
@@ -452,6 +477,7 @@ function main(; dosave::Bool=false, doplot::Bool=false)
         data = data[tieni, :]
         iWSE = iWSE[tieni]
         β = β[tieni]
+        ΔQ = ΔQ[tieni]
 
         #= ULTIMA SEZIONE: CONDIZIONE DI USCITA
             Il modello 1D calcola la portata in uscita come moto uniforme, Q = Ω·√(g·jden·S), con il jden
@@ -466,7 +492,7 @@ function main(; dosave::Bool=false, doplot::Bool=false)
             iWSE = fill(abs(local_slope[end]), length(iWSE))
         end
 
-        table = section_table(data, iWSE, β)
+        table = section_table(data, iWSE, β, ΔQ)
         tabelle[nome] = table
 
         i_ok = table[!, "iWSE"]
