@@ -79,3 +79,53 @@ simulazione in più):
 - la scala dà 26 cm in meno a 54,7 che a 67,2 m3/s: è lo scarto che si vede a monte (S3000 -21, S2800 -24,
   S2900 -34, S2950 -38 cm). Prima che inizi lo sfioro (4,5 h, 46 m3/s) il 1D con il ponte sta entro 2 cm dal 2D
   da S2800 a S3000.
+
+Terza prova: argine di S2950 corretto e riferimenti 2D nuovi (13/11/2026), cartella riferimenti_nuovi/
+======================================================================================================
+
+Configurazione: stesso prototipo della prima prova, con tabelle e geometria attuali di
+input/geometria/Test_Brenta/S_50m (argine destro di S2950 corretto da 426,207 a 427,3546 m) e con i riferimenti 2D
+dei fittizi rifatti con la mesh nuova (reference/ns_50_fittizio_N_*.csv, coerenti con le tabelle). I risultati
+senza ponte, rifatti con la stessa configurazione, sono ora in output/S_50m. Nessuna modifica ai sorgenti.
+
+Contenuto di riferimenti_nuovi/:
+- fittizio_1 ... fittizio_4: risultati 1D con il ponte (prototipo);
+- diagnosi_ponte.txt: bilancio, livelli massimi e livello 1D - scalini 2D per classe di portata, senza e con il ponte;
+- grafici/14_errore_tirante_sezioni.png e grafici/errore_tirante_sezioni.txt: grafico 14 dei quattro scenari con
+  il ponte (strumenti/errore_tirante_sezioni.jl, soglia 1%);
+- 14_confronto_ponte.png e confronto_grafico_14.txt: media sui quattro scenari lungo tutto il tratto, stato
+  precedente (output/S_50m del commit HEAD, tabelle, argine e riferimenti vecchi), senza ponte e con il ponte
+  (confronto_g14.jl è lo script che li ha fatti).
+
+Esito (grafico 14, scarto quadratico medio del tirante 1D - 2D a parità di portata, media sui quattro scenari):
+
+  gruppo di sezioni    precedente   senza ponte   con il ponte
+  S0050-S2350            2,04 cm      1,90 cm       1,92 cm
+  S2400-S2550            5,26         3,66          3,51
+  S2600-S3000            6,28         2,77          2,46
+  S3050-S3500            2,02         6,00          7,49
+  S3550-S6000            1,94         2,01          1,97
+  tutte le sezioni       2,42         2,41          2,50
+
+- Senza ponte il tratto S2600-S3000 scende da 6,3 a 2,8 cm già con argine e riferimenti nuovi (es. S2950 da
+  10,0 a 4,4 cm, S2900 da 9,6 a 3,0). Il ponte lo porta a 2,5 cm: S2950 2,6, S2900 2,6, S2800 3,0 cm.
+- Il ponte migliora S2400-S2700, S2800-S2950 e S3000 (2,5 -> 2,3 cm), ma peggiora S2750 (2,1 -> 4,2 cm, differenza
+  media da +1,9 a +3,5 cm), S2850 (1,3 -> 2,0) e tutte le sezioni da S3100 a S3500 (+0,8 / +2,5 cm).
+- Con i riferimenti nuovi compare un'area che prima era buona: da S3250 a S3500 lo scarto sale a 6-9 cm senza ponte
+  (prima 2-3 cm) e a 7-12 cm con il ponte (S3500 11,6 cm, S3350 10,4 cm). Il segno è negativo (1D più basso).
+  Non è stata ancora analizzata la causa.
+- Restano tra le peggiori anche S2400 (8,2 cm senza ponte, 8,0 con il ponte), S5900 (8,2), S5950 (7,2), S4800 (5,9).
+
+Portata al ponte (stessi risultati, istanti 2D di 12 h e 8 h del fittizio_3 e fittizio_1, 4,5 h del fittizio_3;
+portata in S2800 come media delle due interfacce; 1D interpolato nel tempo):
+- fittizio_3 a 12 h: Q in S2800 / al ponte [m3/s]: 2D 66,47 / 66,41; 1D senza ponte 67,28 / 67,28; con il ponte
+  66,41 / 66,41. Livello 1D - 2D [cm] in S2400, S2800, S2900, S2950, S3000, S3050: senza ponte -6,7 -5,3 -4,4 -7,8
+  -6,2 -3,7; con il ponte -3,8 +1,3 +5,3 +2,7 +5,4 -4,4;
+- fittizio_1 a 8 h: 2D 64,66 / 64,66; senza ponte 66,97 / 66,98; con il ponte 66,19 / 66,20. Livello: senza ponte
+  -3,9 -2,8 -1,1 -4,7 -2,7 +6,8; con il ponte -1,1 +3,8 +8,6 +5,7 +8,8 +6,2;
+- fittizio_3 a 4,5 h: 2D 46,18 / 45,39; senza ponte 46,63 / 45,77; con il ponte 46,61 / 45,76. Livello: senza ponte
+  -7,2 -2,7 -1,5 -4,4 -1,4 +9,2; con il ponte -5,7 +1,4 +4,3 +1,9 +5,6 +10,9.
+- Con l'argine di S2950 alzato il 1D non sfiora più lì (sfioro in S2950 nullo, vedi diagnosi_ponte.txt): la portata
+  che arriva al ponte è quella di S2800, entro 0,9 m3/s da quella del 2D, e nel fittizio_3 a 12 h non c'è più
+  il deficit di 12,6 m3/s della seconda prova. Con il ponte il livello sta ora sopra il 2D (fino a +9 cm) in
+  S2900-S3000, mentre senza ponte sta sotto (fino a -8 cm).

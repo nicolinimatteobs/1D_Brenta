@@ -47,7 +47,13 @@ julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 refer
 julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv --nome=13_1 S2400 S2800 S2900 S2950
 julia --project=. strumenti/confronto_valle.jl     output/S_50m/fittizio_1 reference/ns_50_fittizio_1_wse.csv reference/ns_50_fittizio_1_discharge.csv --nome=13_2 S3650 S4400 S5200 S5750
 julia --project=. strumenti/errore_tirante_sezioni.jl output/S_50m 0.01   # tutti gli scenari insieme (argomenti facoltativi)
+julia --project=. strumenti/estrai_wse_2D.jl ../Test_Brenta/results/inputs/ns_50_fittizio_1_results.h5 reference/ns_50_fittizio_1_wse.csv
 ```
+
+`estrai_wse_2D.jl` (due argomenti obbligatori) scrive i livelli 2D di riferimento dai risultati BASEMENT:
+gruppo `RESULTS/NodeStrg/StateVar`, variabile 1 (la 2 è la portata), tempo dall'attributo `t` di ogni
+uscita, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]` associate per nome tramite `NodeStrg/StrNames` (le
+nodestring BC e P17 sono saltate). Dagli `.h5` vecchi rigenera byte per byte i `wse.csv` vecchi.
 
 Numerazione dei grafici in `<output>/grafici`:
 
@@ -59,7 +65,7 @@ Numerazione dei grafici in `<output>/grafici`:
 | 10-11 | `10_spinup_convergenza.png`, `11_spinup_animazione.gif` | `grafici_spinup.jl` |
 | 12 | `12_confronto_valle_tirante_portata.png` (e `confronto_valle.txt`) | `confronto_valle.jl` |
 | 13 | `13_confronto_sezioni_tirante_portata.png` (e `confronto_sezioni.txt`) | `confronto_valle.jl` con i nomi delle sezioni |
-| 13_1, 13_2 | come il 13, sezioni peggiori e migliori del grafico 14 (e `confronto_sezioni_13_N.txt`) | `confronto_valle.jl --nome=13_N` |
+| 13_1, 13_2 | come il 13, sezioni scelte con il grafico 14 (e `confronto_sezioni_13_N.txt`) | `confronto_valle.jl --nome=13_N` |
 | 14 | `14_errore_tirante_sezioni.png` (e `errore_tirante_sezioni.txt`), in `output/S_50m/grafici/` | `errore_tirante_sezioni.jl` |
 
 La GIF della piena del solo 1D (vecchio 7) e quella del solo 2D (vecchio 10) sono state tolte. Le cartelle
@@ -78,8 +84,9 @@ ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è sig
 - con i nomi di una o più sezioni fa il grafico 13: una riga per sezione, tirante e portata nel tempo
   affiancati (in `output/S_50m` S1000, S2150, S4000 e S6000, cioè 8 pannelli). Con `--nome=13_1` grafico
   e testo prendono quel numero (`13_1_confronto_sezioni_tirante_portata.png`, `confronto_sezioni_13_1.txt`)
-  e il 13 non viene sovrascritto: in `output/S_50m` il 13_1 ha le sezioni peggiori del grafico 14
-  (S2400, S2800, S2900, S2950), il 13_2 le migliori (S3650, S4400, S5200, S5750).
+  e il 13 non viene sovrascritto: in `output/S_50m` il 13_1 ha S2400, S2800, S2900 e S2950, il 13_2
+  S3650, S4400, S5200 e S5750. Erano le peggiori e le migliori del grafico 14 con le tabelle e i
+  riferimenti vecchi: oggi delle peggiori resta solo S2400 (vedi "Errore del tirante a parità di portata").
 - Il tirante 2D è il livello 2D meno il talweg della geometria 1D; gli istanti 2D asciutti sono esclusi.
 - Nei file di testo c'è anche lo scarto **a parità di portata**: tirante meno quello degli scalini 2D
   alla stessa portata, per il 1D e per il 2D. È il confronto giusto per i livelli (vedi "Livelli 1D e 2D
@@ -122,8 +129,9 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
 | `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (quella in uso, β = 1) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
-| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D) |
-| `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`, estratti da `../Test_Brenta/results/inputs/tmp/fittizi/ns_50_fittizio_N_results.h5`, gruppo `RESULTS/NodeStrg/StateVar`, colonna 1) |
+| `input/hq_relations/` | Scale di deflusso dei manufatti, `quota [m s.l.m.], portata [m³/s]` senza intestazione: `hq_P17_dtm.csv` (ponte P17). Usata solo dal prototipo del ponte, non dal modello (vedi "Ponte P17") |
+| `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D); `output/S_50m_hq/` contiene le prove del ponte P17 con il prototipo (descritte in `leggimi.txt`) |
+| `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`). Quelli dei fittizi vengono da `../Test_Brenta/results/inputs/ns_50_fittizio_N_results.h5` (mesh nuova, vedi "Scenari fittizi"); i livelli sono estratti con `strumenti/estrai_wse_2D.jl` |
 | `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata e le scrive anche negli input del modello (vedi "Costruzione delle tabelle") |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
@@ -153,7 +161,8 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 - Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m/`,
   idrogramma `fittizio_1`, output in `output/S_50m/fittizio_1`, dt massimo 60 s, affluenti spenti.
-  Lanciare `main.jl` così riproduce byte per byte `output/S_50m/fittizio_1` (verificato). Per gli
+  I risultati in `output/S_50m/fittizio_N` sono fatti in una copia temporanea con gli stessi sorgenti,
+  la stessa geometria e lo stesso `settings.txt` (righe 14 e 22 a parte). Per gli
   altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
   gli strumenti leggono tabelle e geometria dalle righe 1-2.
 
@@ -288,7 +297,8 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 
 La configurazione di lavoro attuale è quella a 50 m (vedi "Scenari fittizi con la geometria a 50 m").
 I risultati di questa sezione e degli scenari a 200 m sono **precedenti** alla condizione di valle
-attuale: sono fatti con il Ks 33 di `settings.txt` all'uscita.
+attuale: sono fatti con il Ks 33 di `settings.txt` all'uscita, e il loro confronto con il 2D usa i
+riferimenti vecchi (mesh 2D precedente a `23c5d31`).
 
 **Test_Brenta a 200 m:**
 - tratto di 6 km, 30 sezioni ogni 200 m (S0200-S6000), in `input/geometria/Test_Brenta/S_200m/`;
@@ -383,29 +393,35 @@ risultati rilanciati sono identici byte per byte a quelli salvati. i9-9900K, Jul
 A 50 m la simulazione costa 4-7 volte di più (4 volte le sezioni e passo da 60 a circa 28 s); le
 condizioni iniziali costano circa lo stesso perché il nuovo arresto dimezza il tempo simulato. La
 prima esecuzione, con la compilazione, aggiunge 0,1-0,2 s. I `log_tempi.txt` di `output/S_50m` si
-riferiscono ai run con il Ks 33 all'uscita: con la condizione di valle attuale i passi sono circa il 2%
-in più (3519 invece di 3453 nel `fittizio_1`), i tempi non sono stati rimisurati.
+riferiscono ai run con il Ks 33 all'uscita e alle tabelle vecchie: con quelle attuali i passi sono
+3532 / 3487 / 4650 / 5917 (3453 nel `fittizio_1` con il Ks 33), i tempi non sono stati rimisurati.
 
-**Differenza di quota 1D − 2D** (dalle 3 h in poi, dopo l'arrivo del fronte 2D, su tutte le sezioni;
-a 50 m con la condizione di valle attuale):
+**Differenza di quota 1D − 2D** (dalle 3 h in poi, dopo l'arrivo del fronte 2D, su tutte le sezioni
+bagnate; a 200 m con i riferimenti vecchi, a 50 m con tabelle, argini e riferimenti attuali):
 
 | Scenario | 200 m: media / scarto quadratico medio | 50 m: media / scarto quadratico medio |
 |---|---|---|
-| `fittizio_1` | −0,002 / 0,069 m | −0,051 / 0,109 m |
-| `fittizio_2` | +0,007 / 0,055 m | −0,032 / 0,078 m |
-| `fittizio_3` | −0,023 / 0,103 m | −0,105 / 0,207 m |
-| `fittizio_4` | −0,013 / 0,083 m | −0,069 / 0,143 m |
+| `fittizio_1` | −0,002 / 0,069 m | −0,028 / 0,075 m |
+| `fittizio_2` | +0,007 / 0,055 m | −0,012 / 0,043 m |
+| `fittizio_3` | −0,023 / 0,103 m | −0,070 / 0,157 m |
+| `fittizio_4` | −0,013 / 0,083 m | −0,043 / 0,104 m |
 
-A 50 m, a valle di 3 km il 1D sta circa 25 cm sotto il 2D: è l'acqua uscita da S2950 e S3550 che nel
-1D non rientra (vedi sotto). Con il Ks 33 all'uscita le medie erano 3-4 mm meno negative, perché
-l'uscita alzava i livelli degli ultimi chilometri.
+A 50 m, a valle di 3 km il 1D sta in media 5 / 2 / 13 / 8 cm sotto il 2D: è soprattutto l'acqua uscita da
+S3550 che nel 1D non rientra (vedi sotto). Con le tabelle, l'argine di S2950 e i riferimenti vecchi lo
+scarto medio era −3 / −11 cm sul tratto e circa −25 cm a valle di 3 km.
 
-I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` hanno colonne ogni 50 m (S0050-S6000)
-e sono diversi da `ns_channel_piena_discharge.csv`:
+I riferimenti 2D `reference/ns_50_fittizio_*_discharge.csv` e `_wse.csv` hanno colonne ogni 50 m
+(S0050-S6000) e sono diversi da `ns_channel_piena_discharge.csv`:
+- sono stati **rifatti con la mesh e le nodestring nuove** (le stesse degli scalini da cui vengono le
+  tabelle attuali, vedi "Costruzione delle tabelle"); le portate le ha messe l'utente, i livelli sono
+  estratti con `strumenti/estrai_wse_2D.jl` e coincidono con l'`.h5` (controllato sul `fittizio_3`);
 - il 2D **parte da alveo asciutto**: in S6000 la portata è nulla fino a 2,5 h, quando arriva il fronte,
   mentre il 1D parte con la portata di base;
-- tutti e quattro coprono ormai tutta la piena (`fittizio_1` è rimasto quello del commit `7ba5b92`;
-  rilanciato con il codice di quel commit, il 1D dà gli stessi file byte per byte).
+- coprono tutta la piena: 24 / 24 / 30 / 39 h, un'uscita ogni 15 min;
+- colmo in S6000 rispetto ai vecchi: 69,33 m³/s (era 68,14), 63,63 (64,16), 81,72 (81,71), 78,58 (78,54),
+  agli stessi istanti salvo il `fittizio_3` (13,75 h invece di 13,50).
+
+Confronto a 200 m, **con i riferimenti vecchi** (non rifatto):
 
 | Scenario | Riferimento fino a | Colmo in S6000, 2D → 1D | RMSE [m³/s] | NSE | Volume 1D − 2D |
 |---|---|---|---|---|---|
@@ -441,55 +457,65 @@ risultati salvati. Gli strumenti leggono la geometria dalle righe 1-2 di `settin
 
 ### Scenari fittizi con la geometria a 50 m
 
-Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici 1-13, animazioni e confronti.
-Codice attuale: partenza dalle portate cumulate, nuovo arresto del riempimento, **condizione di valle
-dalla tabella dell'ultima sezione**, β = 1, affluenti spenti (riga 27 `no`), sfioro attivo, dt
+Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici 1-13, 13_1, 13_2, animazioni e
+confronti. Codice attuale: partenza dalle portate cumulate, nuovo arresto del riempimento, **condizione
+di valle dalla tabella dell'ultima sezione**, β = 1, affluenti spenti (riga 27 `no`), sfioro attivo, dt
 massimo 60 s. È la configurazione del `settings.txt` committato (con le righe 14 e 22 sullo scenario).
+Tabelle e geometria sono quelle rifatte dagli scalini 2D con la mesh nuova, con l'argine destro di S2950
+corretto (vedi "Costruzione delle tabelle"); il confronto usa i riferimenti 2D nuovi.
 
-- Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso entro lo 0,15%;
-  il livello non supera mai la quota massima delle tabelle (a 200 m la superava di 1-2 cm). Le
-  pendenze del fondo irregolari non hanno dato problemi nello stato iniziale.
-- Rispetto ai run precedenti con il Ks 33 all'uscita cambiano solo i livelli degli ultimi chilometri
-  (in S6000 il tirante massimo scende da 1,89 a 1,73 m): portate, colmi, NSE e sfioro restano uguali
-  entro 0,01 m³/s e qualche m³, perché l'uscita non influenza la parte a monte dove si esonda.
-- **In uscita la portata si ferma a circa 55 m³/s in tutti gli scenari**, contro circa 70 a 200 m:
+- Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso entro lo 0,15%
+  (entrato − uscito − sfiorato tra 3 400 e 3 800 m³).
+- Al colmo il livello supera la quota massima delle tabelle in S2100 e S2150, di 2,5-3,5 cm (0,6-0,7 cm
+  nel `fittizio_2`): lì i valori sono estrapolati. Con le tabelle vecchie non succedeva.
+- **In uscita la portata si ferma a circa 60 m³/s in tutti gli scenari** (55 con le tabelle vecchie,
+  circa 70 a 200 m):
 
-| Scenario | Colmo in S6000: 2D | 1D 200 m | 1D 50 m | NSE 50 m (200 m) | Volume sfiorato 50 m (200 m) |
+| Scenario | Colmo in S6000: 2D → 1D | RMSE [m³/s] | NSE | Volume 1D − 2D | Volume sfiorato |
 |---|---|---|---|---|---|
-| `fittizio_1` | 68,14 | 70,49 | 55,01 (−19%) | 0,935 (0,981) | 406 232 m³, 14,9% (4,4%) |
-| `fittizio_2` | 64,16 | 69,50 | 54,49 (−15%) | 0,965 (0,988) | 266 779 m³, 10,8% (1,5%) |
-| `fittizio_3` | 81,71 | 70,50 | 55,01 (−33%) | 0,785 (0,954) | 1 018 174 m³, 22,5% (8,8%) |
-| `fittizio_4` (2ª onda) | 78,54 | 70,49 | 55,01 (−30%) | 0,871 (0,967) | 817 610 m³, 15,6% (4,6%) |
+| `fittizio_1` | 69,33 a 9,75 h → 59,82 a 7,47 h (−13,7%) | 4,15 | 0,968 | −6,7% | 303 396 m³, 11,1% (12 sezioni) |
+| `fittizio_2` | 63,63 a 8,00 h → 59,13 a 7,50 h (−7,1%) | 1,87 | 0,992 | −3,1% | 179 379 m³, 7,2% (8 sezioni) |
+| `fittizio_3` | 81,72 a 13,75 h → 59,82 a 7,77 h (−26,8%) | 10,74 | 0,862 | −15,0% | 811 421 m³, 17,9% (12 sezioni) |
+| `fittizio_4` (2ª onda) | 78,58 a 24,75 h → 59,82 a 22,42 h (−23,9%) | 6,52 | 0,925 | −9,2% | 610 510 m³, 11,6% (12 sezioni) |
 
-- **Fino a 2,9 km il colmo 1D segue quasi esattamente il 2D** (circa 68 m³/s nel `fittizio_1`), molto
-  meglio che a 200 m. Poi due sezioni che a 200 m non c'erano fanno uscire molta acqua:
-  - **S2950**: argine destro a 426,21 m, solo 2,33 m sopra il talweg (il più basso del tratto). Nel
-    `fittizio_1` da sola sfiora 191 000 m³, quasi metà del totale, e il colmo scende a 58 m³/s;
-  - **S3550**: argine sinistro a 425,11 m, altri 52 000 m³; il colmo scende a 55 m³/s.
-- Nel 2D proprio lì il colmo **risale** da 65,5 a 68,1 m³/s: l'acqua rientra. Nel 1D esce e non torna,
-  quindi da 3,6 km in poi resta circa 13 m³/s sotto. È lo stesso rientro dei `fittizio_3` e
-  `fittizio_4`, qui molto più evidente: con le sezioni a 50 m pesa ancora di più la mancanza del rientro.
-- Sfiorano 12 sezioni tra 0,25 e 3,55 km (9 nel `fittizio_2`), contro 5 tra 0,6 e 2 km a 200 m.
-- Anche qui, per il `fittizio_4`, grafico 8 e ritardo in `confronto_S6000.txt` mescolano le due onde.
+  (dai `confronto_S6000.txt`; volume sfiorato sull'evento intero rispetto a quello entrato)
+- **Fino a 3,5 km il colmo 1D segue il 2D entro circa 3 m³/s** (`fittizio_1`: 1D 70,0 m³/s in S1000 e
+  67,3 da S1100 a S3500; 2D 69,8 in S1000, 64,7 da S2400 a S3500).
+- **S2950 non sfiora più** (livello massimo 426,74 m, argine 427,35 m): con l'argine vecchio, a 426,21 m,
+  da sola faceva uscire 191 000 m³ nel `fittizio_1`.
+- **S3550**, argine sinistro a 425,11 m, è l'unica uscita importante a valle di 1,05 km: 132 000 /
+  103 000 / 293 000 / 266 000 m³ (in S2700 escono al massimo 615 m³). Il colmo 1D scende da 67,3 a
+  59,8 m³/s, mentre nel 2D proprio lì **risale** da 64,7 a 69,0 m³/s: l'acqua rientra. Nel 1D esce e
+  non torna, quindi da 3,6 km in poi resta circa 9,5 m³/s sotto nel `fittizio_1` e fino a 22 m³/s nel
+  `fittizio_3` (vedi "Sfioro del 1D a valle di 2,5 km").
+- Le altre 10 sezioni che sfiorano sono tra 0,25 e 1,05 km (7 nel `fittizio_2`).
+- Il ritardo del colmo dalla prima all'ultima sezione è di 165 / 60 / 75 / 165 min nel 2D e 29 / 30 /
+  39 / 28 min nel 1D. Nel `fittizio_4` le due onde, separate a 14,5 h, hanno in uscita lo stesso colmo
+  1D (59,82 m³/s a 7,47 e 22,42 h) e lo stesso ritardo (29 e 28 min); grafico 8 e `confronto_S6000.txt`
+  cercano un solo colmo su tutta la simulazione, quindi per il `fittizio_4` vanno letti con attenzione.
+- Con il prototipo del ponte P17 cambia poco (colmo in uscita 59,37 m³/s): vedi "Ponte P17".
 
 ### Tirante e portata nelle sezioni (grafici 12 e 13)
 
 Tirante 1D − scalini 2D **a parità di portata**, media nel tempo sugli istanti 2D bagnati (50 m,
-condizione di valle attuale; per confronto il 2D sta entro ±0,4 cm dagli scalini in tutte le sezioni):
+tabelle e riferimenti attuali; per confronto il 2D sta entro ±0,4 cm dagli scalini in tutte le sezioni):
 
 | Sezione | `fittizio_1` | `fittizio_2` | `fittizio_3` | `fittizio_4` |
 |---|---|---|---|---|
-| S1000 | −0,5 cm | −0,2 cm | −1,0 cm | −0,5 cm |
-| S2150 | −0,6 cm | −0,5 cm | −1,1 cm | −0,9 cm |
-| S4000 | −2,6 cm | −2,6 cm | −2,6 cm | −2,8 cm |
+| S1000 | −0,7 cm | −0,4 cm | −1,5 cm | −0,8 cm |
+| S2150 | +4,1 cm | +4,1 cm | +4,2 cm | +4,2 cm |
+| S4000 | −2,7 cm | −2,7 cm | −2,8 cm | −2,9 cm |
 | S6000 | +0,1 cm | +0,2 cm | +0,1 cm | +0,1 cm |
 
+- S2150 con le tabelle vecchie stava a −0,6 / −1,1 cm. Nella stessa zona, al colmo, il livello 1D supera
+  la quota massima delle tabelle (S2100 e S2150): non è stato verificato se le due cose sono legate.
 - In S6000 con il Ks 33 all'uscita lo stesso scarto era +11 / +12 cm.
-- **Allo stesso istante** in S1000 e S2150 1D e 2D coincidono quasi (tirante massimo 1-4 cm più basso,
-  portata massima entro 0,8 m³/s). In S4000 e S6000 il 1D sta 14-64 cm sotto al colmo, ma solo perché
-  ha meno portata (55 contro 64-82 m³/s): è l'acqua sfiorata a S2950 e S3550 che nel 1D non rientra.
-- Il tirante massimo in S6000 (1D − 2D) va da −14 a −38 cm, con scarto quadratico medio 6-19 cm; a
-  200 m (Ks 33) da −8 a +15 cm, 7-8 cm.
+- **Allo stesso istante** in S1000 e S2150 1D e 2D coincidono quasi (`fittizio_1`: tirante massimo −4 e
+  +6 cm, portata massima entro 0,5 m³/s). In S4000 e S6000 il 1D sta sotto al colmo (−23 e −14 cm nel
+  `fittizio_1`), ma solo perché ha meno portata (59,8 contro 69,3-69,4 m³/s): è l'acqua sfiorata a S3550
+  che nel 1D non rientra.
+- Il tirante massimo in S6000 (1D − 2D) è −14 / −7 / −31 / −27 cm (con le tabelle vecchie da −14 a
+  −38 cm); a 200 m (Ks 33, riferimenti vecchi) da −8 a +15 cm.
 
 ### Errore del tirante a parità di portata, sezione per sezione (grafico 14)
 
@@ -497,83 +523,90 @@ Nel grafico 13 lo scarto a parità di portata non è uguale in tutte le sezioni.
 (`output/S_50m/grafici/14_errore_tirante_sezioni.png`) mostra in quali sezioni il 1D sbaglia di più. Prende,
 per ogni sezione, gli istanti 2D in cui 1D e 2D hanno la stessa portata entro l'1% e calcola lo scarto
 quadratico medio del tirante 1D − 2D:
-- restano 37-155 istanti per sezione, con portate da 5 a 83 m³/s, ma la maggior parte è vicina alla
-  portata di base (prima e dopo la piena). Con soglie del 2% o del 5% le sezioni peggiori sono le stesse;
-- in quasi tutte le sezioni l'errore è di 1-3 cm (mediana 1,8-1,9 cm, media 2,2-2,7 cm per scenario);
-- l'errore è **locale e con lo stesso segno in tutti gli scenari**, quindi viene dalle sezioni e non
-  dall'evento. Le peggiori (media sugli scenari, differenza media tra parentesi):
-  - S2400 10,5 cm (1D più basso di circa 9,5 cm);
-  - S2950 10,0 cm (−6/−7,5 cm);
-  - S2900 9,6 cm e S2800 8,6 cm (−4/−10 cm);
-  - S5900 8,1 cm (1D più alto di circa 8 cm);
-  - S5950 7,2 cm (−7,2 cm);
-  - S4800 6,3 cm (+6 cm);
-  - poi S2850, S2450, S2650, S2700, S4750, S5800 e S0150, tutte tra 4,5 e 6 cm;
-- **S2400-S2950 sono il rigurgito del ponte P17** (vedi "Ponte P17: serve una condizione al contorno
-  interna"): nel 2D il livello lì è imposto da una scala di deflusso del ponte, che il 1D non ha. È
-  la causa principale delle sezioni peggiori;
+- restano 37-153 istanti per sezione, con portate da 5 a 83 m³/s, ma la maggior parte è vicina alla
+  portata di base (prima e dopo la piena). Con le tabelle vecchie, con soglie del 2% o del 5% le sezioni
+  peggiori erano le stesse (non ricontrollato con quelle attuali);
+- in quasi tutte le sezioni l'errore è di 1-3 cm (mediana 1,6-1,9 cm, media 2,0-2,7 cm per scenario);
+- l'errore è **locale e con lo stesso segno in quasi tutti gli scenari**, quindi viene dalle sezioni e
+  non dall'evento. Le peggiori (media sugli scenari, differenza media tra parentesi):
+  - **S3250-S3500**: S3500 9,1 cm (−2/−7 cm), S3350 8,4 (−4/−7), S3400 8,3 (tra −2 e +2), S3450 7,9
+    (−1,5/−6), S3300 6,0, S3250 5,9 (−2,5/−5); nel `fittizio_3` S3500 arriva a 14,4 cm;
+  - S5900 8,2 cm (1D più alto di circa 8 cm), S5950 7,2 (−7), S4800 5,9 (+6);
+  - S2400 8,2 cm (−7/−8 cm);
+  - poi S3550, S0150, S2450, S4750 e S5800, tra 4,6 e 4,9 cm;
+- **S3250-S3500 è una zona nuova**: con le tabelle e i riferimenti vecchi stava a 2-3 cm. Il 1D è più
+  basso, di più nei `fittizio_3` e 4. È il tratto subito a monte di S3550, dove il 1D sfiora 103-293 mila
+  m³ e il 2D invece guadagna acqua. **La causa non è stata ancora analizzata**;
+- **S2600-S3000 è migliorato molto**: in media da 6,3 a 2,8 cm (S2950 da 10,0 a 4,4, S2900 da 9,6 a 3,0,
+  S2800 da 8,6 a 4,2). Pesavano lo sfioro di S2950 e la mesh vecchia più del ponte P17, che porta il tratto
+  solo a 2,5 cm (vedi "Ponte P17");
+- S2400 resta tra le peggiori, con il 1D 7-8 cm sotto in tutti gli scenari, anche con il ponte (8,0 cm);
 - S5900 e S5950 sono nel tratto finale, dove il pelo libero 2D scende ripido per il richiamo dell'uscita
   del dominio 2D. Lì e in S4800 resta la spiegazione di "Causa 2" in "Livelli 1D e 2D a parità di
   portata": profilo 2D irregolare e Ks equivalente ricavato senza l'altezza cinetica;
-- tra S2600 e S2950 l'errore **cambia con lo scenario** (fino a 15,8 cm in S2900 nel `fittizio_3`, 3-5 cm
-  nel `fittizio_2`): cresce con la portata, perché il ponte va in pressione. Nella stessa zona nel 1D
-  sfiora S2950, e il 2D perde e recupera acqua attorno alla linea di sezione.
-- **Le migliori** (sotto 1 cm, differenza media entro ±0,8 cm): S5750 0,3 cm, S5200 0,4, S6000 0,4 (ma lì
-  il livello lo fissa la condizione di uscita, tarata sugli scalini), S4400 0,5, S3650 0,5, S5000 0,6,
-  poi S0550, S5150, S4850, S3150, S5050, S5350, S5250, S5400 e S0250. Quasi tutte a valle di 3 km.
-- **Grafici 13_1 (peggiori) e 13_2 (migliori)**, in ogni `output/S_50m/fittizio_N/grafici/`:
-  - nel `fittizio_1`, in S2400, S2800 e S2900 il 1D ha al colmo **più** portata del 2D (circa 68 contro
-    65 m³/s) ma un tirante più basso di 10-26 cm; in S2950, con quasi la stessa portata (63 contro 64),
-    è più basso di 39 cm. È proprio la relazione livello-portata del 1D a non tornare. Rispetto
-    agli scalini 2D alla stessa portata il 1D sta in media 7-17 cm sotto (scarto quadratico medio 9-23 cm,
-    più grande nel `fittizio_3`), mentre il 2D sta sugli scalini entro 0,5 cm (S2400 +2-3 cm);
-  - in S2400 il 1D sta sotto di circa 10 cm anche sul ramo calante, fino alla fine della piena;
-  - nel 13_2 il 1D sta sugli scalini entro 0,2-1,4 cm in media (scarto quadratico medio 1-1,5 cm), anche al
-    colmo. In queste sezioni il tirante 1D si stacca dal 2D solo perché la portata è più bassa (55 contro
-    65-68 m³/s, l'acqua sfiorata che non rientra).
+- **Le migliori** (sotto 1 cm, differenza media entro ±0,8 cm): S6000 0,4 cm (ma lì il livello lo fissa la
+  condizione di uscita, tarata sugli scalini), S5750 0,5, S4400 0,5, S3650 0,6, poi S2550, S5250, S0550,
+  S5200, S5050 e S5000 a 0,7, S5400, S3700, S2000 e S0850 a 0,8, S0250 a 0,9;
+- **Grafici 13_1 e 13_2**, in ogni `output/S_50m/fittizio_N/grafici/`, rifatti con le stesse sezioni
+  di prima (S2400, S2800, S2900, S2950 e S3650, S4400, S5200, S5750). Nel `fittizio_1`, a parità di portata
+  il 1D sta sotto gli scalini 2D di 9,6 cm in S2400 (scarto quadratico medio 14,7 cm), 4,0 in S2800, 3,0 in
+  S2900 e 4,9 in S2950, mentre il 2D sta sugli scalini entro 0,3 cm (S2400 +2 cm). Al colmo il 1D in queste
+  sezioni ha più portata del 2D (67,3 contro 64,7 m³/s) e un tirante 1-4 cm più basso (con le tabelle
+  vecchie in S2950 era −39 cm).
 
-### Ponte P17: serve una condizione al contorno interna
+### Ponte P17: condizione al contorno interna (prototipo, non nei sorgenti)
 
-**L'effetto del ponte non è catturato a priori dal 1D.** Tra S2950 e S3000 c'è il ponte P17, che con le
+**L'effetto del ponte non è catturato a priori dal 1D.** Vicino a S3000 c'è il ponte P17, che con le
 portate di piena va in pressione. Nel 2D non è rappresentato con la sua geometria ma con una
 **condizione al contorno interna**, in `../Test_Brenta/model_ns_50.json`:
 - `LINKED`, `name: P17`, tipo `hqrelation_linked`: il dominio è tagliato tra le nodestring `P17_monte` e
-  `P17_valle` (circa 10-16 m da S3000, la sezione 1D più vicina; a 50-60 m da S2950). La portata che esce da
-  `P17_monte` dipende dal livello secondo la scala di deflusso `../Test_Brenta/hq_relations/hq_P17_dtm.csv`
-  (`quota [m s.l.m.], portata [m³/s]`), e la stessa portata rientra da `P17_valle` (`froude_downstream`);
-- scala imposta: 1 m³/s → 424,30 m; 20 → 425,32; 40 → 425,93; 60 → 426,65; 80 → 426,95; 100 → 427,03
-  (13 punti, fino a 150 m³/s; a 125 m³/s la quota, 426,885, è **più bassa** che a 100: andrebbe
-  sistemata prima di usarla);
-- la scala vale per tutte le portate, non solo con il ponte in pressione.
-
-**Conseguenze nel 1D:**
+  `P17_valle` (circa 10-16 m da S3000, la sezione 1D più vicina). La portata che esce da `P17_monte`
+  dipende dal livello secondo la scala di deflusso `../Test_Brenta/hq_relations/hq_P17_dtm.csv`, e la
+  stessa portata rientra da `P17_valle` (`froude_downstream`);
+- scala: 1 m³/s → 424,30 m; 20 → 425,32; 40 → 425,93; 60 → 426,65; 80 → 426,95; 100 → 427,03 (13 punti,
+  fino a 150 m³/s). Nel file del 2D a 125 m³/s la quota, 426,885, è più bassa che a 100; nella copia del
+  progetto, `input/hq_relations/hq_P17_dtm.csv`, è 427,885. Le piene dei fittizi non arrivano a 100 m³/s;
+- la scala vale per tutte le portate, non solo con il ponte in pressione;
 - le tabelle di S2400-S2950 vengono dagli scalini 2D, quindi contengono già il rigurgito del ponte, ma
-  solo come relazione livello-portata **locale**. Nel 1D il livello di una sezione dipende da quello a
-  valle e dall'attrito, e a valle non c'è niente che imponga la quota del ponte. Il Ks equivalente
-  ricavato da una pendenza del pelo libero quasi nulla nel rigurgito non basta a ricostruirlo;
-- per questo il 1D sta sotto il 2D da S2400 a S2950, sempre più con la portata. A parità di portata, in
-  media, sta tra −10 e +4 cm sotto i 45 m³/s e tra −7 e −30 cm tra 45 e 90 m³/s
-  (`output/confronto_tirante_1D_2D/riepilogo_ponte.txt`, fatto con il Ks 33 all'uscita, che però non
-  influenza questo tratto). Al colmo in S2950 nel `fittizio_1` arriva a −39 cm (grafico 13_1). A valle del ponte, da S3000 in poi, l'errore torna di pochi centimetri;
-- probabilmente cambia anche lo sfioro: la quota imposta a 60 m³/s (426,65 m) è sopra l'argine destro di
-  S2950 (426,21 m). Con il ponte il livello del 1D a monte salirebbe. Anche la perdita e il recupero di
-  acqua del 2D tra S2950 e S3000 (vedi "Rientro dell'acqua nel 2D") sono proprio attorno al ponte.
+  solo come relazione livello-portata **locale**: nel 1D il livello di una sezione dipende da quello a
+  valle e dall'attrito, e a valle non c'è niente che imponga la quota del ponte.
 
-**Cosa servirebbe** (non ancora fatto, i sorgenti non sono stati toccati): una **condizione al contorno
-interna** nel 1D, all'interfaccia tra S2950 e S3000, che faccia come il 2D:
-- la portata all'interfaccia non viene dall'equazione della quantità di moto ma dalla scala del ponte,
-  in funzione del livello della sezione a monte: `Q = Q_hq(η[S2950])`, e la stessa portata entra nella
-  sezione a valle;
-- è lo stesso schema della condizione di valle attuale (`qstar[imax+1] = UNIFORM_DISCHARGE(...)`,
-  esplicita), ma in mezzo al dominio. In versione esplicita si usa il livello del passo precedente.
-  Altrimenti `dQ/dη` della scala entra nella matrice tridiagonale e nel Newton, come per le altre
-  interfacce;
-- da decidere: se la scala va riferita alla sezione 1D a monte (S2950, a circa 50 m da `P17_monte`) o
-  corretta per la distanza; come comportarsi fuori dai 13 punti della tabella; se serve anche nel
-  riempimento (sì, se il 2D a scalini l'aveva a tutte le portate);
-- **va fatto in modo generale**: una lista di strutture interne (interfaccia, file della scala), letta da
-  un file di input. Nel resto del Brenta ci saranno altri ponti e manufatti trattati così nel 2D, e
-  ognuno richiederà lo stesso tipo di condizione interna nel 1D.
+**Prototipo** (in una copia temporanea, sul codice di `5a4b1a0`; le modifiche sono in
+`output/S_50m_hq/prototipo_ponte.diff` e **non sono applicate a `Source/`**). Descrizione completa in
+`output/S_50m_hq/leggimi.txt`:
+- il ponte sta sull'interfaccia tra S3000 (sezione 60, monte) e S3050 (sezione 61, valle);
+- in S3000 il livello è quello della scala per la portata in arrivo (interfaccia S2950|S3000), risolto in
+  modo implicito dentro il Newton al posto della continuità della cella; S3050 riceve la stessa portata e
+  il suo livello viene dalla continuità con il tratto a valle; sull'interfaccia del ponte non si risolve
+  la quantità di moto;
+- alla scala è aggiunto il punto a portata nulla alla quota del talweg di S3000; oltre l'ultimo punto si
+  estrapola con l'ultimo tratto; la cella di S3000 non entra nel bilancio di massa (poche decine di m³);
+- è già generale: un file delle strutture (riga 28 del `settings.txt` del prototipo) con una riga per
+  struttura, `nome,sezione_monte,scala_di_deflusso` (es. `P17,60,input/hq_relations/hq_P17_dtm.csv`).
+  Con la riga 28 vuota il prototipo dà gli stessi file del codice ufficiale, byte per byte.
+
+**Prove** (grafico 14, scarto quadratico medio medio su S2600-S3000 e sui quattro scenari):
+
+| Prova | Cartella in `output/S_50m_hq/` | Senza ponte | Con il ponte |
+|---|---|---|---|
+| Tabelle, argine di S2950 e riferimenti vecchi | `fittizio_N/`, `grafici/` | 6,3 cm | 5,8 cm |
+| Come sopra, argine destro di S2950 a 427,356 m (diagnostica) | `prova_senza_sfioro_S2950/` | 3,1 cm | 2,5 cm |
+| Tabelle nuove, argine e riferimenti vecchi | `nuova_geometria/` | 6,8 cm | 5,9 cm |
+| Tabelle, argine e riferimenti attuali | `riferimenti_nuovi/` | 2,77 cm | 2,46 cm |
+
+Con la configurazione attuale (`riferimenti_nuovi/`, con il suo `14_confronto_ponte.png`):
+- il ponte migliora di poco S2400-S2550 (3,66 → 3,51 cm), S2600-S2700, S2800-S2950 e S3000, ma peggiora
+  S2750 (2,1 → 4,2 cm), S2850 e tutte le sezioni da S3050 a S3500 (in media 6,00 → 7,49 cm). Su tutto il
+  tratto passa da 2,41 a 2,50 cm; S2400 resta a 8,0 cm;
+- con il ponte il livello 1D in S2900-S3000 sta sopra il 2D (fino a +9 cm), senza ponte sotto (fino a −8 cm);
+  la portata che arriva al ponte è entro 0,9 m³/s da quella del 2D in entrambi i casi;
+- colmo in uscita 59,37 / 58,91 / 59,37 / 59,37 m³/s (circa 0,4 in meno); S2950 non sfiora (livello
+  massimo 426,85 m), S2700 sfiora di più (2 800-27 800 m³ invece di 0-615) perché a monte il livello sale.
+
+**Per ora il ponte non va nei sorgenti:** il miglioramento è piccolo e a valle peggiora, quindi lo scarto
+che restava tra S2600 e S2950 dipendeva soprattutto da altro (argine di S2950, mesh vecchia). Da capire
+perché peggiorano S2750 e S3050-S3500. Nel resto del Brenta ci saranno altri ponti e manufatti trattati così
+nel 2D: il formato del file delle strutture del prototipo serve a questo.
 
 ### Livelli 1D e 2D a parità di portata (questione chiusa)
 
@@ -581,7 +614,8 @@ Le tabelle vengono dal 2D, quindi ci si aspetterebbe che a parità di portata il
 del 2D. Con il Ks 33 all'uscita, nel grafico 12 non succedeva neanche sotto i 40 m³/s, dove non c'è
 esondazione e le portate coincidono. Analisi fatta su copie temporanee. **Conclusione:** lo scarto
 grande veniva dalla condizione di valle, ora corretta; quello che resta nel tratto è di 1-2 cm in
-media e dipende dal Ks equivalente delle tabelle, non da β.
+media e dipende dal Ks equivalente delle tabelle, non da β. Tutta l'analisi è fatta con le tabelle e i
+riferimenti precedenti a `23c5d31` (mesh vecchia): le conclusioni restano, i numeri non sono stati rifatti.
 
 **Prima di tutto: confrontare a parità di portata, non allo stesso istante.** Sul ramo crescente il
 1D arriva prima del 2D (laminazione e ritardo minori), quindi allo stesso istante è più alto anche se la
@@ -665,20 +699,24 @@ aumento). In quella fase il tratto si riempie e trattiene acqua, quindi senza in
 portata cala andando verso valle: se cresce, l'acqua arriva dal lato. Quando la piena cala, invece, il
 tratto restituisce l'acqua immagazzinata e la portata cresce verso valle anche senza rientro.
 
+Tabella rifatta con i riferimenti nuovi; la colonna "Note" (crescita con la piena in salita) e le quote
+di rientro più sotto vengono dall'analisi fatta con i riferimenti vecchi e non sono state ricontrollate:
+
 | Sezioni | Crescita del colmo [m³/s] | Scenari | Note |
 |---|---|---|---|
 | S0400 | +1,1 / +1,8 | tutti | anche con la piena in salita; dopo le uscite di S0150-S0350 |
-| S0950 (e S1100) | +0,4 / +0,8 | tutti | |
-| S1600-S1700 | fino a +3,1 (S1700) | tutti (S1600 non nel `fittizio_2`) | anche con la piena in salita; dopo le uscite di S1000-S1400 |
-| S3000 | +1,4 / +1,6 | tutti | anche con la piena in salita; il 2D perde 25-66 mila m³ in S2950 e li recupera 50 m dopo |
-| S3550 (e S3600) | +2,3 / +4,6 | 1, 3, 4 | nel `fittizio_2` S3550 perde acqua |
-| S2700, S3700-S3750, S4000 | fino a +1,3 | 3, 4 | |
-| **S4150** | +6,5 / +7,2 | 3, 4 (nel 1 solo +11 000 m³ di volume) | il rientro maggiore, fino a 167 000 m³; il colmo sale da circa 74 a 83 m³/s |
-| S4250-S4700, S5650-S5700 | fino a +2,5 | 3, 4 | |
+| S0950 (e S1100) | +0,4 / +0,8 | tutti (S1100 non nel `fittizio_2`) | |
+| S1600-S1700 | fino a +4,0 (S1700) | tutti (S1600 non nel `fittizio_2`) | anche con la piena in salita; dopo le uscite di S1000-S1400 |
+| S3550 (e S3600) | +3,9 / +5,0 | 1, 3, 4 | fino a 142 000 m³; nel `fittizio_2` S3550 perde un po' d'acqua (1 060 m³) |
+| S2650-S2700, S3700-S3750, S4000 | fino a +1,9 | 3, 4 (S2650 solo nel 3) | |
+| **S4150** | +6,2 / +6,9 | 3, 4 | il rientro maggiore, fino a 159 000 m³ |
+| S4200-S4700, S5650-S5700 | fino a +2,3 | 3, 4 | |
 
-Nel `fittizio_4` crescono anche con la piena in salita S0850 e S0950. Rientra circa metà dell'acqua
-persa nel `fittizio_1` (175 000 m³ su 356 000) e circa l'80% nel `fittizio_3` (879 000 su 1 093 000).
-Nel 1D a 50 m, invece, S2950 da sola sfiora 191 000 m³ che non tornano.
+In S6000 transita il 93,4 / 93,8 / 95,3 / 96,4% del volume entrato. Con la mesh vecchia c'era anche S3000
+(+1,4 / +1,6 m³/s: il 2D perdeva 25-66 mila m³ in S2950 e li recuperava 50 m dopo); con la mesh nuova
+S2950 e S3000 cambiano il volume di meno di 400 m³, quindi era un effetto delle nodestring vecchie.
+Con i riferimenti vecchi rientrava circa metà dell'acqua persa nel `fittizio_1` (175 000 m³ su 356 000) e
+circa l'80% nel `fittizio_3` (879 000 su 1 093 000).
 
 Due avvertenze:
 - le portate 2D sono misurate su linee di sezione: un aumento può anche voler dire che l'acqua ha
@@ -687,38 +725,37 @@ Due avvertenze:
 
 ### Sfioro del 1D a valle di 2,5 km: esce dove nel 2D rientra
 
-Nei grafici 8 a 50 m l'andamento del colmo lungo il tratto è buono nei primi 2,5 km, anche se le singole
-uscite non coincidono. Più a valle il 1D perde acqua in punti in cui il 2D non la perde. Analisi fatta sui
+Nei grafici 8 a 50 m l'andamento del colmo lungo il tratto è buono nei primi 3,5 km, anche se le singole
+uscite non coincidono. Più a valle il 1D perde acqua in un punto in cui il 2D la guadagna. Analisi fatta sui
 risultati salvati e sugli scalini 2D, senza simulazioni e senza toccare i sorgenti.
 
-**Tra 2,5 e 4,0 km nel 1D sfiorano solo due sezioni, in tutti gli scenari** (segnate nel grafico 8):
+**S2950 (risolto).** Con l'argine destro a 426,21 m sfiorava da sola 191 000 m³ nel `fittizio_1` (fino a
+398 000 nel `fittizio_3`), mentre il 2D lì perdeva 25-66 mila m³ e li recuperava 50 m dopo in S3000. Il
+punto in `bankpoints.csv` aveva `dist_cp` = 2,78 m, il più piccolo dei 240 punti, ed era 1,1-1,2 m più
+basso dei vicini (S2900 427,27 m, S3000 427,44 m). In `23c5d31` l'argine è stato portato a 427,3546 m e la
+mesh 2D è stata rifatta: ora S2950 non sfiora più, e nel 2D nuovo la perdita e il recupero tra S2950 e
+S3000 non ci sono più.
 
-| Scenario | S2950, argine destro | S3550, argine sinistro | 2D in S2950 (volume rispetto alla sezione a monte) | 2D in S3550 |
-|---|---|---|---|---|
-| `fittizio_1` | 191 386 m³, fino a 9,6 m³/s | 51 663 m³, fino a 3,3 m³/s | −31 173 m³, recuperati in S3000 (+30 726) | **+36 102 m³** |
-| `fittizio_2` | 158 920 m³ | 37 657 m³ | −25 516 m³ (+24 926 in S3000) | −3 795 m³ (+3 025 in S3600) |
-| `fittizio_3` | 398 108 m³ | 121 808 m³ | −65 745 m³ (+65 239 in S3000) | **+120 442 m³** |
-| `fittizio_4` | 385 374 m³ | 103 971 m³ | −63 701 m³ (+63 362 in S3000) | **+101 662 m³** |
+**S3550, argine sinistro (425,11 m): tra 2,5 e 4,0 km è l'unica sezione che sfiora davvero** (segnata nel
+grafico 8; S2700 fa uscire al massimo 615 m³):
 
-- Nel 1D il livello supera l'argine di 23 cm in S2950 e di 10-11 cm in S3550, per 5-14 ore.
-- **Nel 2D il livello sta ancora più in alto su quegli stessi punti** (37-66 cm, per 6-15 ore), eppure in
-  S2950 il 2D perde circa 1,5 m³/s, che ritrova 50 m dopo, e in S3550 guadagna acqua (colmo +2,3 / +4,6
-  m³/s; solo nel `fittizio_2` ne perde poca, −0,2 m³/s). Quindi il livello sopra la quota dell'argine non
-  basta a dire che l'acqua esce.
-- **S2950, argine destro (426,21 m):** in `bankpoints.csv` ha `dist_cp` = 2,78 m, il valore più piccolo dei
-  240 punti (mediana 9,9 m; non è stato verificato che cosa misuri esattamente la colonna), ed è 1,1-1,2 m
-  più basso dei punti vicini (S2900 427,27 m, S3000 427,44 m). La larghezza bagnata della nodestring 2D è
-  14,3 m, contro 16,8-17,0 m nelle sezioni vicine. **Ipotesi da verificare in QGIS:** il punto e la fine
-  della nodestring sono dentro l'alveo o sulla scarpata, e l'acqua che il 2D "perde" lì passa solo fuori
-  dalla linea di sezione. È anche la sezione subito a monte del ponte P17: con la condizione interna del
-  ponte il livello del 1D salirebbe e, con questa quota, lo sfioro aumenterebbe ancora.
-- **S3550, argine sinistro (425,11 m):** `dist_cp` normale (11,1 m), circa 0,9 m più basso dei vicini
-  (S3500 426,00 m, S3600 425,99 m), nodestring larga come le altre. È un varco vero, ma nel 2D è un punto
-  in cui l'acqua della piana **rientra**.
+| Scenario | 1D: sfiorato in S3550 | 2D in S3550 (volume rispetto a S3500) |
+|---|---|---|
+| `fittizio_1` | 131 944 m³ | **+49 960 m³** |
+| `fittizio_2` | 103 016 m³ | −1 060 m³ |
+| `fittizio_3` | 293 020 m³ | **+142 375 m³** |
+| `fittizio_4` | 265 608 m³ | **+128 313 m³** |
 
-**A moto permanente (scalini 2D)** la formula di sfioro del 1D, applicata ai livelli del 2D e agli argini
-di `bankpoints.csv`, a confronto con la perdita netta del 2D (portata a monte meno portata a valle del
-tratto, m³/s; negativo = il 2D guadagna):
+- `dist_cp` normale (11,1 m), circa 0,9 m più basso dei vicini (S3500 426,00 m, S3600 425,99 m),
+  nodestring larga come le altre. È un varco vero, ma nel 2D è un punto in cui l'acqua della piana
+  **rientra**: il livello sopra la quota dell'argine non basta a dire che l'acqua esce.
+- Subito a monte, in S3250-S3500, il grafico 14 ha ora il 1D 2-7 cm sotto il 2D a parità di portata
+  (vedi "Errore del tirante"): non è stato verificato se dipende da questo sfioro.
+
+**A moto permanente (scalini 2D vecchi, prima di `23c5d31`, con l'argine di S2950 a 426,21 m)** la
+formula di sfioro del 1D, applicata ai livelli del 2D e agli argini di `bankpoints.csv`, a confronto con la
+perdita netta del 2D (portata a monte meno portata a valle del tratto, m³/s; negativo = il 2D guadagna).
+Non è stata rifatta con gli scalini nuovi:
 
 | Portata in S0050 | 0-2,5 km: 2D / formula | 2,5-4,0 km: 2D / formula | 4,0-6,0 km: 2D / formula |
 |---|---|---|---|
@@ -732,7 +769,7 @@ tratto, m³/s; negativo = il 2D guadagna):
 - Nei primi 2,5 km la formula è dell'ordine giusto fino a circa 75 m³/s, poi dà circa il doppio.
 - Tra 2,5 e 4,0 km sbaglia segno: dà già 13 m³/s a 50 m³/s e 38 a 60, mentre il 2D non perde niente.
   In S3550 il 2D guadagna fino a 3,6 m³/s, e meno quando il livello sale ancora (curva non monotona).
-- **Oltre 4 km il 1D oggi non sfiora solo perché ha meno portata** (55 m³/s). Se l'acqua rientrasse,
+- **Oltre 4 km il 1D oggi non sfiora solo perché ha meno portata** (circa 60 m³/s). Se l'acqua rientrasse,
   comincerebbero a sfiorare S4150 (dove il 2D guadagna fino a 8,8 m³/s), S4300-S4650, S4850, S5150, S5300,
   S5600 e S5650. Il problema è quindi generale, non di due sezioni.
 - Non è stato verificato che ogni scalino del 2D sia arrivato a regime.
@@ -743,15 +780,15 @@ rientro o di scambio rigurgitato, non di uscita. In più la quota è un solo pun
 tutti i 50 m della cella.
 
 **Possibili soluzioni senza alzare gli argini** (niente è deciso, i sorgenti non sono stati toccati):
-1. **S2950: controllare il dato.** Se il punto è dentro l'alveo va spostato sulla cresta vera (e la
-   nodestring allungata): è una correzione del dato, non un argine alzato a mano.
+1. **S2950: correggere il dato** (fatto in `23c5d31`, vedi sopra): una correzione del dato, non un argine
+   alzato a mano.
 2. **Scambio laterale ricavato dagli scalini 2D**, al posto della formula e di `bankpoints.csv`: per ogni
    sezione una colonna in più nella tabella, `Q_lat(η)` con segno (portata della sezione a monte meno
    quella della sezione, a moto permanente), interpolata come le altre grandezze. Stessa logica di `jden`
    e β, nessun parametro nuovo, segno giusto, e a moto permanente riproduce le portate del 2D lungo il
    tratto. Limiti: il rientro è legato al livello locale e non al volume davvero uscito (in una piena
    breve torna troppo e troppo presto: nel `fittizio_1` rientra circa metà, nel `fittizio_3` l'80%);
-   curve non monotone; eredita gli artefatti delle linee di sezione (S2950/S3000 si compensano).
+   curve non monotone; eredita gli artefatti delle linee di sezione (con la mesh vecchia S2950 e S3000).
 3. **Sfioro nei due versi con un serbatoio virtuale per la piana:** lo scambio dipende dal livello del
    fiume e da quello della piana (sfioro rigurgitato, e inverso quando la piana è più alta). I punti
    bassi a valle diventano da soli punti di rientro. È lo schema (3) del punto "Rientro dell'acqua
@@ -778,13 +815,18 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
 
 - `tabella_sezioni.csv` e `localslope_xcoord.csv` sono scritti sia nell'output dello script sia negli
   input del modello (`ModelFolder`), quindi sono sempre uguali: non vanno più copiati a mano.
-  Rilanciato con i dati attuali lo script non cambia nessun file.
-- **Controllo dei file all'avvio:** se manca un file di input (`sections_dx.csv`, `bankpoints.csv`,
+- **Dati 2D attuali (da `23c5d31`):** mesh `test_brenta_ns_50_computational-mesh.2dm`, risultati
+  `ns_50_scalini_results.h5` e file delle 120 sezioni rifatti con la mesh e le nodestring nuove;
+  `sections_dx.csv` è diventato `centerpoints.csv` (stesso contenuto); in `bankpoints.csv` l'argine destro
+  di S2950 è passato da 426,207 a 427,3546 m (vedi "Sfioro del 1D a valle di 2,5 km"). Tabelle e geometria
+  in `input/geometria/Test_Brenta/S_50m/` sono state rifatte con questi dati; quelle di `S_50m_beta/` no
+  (mesh vecchia).
+- **Controllo dei file all'avvio:** se manca un file di input (`centerpoints.csv`, `bankpoints.csv`,
   i file delle sezioni e, con β dal 2D, mesh e risultati 2D) lo script li elenca tutti in rosso e si ferma.
 - Il caso a 200 m (`input/S_0200_6000/`, prefisso `ns_channel_`) non è più configurato nello script:
   le sue tabelle in `input/geometria/Test_Brenta/S_200m/` sono quelle vecchie (vedi "Condizione al
   contorno di valle").
-- La cartella di input contiene i file delle sezioni, `sections_dx.csv` (nome e ascissa),
+- La cartella di input contiene i file delle sezioni, `centerpoints.csv` (nome e ascissa),
   `bankpoints.csv` (quote degli argini) e, per β, la mesh `test_brenta_ns_50_computational-mesh.2dm`
   e i risultati `ns_50_scalini_results.h5` del 2D a scalini. Le sezioni BC e P17 non sono usate.
 - I file a 50 m non hanno la colonna `t [s]`: il controllo che le sezioni abbiano gli stessi scalini
@@ -827,16 +869,18 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
     vuole quote crescenti (a 50 m le ultime due di S0050, a 94,8 e 99,9 m³/s, dove il livello scende).
 
 **Geometria a 50 m** (`input/geometria/Test_Brenta/S_50m/`, 22 livelli per sezione, 20 in S0050):
-- nessun NaN e valori positivi; Ks mediano 20,4 (20,9 a 200 m), con la stessa proporzione di valori
-  fuori da 10-50; restano Ks di 3-9 in alcune sezioni tra 0,6 e 1,25 km a livelli intermedi e 139
-  nell'ultima riga di S0100;
-- **pendenze del fondo molto più irregolari**: 23 sezioni in contropendenza e 6 con |pendenza| sotto
-  2·10⁻⁴, fino a 7·10⁻⁶ in S1800 (l'ultima sezione usa sempre la pendenza media, −0,00213, che è anche
-  quella della condizione di uscita). Lo stato
-  iniziale usa il moto uniforme con `|local_slope|`: a 5,07 m³/s il tirante supera 1,5 m in 7 sezioni
-  (massimo 1,32 m a 200 m) e in S1800 il livello andrebbe oltre la tabella. Negli scenari fittizi il
-  riempimento lo ha comunque assestato senza problemi (2,5 h); per portate iniziali diverse resta da
-  valutare una pendenza più regolare per lo stato iniziale.
+- nessun NaN e valori positivi; Ks mediano 20,3 (20,4 con la mesh vecchia, 20,9 a 200 m), con il 3% dei
+  valori fuori da 10-50; resta 139 nell'ultima riga di S0100. Ks d'uscita in S6000 circa 39,5 tra 15 e
+  80 m³/s, come prima;
+- rispetto alla mesh vecchia le ascisse sono le stesse, il talweg cambia fino a 20 cm e degli argini
+  cambia solo S2950;
+- **pendenze del fondo molto più irregolari che a 200 m**: 24 sezioni in contropendenza e 5 con
+  |pendenza| sotto 2·10⁻⁴, fino a 3·10⁻⁵ in S2850 (con la mesh vecchia 23, 6 e 7·10⁻⁶ in S1800; l'ultima
+  sezione usa sempre la pendenza media, −0,00213, che è anche quella della condizione di uscita). Lo stato
+  iniziale usa il moto uniforme con `|local_slope|`: con la mesh vecchia a 5,07 m³/s il tirante superava
+  1,5 m in 7 sezioni (massimo 1,32 m a 200 m) e in S1800 il livello andava oltre la tabella (non
+  ricontrollato). Negli scenari fittizi il riempimento lo ha comunque assestato senza problemi (2,5 h);
+  per portate iniziali diverse resta da valutare una pendenza più regolare per lo stato iniziale.
 
 ## Problemi aperti e prossimi passi possibili
 
@@ -855,7 +899,8 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
   Test_Brenta (6 km) e rettangolare (30 km).
 - **Rientro dell'acqua sfiorata: il prossimo passo.** Nel 2D l'acqua uscita rientra più a valle (vedi
   "Rientro dell'acqua nel 2D"); nel 1D esce e non torna, ed è ormai la causa principale dello scarto
-  con il 2D (da 3 km in poi il 1D ha circa 13 m³/s e 25 cm in meno). L'idea è includerlo **senza
+  con il 2D (da 3,6 km in poi il 1D ha 4-22 m³/s in meno; a valle di 3 km i livelli sono in media 2-13 cm
+  più bassi). L'idea è includerlo **senza
   modellare la piana alluvionale**. Ragionamenti fatti finora, niente è deciso:
   - il meccanismo per far rientrare l'acqua c'è già: come gli affluenti, una portata laterale entrante
     nella sola continuità (`rhs += dt/dx·Q`), senza quantità di moto;
@@ -868,23 +913,21 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
     con lo svuotamento che dipende dal livello del fiume nella sezione di rientro (sfioro inverso, con
     la stessa formula dello sfioro), così l'acqua torna solo quando il fiume si abbassa;
   - nel 2D ci sono due comportamenti diversi: rientri a breve distanza già con la piena in salita
-    (S0400, S1600-S1700, S3000, cioè ritardo piccolo e poco accumulo) e il grande rientro di S4150 nei
+    (S0400, S1600-S1700, cioè ritardo piccolo e poco accumulo) e il grande rientro di S4150 nei
     `fittizio_3` e 4, che arriva solo dopo che le aree esondate si sono riempite (serve un accumulo).
     Lo schema (1) basterebbe per i primi, per il secondo serve almeno il (2) o il (3);
   - parametri (α, τ, T, abbinamento uscita-rientro) da ricavare dalle portate 2D sezione per sezione
     (volumi persi e recuperati, istanti), oggi abbinati solo per vicinanza; il bilancio di massa del
     riempimento e della simulazione dovrà includere i volumi nei serbatoi;
-  - il caso S2950 → S3000 (il 2D perde 25-66 mila m³ e li recupera 50 m dopo) sembra più acqua che
-    aggira la linea di sezione che una vera esondazione: dipende da come sono definite le nodestring
-    (punto seguente). Ed è proprio attorno al ponte P17, che nel 2D è una condizione interna (punto
-    "Ponte P17 e condizioni al contorno interne").
+  - il caso S2950 → S3000 (con la mesh vecchia il 2D perdeva 25-66 mila m³ e li recuperava 50 m dopo) era
+    acqua che aggirava la linea di sezione: con la mesh nuova non c'è più.
 - **Definizione delle nodestring del 2D.** Oggi ogni nodestring va da sponda a sponda del solo canale
   principale (15-25 m, 3-12 lati di mesh): tabelle, Ks e portate 2D di riferimento descrivono solo il
   canale, e per il 1D tutto ciò che supera gli argini è acqua uscita. L'alternativa è **prolungare la
   nodestring nella piana fino a dove la pendenza del terreno cambia e l'acqua sceglie una direzione
   anziché l'altra** (uno spartiacque locale): la parte di piana che scorre verso valle insieme al fiume
   farebbe parte della sezione, quella oltre lo spartiacque sarebbe davvero persa. Ragionamenti:
-  - pro: l'acqua che aggira una sezione e rientra subito (S2950 → S3000 e simili) diventerebbe portata
+  - pro: l'acqua che aggira una sezione e rientra subito (come S2950 → S3000 con la mesh vecchia) diventerebbe portata
     della sezione, non uscita più rientro; le tabelle includerebbero la golena attiva (sezione
     composta) e una parte del rientro sarebbe compresa senza modellare la piana; lo sfioro resterebbe
     solo dove l'acqua se ne va davvero;
@@ -897,23 +940,28 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
     sezione regge meno; quote di sfioro (argini) e tabelle andrebbero ridefinite agli estremi nuovi;
   - una via di mezzo: prolungare solo le nodestring dove il 2D mostra aggiramenti e rientri a breve
     distanza.
-- **Ponte P17 e condizioni al contorno interne.** Il 2D impone tra S2950 e S3000 la scala di deflusso
-  del ponte (`hqrelation_linked`), il 1D no: da S2400 a S2950 il tirante 1D è fino a 30-40 cm più basso
-  in piena. Serve una condizione al contorno interna generale (portata all'interfaccia dalla scala del
-  manufatto), da riusare per gli altri ponti più avanti. Vedi "Ponte P17: serve una condizione al
-  contorno interna".
+- **Ponte P17 e condizioni al contorno interne.** Il 2D impone vicino a S3000 la scala di deflusso del
+  ponte (`hqrelation_linked`), il 1D no. Il prototipo (`output/S_50m_hq/`, non nei sorgenti) con le
+  tabelle e i riferimenti attuali migliora S2600-S3000 solo da 2,8 a 2,5 cm e peggiora S2750 e
+  S3050-S3500: per ora non si porta nei sorgenti. Servirà comunque per gli altri ponti più avanti. Vedi
+  "Ponte P17: condizione al contorno interna".
+- **Errore del tirante in S3250-S3500** (grafico 14): 6-9 cm, 1D più basso, comparso con le tabelle e i
+  riferimenti nuovi (prima 2-3 cm) e peggiore con il ponte. Causa da capire: è subito a monte dello
+  sfioro di S3550.
 - **Sfioro dove nel 2D l'acqua rientra.** Lo sfioro libero con una quota per argine fa uscire acqua da
-  S2950 e S3550 (243 000 m³ nel `fittizio_1`), dove il 2D non ne perde o ne guadagna, e farebbe lo stesso
-  oltre 4 km con più portata. Da controllare in QGIS il punto d'argine destro di S2950; per il resto
-  serve uno scambio laterale che conosca la piana (tabella dagli scalini 2D, sfioro nei due versi con
-  serbatoio virtuale, o entrambi), senza alzare gli argini a mano. Vedi "Sfioro del 1D a valle di
-  2,5 km: esce dove nel 2D rientra".
+  S3550 (132 000 m³ nel `fittizio_1`), dove il 2D ne guadagna, e farebbe lo stesso oltre 4 km con più
+  portata. Il punto d'argine di S2950 è stato corretto; per il resto serve uno scambio laterale che
+  conosca la piana (tabella dagli scalini 2D, sfioro nei due versi con serbatoio virtuale, o entrambi),
+  senza alzare gli argini a mano. Vedi "Sfioro del 1D a valle di 2,5 km: esce dove nel 2D rientra".
 - **Affluenti e sfioro** insieme: non ancora provati.
 - **Ks equivalente delle tabelle** ricavato dalla pendenza del pelo libero senza l'altezza cinetica:
   lascia scarti di 1-2 cm in media e fino a 10 cm dove il profilo 2D è irregolare. Per ora accettato.
 - **Geometrie non aggiornate alla condizione di valle attuale:** `S_200m`, rettangolare e `vaia` hanno
   ancora l'ultima tabella con il Ks dalla pendenza del pelo libero; vanno ricostruite prima di
-  riusarle. Anche le simulazioni in `output/S_50m_beta/` sono state fatte con il Ks 33 all'uscita.
+  riusarle. Anche le simulazioni in `output/S_50m_beta/` sono state fatte con il Ks 33 all'uscita, e le
+  tabelle di `S_50m_beta/` vengono ancora dalla mesh vecchia.
+- **Livello oltre le tabelle in S2100-S2150** al colmo (fino a 3,5 cm, valori estrapolati): con le
+  tabelle nuove succede in tutti i fittizi.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
@@ -923,21 +971,25 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
 
 ## Ultimo commit descritto
 
-`0a2e2cd` ("tirante coincide con 2D, segnati \"problemi aperti\""), più le modifiche successive non
-ancora committate quando questo file è stato scritto (13/11/2026), da committare insieme a esso:
-- `strumenti/errore_tirante_sezioni.jl` e il grafico 14 in `output/S_50m/grafici/` (con
-  `errore_tirante_sezioni.txt`);
-- `strumenti/confronto_valle.jl` con l'opzione `--nome=`, e i grafici 13_1 e 13_2 nei quattro fittizi a 50 m;
-- nota sul ponte P17 e sulla condizione al contorno interna che manca nel 1D (nessuna modifica ai sorgenti);
-- `strumenti/confronto_reference.jl` con i nomi delle sezioni che sfiorano tra 2,5 e 4,0 km nel grafico 8,
-  grafici 8 e `confronto_S6000.txt` rifatti nei quattro fittizi a 50 m, e l'analisi dello sfioro a valle
-  di 2,5 km con le possibili soluzioni (nessuna modifica ai sorgenti).
+`23c5d31` ("inserita scala di deflusso per il ponte"), più le modifiche successive non ancora
+committate quando questo file è stato scritto (16/11/2026), da committare insieme a esso (nessuna
+modifica a `Source/`, `settings.txt` e `main.jl`):
+- riferimenti 2D dei fittizi rifatti con la mesh nuova: `reference/ns_50_fittizio_N_discharge.csv` (messi
+  dall'utente) e `ns_50_fittizio_N_wse.csv`, estratti con il nuovo `strumenti/estrai_wse_2D.jl`;
+- `output/S_50m/fittizio_1` … `fittizio_4` rifatti con tabelle, argine di S2950 e riferimenti attuali
+  (risultati e tutti i grafici; non `log_tempi.txt`), e il grafico 14 in `output/S_50m/grafici/`;
+- `output/S_50m_hq/riferimenti_nuovi/` (prova del ponte con la configurazione attuale) e la terza prova
+  in `output/S_50m_hq/leggimi.txt`.
 
 Commit descritti in precedenza: fino a `21b8f7a`, poi `c753289`-`373ba48` (geometria a 50 m, risultati
 dei fittizi, grafici), `d7ee4e6` e `282eaf2` (analisi dei livelli e della condizione di valle),
 `e034518` (calcolo di β e prova `S_50m_beta`), `0a2e2cd` (condizione di valle dalla tabella, β = 1 con
 la geometria `S_50m_beta` tenuta da parte, scrittura diretta delle tabelle, `settings.txt` a 50 m,
-grafici 12-13, ragionamenti su rientro e nodestring). Strumenti utili per i riempimenti:
+grafici 12-13, ragionamenti su rientro e nodestring), `5a4b1a0` (grafici 13_1, 13_2 e 14, sezioni che
+sfiorano nel grafico 8, note sul ponte P17 e sullo sfioro a valle di 2,5 km), `23c5d31` (mesh e scalini
+2D nuovi, tabelle a 50 m rifatte, argine di S2950 corretto, `sections_dx.csv` → `centerpoints.csv`,
+scala del ponte in `input/hq_relations/`, prime due prove del prototipo del ponte in `output/S_50m_hq/`).
+Strumenti utili per i riempimenti:
 `strumenti/confronto_spinup.jl` (`<cartella dei grafici> <cartella 1> <cartella 2> ...`) e
 `strumenti/confronto_simulazioni.jl` (stessi argomenti, per le simulazioni; non distingue cartelle con
 lo stesso nome e salta le differenze se gli istanti sono diversi).

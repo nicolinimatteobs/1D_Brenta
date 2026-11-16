@@ -1,6 +1,6 @@
 Sezione S6000 (x = 6.00 km, talweg 417.78 m s.l.m.), 1D - 2D, 87 istanti 2D bagnati (dati ogni 15 min)
-tirante massimo: 2D 1.921 m a 9.75 h | 1D 1.728 m a 7.46 h | differenza -0.193 m
-tirante: differenza media -0.055 m, scarto quadratico medio 0.089 m, massimo -0.218 m
-portata massima: 2D 68.14 m3/s a 9.75 h | 1D 55.01 m3/s a 7.48 h | differenza -13.14 m3/s
-portata: differenza media -3.45 m3/s, scarto quadratico medio 5.93 m3/s
+tirante massimo: 2D 1.938 m a 9.75 h | 1D 1.801 m a 7.45 h | differenza -0.137 m
+tirante: differenza media -0.035 m, scarto quadratico medio 0.062 m, massimo -0.184 m
+portata massima: 2D 69.33 m3/s a 9.75 h | 1D 59.82 m3/s a 7.47 h | differenza -9.52 m3/s
+portata: differenza media -2.17 m3/s, scarto quadratico medio 4.15 m3/s
 a parità di portata, tirante - scalini 2D: 1D media +0.001 m (scarto quadratico medio 0.002 m), 2D media +0.003 m (0.005 m)
