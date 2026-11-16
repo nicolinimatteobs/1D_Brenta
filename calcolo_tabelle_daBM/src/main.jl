@@ -8,11 +8,11 @@ using Plots, Plots.Measures, Printf, CSV, DataFrames, Infiltrator, HDF5
 # cambiano poco, quindi quelle tabelle sono tenute da parte (input/geometria/Test_Brenta/S_50m_beta).
 const β_dal_2D = false
 # Sezioni ogni 50 m
-const InputFolder = "calcolo_tabelle_daBM/input/S_0050_6000"
-const OutputFolder = β_dal_2D ? "calcolo_tabelle_daBM/output/S_50m_beta" : "calcolo_tabelle_daBM/output/S_50m"
+const InputFolder = "calcolo_tabelle_daBM/input/S_0050_6000_q2"
+const OutputFolder = β_dal_2D ? "calcolo_tabelle_daBM/output/S_50m_q2" : "calcolo_tabelle_daBM/output/S_50m_q2"
 # Cartella degli input del modello 1D: tabella_sezioni.csv e localslope_xcoord.csv vengono scritti anche qui,
 # così il modello usa sempre le tabelle appena calcolate (righe 1-2 di settings.txt)
-const ModelFolder = β_dal_2D ? "input/geometria/Test_Brenta/S_50m_beta" : "input/geometria/Test_Brenta/S_50m"
+const ModelFolder = β_dal_2D ? "input/geometria/Test_Brenta/S_50m_q2" : "input/geometria/Test_Brenta/S_50m_q2"
 const FilePrefix = "ns_50_scalini_"
 const MeshFile = "test_brenta_ns_50_computational-mesh.2dm"
 const ResultsFile = "ns_50_scalini_results.h5"
