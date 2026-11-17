@@ -90,3 +90,33 @@ function save_time!(filename::String, time::Float64)
         @printf(io, "%12.6f\n", time)
     end
 end
+
+# Controllo del bilancio di massa della simulazione (dopo il riempimento), scritto in filename e stampato.
+# Volumi [m3]: in alveo all'inizio e alla fine (aree delle tabelle per la lunghezza delle celle), entrato da
+# monte, uscito a valle, entrato dagli affluenti, scambio netto con la piana (positivo se entra).
+# errore = variazione del volume in alveo − (monte − valle + affluenti + scambio), rispetto al volume da monte;
+# oltre lo 0,1% compare un avviso. Con lo scambio 'tabella' controlla anche il serbatoio della piana: il volume
+# che contiene deve essere uguale all'acqua uscita e non ancora rientrata dall'inizio, riempimento compreso.
+function BILANCIO_DI_MASSA(filename, scambio, V_ini, V_fin, V_monte, V_valle, V_aff, V_lat, V_piana, V_lat_tutto)
+    err  = (V_fin - V_ini) - (V_monte - V_valle + V_aff + V_lat)
+    rel  = V_monte > 0.0 ? err / V_monte : NaN
+    io = IOBuffer()
+    println(io, "Bilancio di massa della simulazione (dopo il riempimento), volumi in m3")
+    @printf(io, "%-42s %16.1f\n", "volume in alveo all'inizio", V_ini)
+    @printf(io, "%-42s %16.1f\n", "volume in alveo alla fine", V_fin)
+    @printf(io, "%-42s %16.1f\n", "entrato da monte", V_monte)
+    @printf(io, "%-42s %16.1f\n", "uscito a valle", V_valle)
+    @printf(io, "%-42s %16.1f\n", "entrato dagli affluenti", V_aff)
+    @printf(io, "%-42s %16.1f\n", "scambio con la piana (+ entra, − esce)", V_lat)
+    @printf(io, "%-42s %16.1f  (%.4f%% del volume da monte)\n", "errore", err, 100rel)
+    abs(rel) > 1e-3 && println(io, "ATTENZIONE: errore del bilancio oltre lo 0,1%")
+    if scambio == :tabella
+        err_p = V_piana + V_lat_tutto
+        @printf(io, "%-42s %16.1f\n", "serbatoio della piana alla fine", V_piana)
+        @printf(io, "%-42s %16.1f  (deve essere uguale al serbatoio)\n", "uscito e non rientrato, riempimento compreso", -V_lat_tutto)
+        abs(err_p) > 1e-6 * max(abs(V_lat_tutto), 1.0) && @printf(io, "ATTENZIONE: il serbatoio della piana non torna (%.3f m3)\n", err_p)
+    end
+    s = String(take!(io))
+    write(filename, s); print(s)
+    return err
+end

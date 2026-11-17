@@ -4,13 +4,13 @@
 # righe 23-26 Ks (non più usato: l'uscita usa la tabella dell'ultima sezione), tempo iniziale,
 # passo massimo e numero massimo di passi, riga 27 affluenti attivi (si/no), riga 28 scambio
 # laterale con la piana (sfioro, tabella o nessuno), righe 29-31 parametri del serbatoio della
-# piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h].
-# Numero di righe e di colonne delle tabelle e numero di sezioni sono ricavati direttamente
-# dai file di input
+# piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h], riga 32
+# tempo di rilascio lento della parte sotto la soglia [h]. Numero di righe e di colonne delle
+# tabelle e numero di sezioni sono ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
-    # Legge esattamente 31 righe e rimuove spazi
+    # Legge esattamente 32 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:31]
+        [strip(readline(f)) for _ in 1:32]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
@@ -35,6 +35,7 @@ function INITIAL_SETTINGS!()
     V_soglia          = PARSE_NON_NEGATIVO(righe[29], "riga 29 di settings.txt (soglia del serbatoio della piana, m3)")
     T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], "riga 30 di settings.txt (tempo di svuotamento, ore)")
     tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], "riga 31 di settings.txt (ritardo, ore)")
+    T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[32], "riga 32 di settings.txt (rilascio lento, ore)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
@@ -43,7 +44,7 @@ function INITIAL_SETTINGS!()
         error("Riga 28 di settings.txt: lo scambio 'tabella' richiede le colonne ΔQ e ΔQ_s in $parametri_sezioni")
 
     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
-                     Ks, time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana,
+                     Ks, time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
                      n_row, imax, n_col)
 end
 

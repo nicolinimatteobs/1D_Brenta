@@ -1,4 +1,4 @@
-# Calibrazione dello scambio laterale con la piana (soglia, T, ritardo)
+# Calibrazione dello scambio laterale con la piana (soglia, T, ritardo, rilascio lento)
 
 Codici, risultati e grafici della taratura dei parametri del **serbatoio della piana**, usato dallo scambio
 laterale `tabella` (riga 28 di `settings.txt`). Tutte le prove sono sui fittizi 1-4 con le tabelle
@@ -16,16 +16,21 @@ dt massimo 60 s, confronto con i riferimenti 2D `reference/ns_50_fittizio_N_*.cs
   - le **uscite** sono quelle della tabella e finiscono in un **serbatoio virtuale unico** per tutto il tratto;
   - i **rientri** sono quelli della tabella (solo dove ΔQ > 0), ridotti tutti della stessa frazione in modo da
     non superare quanto il serbatoio può restituire.
-- Parametri del serbatoio (righe 29-31 di `settings.txt`):
+- Parametri del serbatoio (righe 29-32 di `settings.txt`):
 
   | Riga | Parametro | Significato |
   | 29 | soglia [m³] | la piana trattiene i primi m³ usciti (si riempie): rientra solo il volume oltre la soglia |
   | 30 | T [h] | tempo di svuotamento: rientro al massimo (V − soglia)/T; 0 = tutto subito |
   | 31 | τ [h] | ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo τ |
+  | 32 | T_lento [h] | rilascio lento: la parte sotto la soglia torna al fiume in T_lento, nelle sezioni di rientro (pesi: ΔQ massimo positivo della tabella), anche quando la tabella non chiede rientri; 0 = resta nella piana |
+- A fine simulazione il modello scrive `bilancio.txt` nella cartella degli output: volumi in alveo, entrati,
+  usciti e scambiati, errore del bilancio e, con lo scambio `tabella`, il controllo del serbatoio della piana.
+  In tutte le prove l'errore è 0,0000% e il serbatoio torna al m³.
 
 ## Risultati
 
-Valori tarati: **soglia 150 000 m³, T = 0,5 h, τ = 1 h** (NSE medio in S6000 massimo). Medie sui fittizi 1-4:
+Valori tarati: **soglia 150 000 m³, T = 0,5 h, τ = 1 h, rilascio lento 32 h** (NSE medio in S6000 massimo; il
+rilascio lento è stato tarato dopo, con gli altri tre fissi). Medie sui fittizi 1-4:
 
 | Simulazione | NSE in S6000 | errore del colmo lungo il tratto | errore del livello |
 |---|---|---|---|
@@ -33,10 +38,11 @@ Valori tarati: **soglia 150 000 m³, T = 0,5 h, τ = 1 h** (NSE medio in S6000 m
 | tabella, serbatoio senza parametri (T = 0) | 0,926 | 4,18 m³/s | 5,9 cm |
 | tabella, solo T = 4 h | 0,986 | 1,86 m³/s | 3,6 cm |
 | tabella, soglia 150 000 m³, T = 1 h | 0,989 | 1,11 m³/s | 3,3 cm |
-| **tabella, soglia 150 000 m³, T = 0,5 h, τ = 1 h** | **0,991** | **1,02 m³/s** | **3,1 cm** |
+| tabella, soglia 150 000 m³, T = 0,5 h, τ = 1 h | 0,991 | 1,02 m³/s | 3,1 cm |
+| **tabella, come sopra con rilascio lento in 32 h** | **0,994** | **1,05 m³/s** | **3,2 cm** |
 
-- Colmo in S6000 (2D → 1D tarato): 69,3 → 70,1; 63,6 → 63,2; 81,7 → 81,9; 78,6 → 78,8 m³/s (`fittizio_4`:
-  seconda onda). Con lo sfioro era sempre circa 60.
+- Colmo in S6000 (2D → 1D tarato con rilascio lento): 69,3 → 69,9; 63,6 → 63,4; 81,7 → 81,8; 78,6 → 77,9 m³/s
+  (`fittizio_4`: seconda onda). Con lo sfioro era sempre circa 60.
 - **Senza soglia** (grafici 1-3) tutta l'acqua uscita rientra subito: il colmo in uscita resta quello in ingresso.
   Con il solo T il rientro è graduale e troppo presto, mentre nel 2D arriva a scatto, quando la piana si è riempita.
 - Nel 2D il volume che resta fuori (uscito − rientrato, per tratto) è simile nei quattro scenari, 154-215 mila m³:
@@ -45,15 +51,20 @@ Valori tarati: **soglia 150 000 m³, T = 0,5 h, τ = 1 h** (NSE medio in S6000 m
   rientro al momento giusto: in S4200 la portata supera 67 m³/s 44-50 min prima del 2D senza ritardo, 1-7 min
   dopo con τ = 1 h (`risultati/anticipo_*.txt`).
 - Il minimo è largo: T da 0,5 a 2 h, soglia 100-150 mila m³ e τ 0,5-1,5 h danno NSE medi tra 0,989 e 0,991.
+- **Senza rilascio lento** il serbatoio non si svuota mai sotto la soglia: alla seconda onda del `fittizio_4` la
+  piana risulta già piena e il rientro arriva 112 min prima del 2D; nel ramo calante il 1D scende 39 min prima
+  (in media, portata in S6000 sotto 50 m³/s).
+- **Rilascio lento** (griglia T_lento 4-64 h × soglia 75-175 mila m³, con T e τ fissi, grafici 9-11): con 32 h e
+  soglia 150 000 m³ l'anticipo della seconda onda scende da 112 a 23 min e quello della discesa da 39 a 32 min;
+  nelle prime onde il rientro arriva 4-11 min dopo il 2D. Nel `fittizio_2` ora rientrano 47 000 m³ (2D 51 000).
+  Con un rilascio più veloce (4 h) la discesa è quasi esatta (6-8 min) ma il rientro arriva 48 min tardi: la
+  piana si svuota troppo presto e va riempita di nuovo. Tempi oltre 32 h non migliorano.
 
 ## Limiti
 
-- **Seconda onda del `fittizio_4`**: il rientro arriva ancora circa 110 min prima. Il serbatoio non si svuota
-  mai sotto la soglia, quindi alla seconda onda la piana risulta già piena; nel 2D fra le due onde si svuota in
-  parte. Servirebbe uno svuotamento lento della parte sotto la soglia.
-- Nel ramo calante il 1D scende ancora 0,5-1 h prima del 2D.
-- Nel `fittizio_2` escono 136 000 m³, meno della soglia, e non rientra niente (nel 2D il 25%); il colmo in uscita
-  è comunque giusto. In generale il 1D fa uscire il 10-30% di acqua in meno del 2D.
+- Nel ramo calante il 1D scende ancora circa 30 min prima del 2D, e a fine evento in S6000 sta circa 1 m³/s
+  sopra (la piana sta ancora restituendo).
+- Il 1D fa uscire il 10-35% di acqua in meno del 2D (volumi netti per tratto).
 - Un solo serbatoio per tutto il tratto: l'acqua uscita a 0,5 km può rientrare a 4 km. Per il Brenta intero
   serviranno serbatoi per zona o parametri tratto per tratto.
 - **Taratura e verifica sugli stessi quattro scenari**, senza una piena di controllo indipendente.
@@ -70,7 +81,10 @@ Valori tarati: **soglia 150 000 m³, T = 0,5 h, τ = 1 h** (NSE medio in S6000 m
 | `confronto.jl` | Colmo lungo il tratto e portata in S6000 (grafici 1 e 8), con indici e volumi |
 | `idrogrammi.jl` | Idrogrammi in S3500, S4200 e S6000 (grafici 3, 5, 7) |
 | `anticipo.jl` | Istante del rientro in S4200, 2D e 1D (`risultati/anticipo_<nome>.txt`) |
+| `rilascio_lento.jl` | Lancia le combinazioni di T_lento e soglia (T e τ fissi) e aggiunge le righe a `risultati/rilascio_lento.csv`, con l'anticipo di rientro e discesa per onda |
+| `grafici_rilascio_lento.jl` | Grafico 9 e `risultati/riepilogo_rilascio_lento.txt` |
 | `risultati/taratura.csv` | Una riga per combinazione e scenario: 73 combinazioni (11 di solo T, 25 di soglia e T, 36 con il ritardo, più 1 prova) |
+| `risultati/rilascio_lento.csv` | Una riga per combinazione, scenario e onda: 21 combinazioni di T_lento e soglia (T 0,5 h, τ 1 h) |
 | `out/` | Uscite delle simulazioni (non nel repository: si rigenerano con gli script) |
 
 Grafici in `grafici/`:
@@ -85,6 +99,9 @@ Grafici in `grafici/`:
 | 6 | `6_taratura_ritardo.png` | Mappe di soglia e T per ogni ritardo |
 | 7 | `7_idrogrammi_tarato.png` | Idrogrammi con i valori tarati |
 | 8 | `8_colmo_tarato.png` | Colmo lungo il tratto e portata in S6000 con i valori tarati |
+| 9 | `9_taratura_rilascio_lento.png` | Mappe di T_lento e soglia: NSE, anticipo del rientro e della discesa |
+| 10 | `10_idrogrammi_rilascio_lento.png` | Idrogrammi con i valori tarati, senza e con rilascio lento in 32 h |
+| 11 | `11_colmo_rilascio_lento.png` | Colmo lungo il tratto e portata in S6000 con il rilascio lento |
 
 ## Come rifare tutto
 
@@ -106,9 +123,17 @@ julia --project=. calibrazione_scambio/idrogrammi.jl 5_idrogrammi_soglia.png sog
 julia --project=. calibrazione_scambio/idrogrammi.jl 7_idrogrammi_tarato.png tarato "1D, tabella ΔQ, soglia 150 000 m³, T = 0,5 h, τ = 1 h"
 julia --project=. calibrazione_scambio/confronto.jl 8_colmo_tarato tarato "1D, tabella ΔQ, soglia 150 000 m³, T = 0,5 h, τ = 1 h"
 julia --project=. calibrazione_scambio/anticipo.jl soglia_T1 tarato
+julia --project=. -O2 calibrazione_scambio/rilascio_lento.jl 0,8 150000 0.5 1
+julia --project=. -O2 calibrazione_scambio/rilascio_lento.jl 4,8,16,32 75000,100000,125000,150000 0.5 1
+julia --project=. -O2 calibrazione_scambio/rilascio_lento.jl 48,64 150000,175000 0.5 1
+julia --project=. calibrazione_scambio/grafici_rilascio_lento.jl
+julia --project=. -O2 calibrazione_scambio/simula_fittizi.jl tarato_lento tabella 150000 0.5 1 32
+julia --project=. calibrazione_scambio/idrogrammi.jl 10_idrogrammi_rilascio_lento.png tarato "1D, tarato senza rilascio lento" tarato_lento "1D, tarato con rilascio lento in 32 h"
+julia --project=. calibrazione_scambio/confronto.jl 11_colmo_rilascio_lento tarato_lento "1D, tabella ΔQ, valori tarati con rilascio lento in 32 h"
+julia --project=. calibrazione_scambio/anticipo.jl tarato_lento
 ```
 
-`taratura.jl` aggiunge righe a `risultati/taratura.csv` senza controllare i doppioni: per rifare tutto da capo,
-cancellare prima il file. Le tarature sono state fatte con un prototipo dello stesso codice, con i parametri
-passati da variabili d'ambiente: con `Source/` attuale i risultati sono identici byte per byte (controllato su
-due combinazioni).
+`taratura.jl` e `rilascio_lento.jl` aggiungono righe ai loro file senza controllare i doppioni: per rifare tutto
+da capo, cancellare prima i file. Le tarature sono state fatte con prototipi dello stesso codice, con i parametri
+passati da variabili d'ambiente: con `Source/` attuale i risultati sono identici byte per byte senza rilascio
+lento (controllato su quattro casi) e uguali entro l'ultima cifra stampata (10⁻⁶) con il rilascio lento.

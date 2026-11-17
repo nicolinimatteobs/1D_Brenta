@@ -29,6 +29,7 @@ sfioro
 150000
 0.5
 1
+32
 
 CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 1      - Tabelle delle sezioni, con la quota del pelo libero in colonna 2, in input/geometria/<caso>/
@@ -47,7 +48,9 @@ CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 29     - Serbatoio della piana (solo con tabella): soglia [m3], volume trattenuto prima che l'acqua rientri
 30     - Serbatoio della piana (solo con tabella): tempo di svuotamento T [h], rientro al massimo (V − soglia)/T; 0 = subito
 31     - Serbatoio della piana (solo con tabella): ritardo τ [h], tempo dopo cui l'acqua uscita arriva al serbatoio
-         (valori tarati sui fittizi 1-4 con le tabelle S_50m_q2: 150000, 0.5, 1; vedi calibrazione_scambio/)
+32     - Serbatoio della piana (solo con tabella): rilascio lento [h], la parte sotto la soglia torna al fiume in questo
+         tempo, nelle sezioni di rientro; 0 = la parte sotto la soglia resta nella piana
+         (valori tarati sui fittizi 1-4 con le tabelle S_50m_q2: 150000, 0.5, 1, 32; vedi calibrazione_scambio/)
 
 Input/dx_70/h_01/struttura_output.txt
 4

@@ -4,7 +4,7 @@
     params = INITIAL_SETTINGS!()
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana,
+    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
             parametri_sezioni, local_slope, output_dir, time = params
 
     # --- ALLOCAZIONE ARRAY ---
@@ -111,13 +111,22 @@
 
     Q_lat = zeros(imax)  # Scambio laterale con la piana per cella [m3/s]: positivo se entra, negativo se esce
     Cd    = 0.385        # Coefficiente di efflusso dello sfioro sugli argini (scambio = :sfioro)
-    # Serbatoio virtuale della piana (scambio = :tabella). V_soglia [m3], T_piana [s] e tau_piana [s]
-    # vengono dalle righe 29-31 di settings.txt
+    # Serbatoio virtuale della piana (scambio = :tabella). V_soglia [m3], T_piana [s], tau_piana [s] e
+    # T_lento [s] vengono dalle righe 29-32 di settings.txt
     V_piana     = 0.0                 # Volume uscito e non ancora rientrato [m3]
     V_rientrato = 0.0                 # Volume rientrato dall'inizio [m3]
     Vu_tot      = 0.0                 # Volume uscito dall'inizio [m3]
     t_tot       = 0.0                 # Tempo dall'inizio, riempimento compreso (time riparte da 0) [s]
     t_storia    = [0.0]; Vu_storia = [0.0]   # Storia del volume uscito, per il ritardo
+    # Rilascio lento: la parte sotto la soglia torna al fiume in T_lento, nelle sezioni di rientro, con pesi
+    # proporzionali al ΔQ massimo positivo della tabella di ogni sezione (somma 1)
+    w_rientro = [max(0.0, maximum(data_depth[13, first_row[k]:first_row[k+1]-1])) for k in 1:imax]
+    w_rientro ./= max(sum(w_rientro), 1e-12)
+
+    # Bilancio di massa della simulazione (dopo il riempimento): volumi entrati da monte, usciti a valle,
+    # entrati dagli affluenti e scambiati con la piana, e volume in alveo all'inizio [m3]
+    B_monte = 0.0; B_valle = 0.0; B_aff = 0.0; B_lat = 0.0; B_iniziale = 0.0
+    B_lat_tutto = 0.0   # scambio netto con la piana dall'inizio, riempimento compreso (per il serbatoio)
     eta_fermo = copy(eta)  # Livello all'inizio della finestra di controllo del riempimento
     t_fermo   = time       # Inizio della finestra
     fermo     = false      # true se nell'ultima finestra il livello è rimasto fermo
@@ -268,10 +277,12 @@
         #   quelle della tabella e finiscono in un serbatoio virtuale unico per tutto il tratto (la piana).
         #   I rientri sono quelli della tabella, ma limitati dal serbatoio e ridotti tutti della stessa
         #   frazione: senza limite crescono con il livello, che cresce con i rientri, e il modello crea acqua.
-        #   Parametri (righe 29-31 di settings.txt):
+        #   Parametri (righe 29-32 di settings.txt):
         #     V_soglia  la piana trattiene i primi V_soglia m3 (si riempie): rientra solo il volume oltre;
         #     T_piana   tempo di svuotamento: rientro al massimo (V − V_soglia)/T_piana (0: tutto subito);
         #     tau_piana ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo tau_piana;
+        #     T_lento   rilascio lento della parte sotto la soglia, in T_lento, sulle sezioni di rientro
+        #               (anche quando la tabella non chiede rientri, es. nel ramo calante; 0: nessun rilascio);
         # - nessuno: nessuno scambio.
         if scambio == :sfioro
             @inbounds for i in 1:imax
@@ -295,17 +306,22 @@
                 V_arrivato = VOLUME_AT(t_storia, Vu_storia, t_tot + dt - tau_piana)
                 V_oltre    = max(V_arrivato - V_rientrato - V_soglia, 0.0)
                 Q_disp     = T_piana > 0.0 ? min(V_oltre/T_piana, V_oltre/dt) : V_oltre/dt
+                V_sotto    = clamp(V_arrivato - V_rientrato, 0.0, V_soglia)
             else
                 V_oltre   = max(V_piana - V_soglia, 0.0)
                 Q_disp    = T_piana > 0.0 ? min(V_oltre/T_piana, V_oltre/dt + Q_esce) : V_oltre/dt + Q_esce
+                V_sotto   = clamp(V_piana, 0.0, V_soglia)
             end
             f_rientro = Q_rientro > 0.0 ? min(1.0, Q_disp/Q_rientro) : 0.0
+            # rilascio lento della parte sotto la soglia: V_sotto/T_lento, sulle sezioni di rientro (w_rientro)
+            Q_lento = T_lento > 0.0 ? min(V_sotto/T_lento, V_sotto/dt) : 0.0
             @inbounds for i in 1:imax
                 Q_lat[i] > 0.0 && (Q_lat[i] *= f_rientro)
+                T_lento > 0.0 && (Q_lat[i] += Q_lento*w_rientro[i])
                 rhs[i] += dt/dx_int[i] * Q_lat[i]
             end
-            V_piana     += dt*(Q_esce - f_rientro*Q_rientro)
-            V_rientrato += dt*f_rientro*Q_rientro
+            V_piana     += dt*(Q_esce - f_rientro*Q_rientro - Q_lento)
+            V_rientrato += dt*f_rientro*Q_rientro + dt*Q_lento   # scritto così: con Q_lento = 0 i conti sono quelli senza rilascio lento
         end
         ####  FINE SCAMBIO LATERALE
 
@@ -363,6 +379,11 @@
         Q_aff_tot = sum(Q_aff)  # Somma degli affluenti, per il bilancio
         Q_lat_tot = sum(Q_lat)  # Scambio laterale netto (positivo se entra), per il bilancio
         Q_aff .= 0.0  # Reset portate affluenti
+        # Bilancio di massa: volumi della simulazione (dopo il riempimento) e scambio con la piana di tutto il run
+        B_lat_tutto += dt*Q_lat_tot
+        if IC == 0
+            B_monte += dt*q[1]; B_valle += dt*q[imax+1]; B_aff += dt*Q_aff_tot; B_lat += dt*Q_lat_tot
+        end
         # --- Salvataggio risultati ---
         if nCS % 500 == 0
             println("Time step: ", nCS, " Time: ", @sprintf("%.4f", time), " dt: ", @sprintf("%.6f", dt))
@@ -418,6 +439,7 @@
             Q_in_tot = q[1] + Q_aff_tot + Q_lat_tot
             if IC_counter == imax && time >= T_assestamento && fermo && abs(Q_in_tot - q[imax+1]) < 1e-3*Q_in_tot
                 println("Condizioni iniziali raggiunte al tempo: ", nCS, ", time = ", time)
+                B_iniziale   = sum(A_b .* dx_int)  # volume in alveo all'inizio della simulazione
                 IC           = 0 # Disattiva condizioni iniziali
                 nCS          = 1
                 time         = 0.0
@@ -425,5 +447,13 @@
                 #@infiltrate
             end
         end
+    end
+
+    # --- CONTROLLO DEL BILANCIO DI MASSA ---
+    if IC == 1
+        println("Bilancio di massa non calcolato: il riempimento non si è concluso")
+    else
+        BILANCIO_DI_MASSA(joinpath(output_dir, "bilancio.txt"), scambio, B_iniziale, sum(A_b .* dx_int),
+                          B_monte, B_valle, B_aff, B_lat, V_piana, B_lat_tutto)
     end
 end

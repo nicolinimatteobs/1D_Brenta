@@ -1,0 +1,12 @@
+Confronto con il 2D (tabelle S_50m_q2, fittizi 1-4). Colmo in S6000 (fittizio_4: 2ª onda), NSE in S6000, errore medio del
+colmo lungo il tratto, volumi usciti e rientrati per tratto (netti in ogni tratto tra due sezioni in tutto l'evento).
+
+scenario   simulazione                                              colmo2D  colmo1D     NSE  |Δcolmo|   1D uscito  1D rientr.   2D uscito  2D rientr.
+fittizio_1 1D, sfioro sugli argini                                    69.33    59.80   0.968      5.01      303915           0      341928      162733
+fittizio_1 1D, tabella ΔQ, valori tarati con rilascio lento in 32 h    69.33    69.89   0.993      0.96      236825      112463      341928      162733
+fittizio_2 1D, sfioro sugli argini                                    63.63    59.11   0.992      2.68      179880           0      205020       51386
+fittizio_2 1D, tabella ΔQ, valori tarati con rilascio lento in 32 h    63.63    63.41   0.998      0.50      131438       47197      205020       51386
+fittizio_3 1D, sfioro sugli argini                                    81.72    59.80   0.861      8.99      812300           0     1077664      863074
+fittizio_3 1D, tabella ΔQ, valori tarati con rilascio lento in 32 h    81.72    81.83   0.994      1.27      941808      769687     1077664      863074
+fittizio_4 1D, sfioro sugli argini                                    78.58    59.80   0.925      8.23      611555           0      680044      491184
+fittizio_4 1D, tabella ΔQ, valori tarati con rilascio lento in 32 h    78.58    77.93   0.990      1.46      540836      393955      680044      491184

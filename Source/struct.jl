@@ -14,6 +14,7 @@ struct Parametri
     V_soglia           ::Float64  # serbatoio della piana (scambio :tabella): volume trattenuto prima del rientro [m3]
     T_piana            ::Float64  # tempo di svuotamento [s]
     tau_piana          ::Float64  # ritardo di percorrenza [s]
+    T_lento            ::Float64  # tempo di rilascio lento della parte sotto la soglia [s] (0 = nessun rilascio)
     n_row              ::Int
     imax               ::Int
     n_col              ::Int

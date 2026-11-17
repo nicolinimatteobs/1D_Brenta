@@ -7,14 +7,15 @@ const PROGETTO = normpath(joinpath(@__DIR__, ".."))
 include(joinpath(PROGETTO, "Source", "Run_Simulation.jl")); using .RUN_SIMULATION
 
 """
-    simula(; geometria, scenario, out, scambio = "tabella", V = 0, T = 0, τ = 0)
+    simula(; geometria, scenario, out, scambio = "tabella", V = 0, T = 0, τ = 0, T_lento = 0)
 
 Simulazione del fittizio `scenario` (1-4) con le tabelle di `input/geometria/Test_Brenta/<geometria>/`,
 output in `out`. `scambio` è la riga 28 di settings.txt (sfioro, tabella o nessuno); `V` è la soglia del
-serbatoio della piana [m³], `T` il tempo di svuotamento [h] e `τ` il ritardo [h] (righe 29-31).
+serbatoio della piana [m³], `T` il tempo di svuotamento [h], `τ` il ritardo [h] e `T_lento` il tempo di
+rilascio lento [h] (righe 29-32).
 """
-function simula(; geometria, scenario, out, scambio = "tabella", V = 0, T = 0, τ = 0)
-    base = [strip(l) for l in readlines(joinpath(PROGETTO, "settings.txt"))[1:31]]
+function simula(; geometria, scenario, out, scambio = "tabella", V = 0, T = 0, τ = 0, T_lento = 0)
+    base = [strip(l) for l in readlines(joinpath(PROGETTO, "settings.txt"))[1:32]]
     r = copy(base)
     ass(p) = isabspath(p) ? p : joinpath(PROGETTO, p)
     r[1] = ass("input/geometria/Test_Brenta/$geometria/tabella_sezioni.csv")
@@ -22,7 +23,7 @@ function simula(; geometria, scenario, out, scambio = "tabella", V = 0, T = 0, �
     for j in [3:13; 15:21]; r[j] = ass(r[j]); end
     r[14] = ass("input/idrogrammi/fittizio_$scenario/piena.csv")
     r[22] = abspath(out); r[25] = "60"; r[26] = "20000"; r[27] = "no"
-    r[28] = scambio; r[29] = string(V); r[30] = string(T); r[31] = string(τ)
+    r[28] = scambio; r[29] = string(V); r[30] = string(T); r[31] = string(τ); r[32] = string(T_lento)
     dir = mktempdir()
     write(joinpath(dir, "settings.txt"), join(r, "\r\n") * "\r\n")
     cd(() -> RUN_SIMULATION.SEMI_IMPLICIT_BRENTA_2D_1D!(), dir)
