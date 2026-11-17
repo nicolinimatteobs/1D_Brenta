@@ -1,0 +1,6 @@
+Istante del rientro, simulazione out/soglia_T1: portata in S4200 oltre 67 m³/s nel 2D e nel 1D (anticipo positivo se il 1D è prima).
+fittizio_1          2D  9.00 h, 1D  8.27 h, anticipo   44 min; rientro nel 1D da 7.75 h, uscito prima per km (0-1 … 5-6): 91 / 47 / 11 / 1 / 1 / 0 migliaia di m³
+fittizio_2          2D   NaN h, 1D   NaN h, anticipo  NaN min; nessun rientro nel 1D
+fittizio_3          2D  9.00 h, 1D  8.17 h, anticipo   50 min; rientro nel 1D da 7.72 h, uscito prima per km (0-1 … 5-6): 91 / 47 / 11 / 1 / 1 / 0 migliaia di m³
+fittizio_4 1ª onda  2D  9.00 h, 1D  8.27 h, anticipo   44 min; rientro nel 1D da 7.75 h, uscito prima per km (0-1 … 5-6): 91 / 47 / 11 / 1 / 1 / 0 migliaia di m³
+fittizio_4 2ª onda  2D 22.25 h, 1D 20.50 h, anticipo  105 min; rientro nel 1D da 19.36 h, uscito prima per km (0-1 … 5-6): 144 / 85 / 26 / 2 / 2 / 2 migliaia di m³

@@ -1,17 +1,12 @@
-Scambio laterale: sfioro sugli argini contro tabella ΔQ (tabelle dagli scalini a 2 m³/s, S_50m_q2).
-Fittizi 1-4, affluenti spenti, dt massimo 60 s. Colmo in S6000 (per il fittizio_4 la seconda onda), NSE in S6000
-sugli istanti 2D con portata positiva, scarto medio assoluto del colmo lungo il tratto rispetto al 2D, volumi.
+Confronto con il 2D (tabelle S_50m_q2, fittizi 1-4). Colmo in S6000 (fittizio_4: 2ª onda), NSE in S6000, errore medio del
+colmo lungo il tratto, volumi usciti e rientrati per tratto (netti in ogni tratto tra due sezioni in tutto l'evento).
 
-scenario   variante                        colmo2D  colmo1D     NSE  |Δcolmo|    V entrato     V uscito    V scambio   errore V   osc. max
-fittizio_1 1D, sfioro sugli argini           69.33    59.80   0.968      5.01      2723793      2416171      -303915     -0.00%     0.0011
-fittizio_1 1D, scambio dalla tabella ΔQ      69.33    83.01   0.910      6.47      2723793      2719349         -716     -0.00%     0.0037
-fittizio_2 1D, sfioro sugli argini           63.63    59.11   0.992      2.68      2474708      2291556      -179880     -0.00%     0.0011
-fittizio_2 1D, scambio dalla tabella ΔQ      63.63    74.76   0.967      5.30      2474708      2470640         -761     -0.00%     0.0042
-fittizio_3 1D, sfioro sugli argini           81.72    59.80   0.861      8.99      4523937      3707930      -812300     -0.00%     0.0011
-fittizio_3 1D, scambio dalla tabella ΔQ      81.72    83.34   0.923      2.08      4523937      4519493         -716     -0.00%     0.0037
-fittizio_4 1D, sfioro sugli argini           78.58    59.80   0.925      8.23      5252046      4636896      -611555     -0.00%     0.0011
-fittizio_4 1D, scambio dalla tabella ΔQ      78.58    83.03   0.904      2.87      5252046      5247726         -718     -0.00%     0.0045
-
-V scambio: volume netto entrato lateralmente (negativo se esce). errore V: entrato − uscito + scambio − variazione
-d'invaso (dalle aree delle tabelle), rispetto al volume entrato. osc. max: massima differenza seconda nel tempo
-del livello [m] in tutte le sezioni (oscillazioni numeriche).
+scenario   simulazione                                              colmo2D  colmo1D     NSE  |Δcolmo|   1D uscito  1D rientr.   2D uscito  2D rientr.
+fittizio_1 1D, sfioro sugli argini                                    69.33    59.80   0.968      5.01      303915           0      341928      162733
+fittizio_1 1D, tabella ΔQ, serbatoio con T = 0                        69.33    83.01   0.910      6.47      407354      406638      341928      162733
+fittizio_2 1D, sfioro sugli argini                                    63.63    59.11   0.992      2.68      179880           0      205020       51386
+fittizio_2 1D, tabella ΔQ, serbatoio con T = 0                        63.63    74.76   0.967      5.30      183178      182416      205020       51386
+fittizio_3 1D, sfioro sugli argini                                    81.72    59.80   0.861      8.99      812300           0     1077664      863074
+fittizio_3 1D, tabella ΔQ, serbatoio con T = 0                        81.72    83.34   0.923      2.08     1270273     1269557     1077664      863074
+fittizio_4 1D, sfioro sugli argini                                    78.58    59.80   0.925      8.23      611555           0      680044      491184
+fittizio_4 1D, tabella ΔQ, serbatoio con T = 0                        78.58    83.03   0.904      2.87      819117      818399      680044      491184
