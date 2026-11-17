@@ -1,0 +1,40 @@
+Confronto tra simulazioni 1D e 2D, fittizi 1-4: 1D, rilascio lento 24 h (output\Volume_in_out\svuotamento_24h); 1D, rilascio lento 32 h (output\Volume_in_out\svuotamento_32h)
+Portata in S6000: colmo (fittizio_4 per onda), NSE e RMSE agli istanti 2D con portata 2D > 0; anticipo della discesa =
+istante 2D − istante 1D in cui la portata in S6000 scende sotto 50 m³/s dopo il colmo (positivo: il 1D scende prima).
+Tirante: scarto 1D − 2D allo stesso istante, sezioni 2D bagnate, dalle 3 h (media, scarto quadratico medio, medio assoluto).
+Volumi dal Q_lat.csv della simulazione (dopo il riempimento).
+
+fittizio_1
+  1D, rilascio lento 24 h      NSE 0.9972, RMSE 1.24 m³/s; tirante 1D − 2D: media +0.005 m, scarto q. m. 0.040 m, medio ass. 0.030 m
+                               colmo S6000 69.82 m³/s a 9.81 h (2D 69.33 a 9.75 h); anticipo della discesa 21 min
+                               volumi: uscito verso la piana 248329 m³, rientrato 153655 m³, rimasto nella piana 94674 m³
+  1D, rilascio lento 32 h      NSE 0.9977, RMSE 1.11 m³/s; tirante 1D − 2D: media +0.002 m, scarto q. m. 0.037 m, medio ass. 0.028 m
+                               colmo S6000 69.89 m³/s a 9.80 h (2D 69.33 a 9.75 h); anticipo della discesa 20 min
+                               volumi: uscito verso la piana 248907 m³, rientrato 141489 m³, rimasto nella piana 107418 m³
+
+fittizio_2
+  1D, rilascio lento 24 h      NSE 0.9977, RMSE 1.02 m³/s; tirante 1D − 2D: media +0.004 m, scarto q. m. 0.036 m, medio ass. 0.027 m
+                               colmo S6000 63.51 m³/s a 7.94 h (2D 63.63 a 8.00 h); anticipo della discesa 8 min
+                               volumi: uscito verso la piana 133704 m³, rientrato 61793 m³, rimasto nella piana 71911 m³
+  1D, rilascio lento 32 h      NSE 0.9979, RMSE 0.97 m³/s; tirante 1D − 2D: media +0.001 m, scarto q. m. 0.035 m, medio ass. 0.027 m
+                               colmo S6000 63.41 m³/s a 7.83 h (2D 63.63 a 8.00 h); anticipo della discesa 10 min
+                               volumi: uscito verso la piana 133737 m³, rientrato 49497 m³, rimasto nella piana 84241 m³
+
+fittizio_3
+  1D, rilascio lento 24 h      NSE 0.9973, RMSE 1.51 m³/s; tirante 1D − 2D: media +0.012 m, scarto q. m. 0.039 m, medio ass. 0.030 m
+                               colmo S6000 81.80 m³/s a 15.00 h (2D 81.72 a 13.75 h); anticipo della discesa 4 min
+                               volumi: uscito verso la piana 960235 m³, rientrato 864046 m³, rimasto nella piana 96189 m³
+  1D, rilascio lento 32 h      NSE 0.9975, RMSE 1.43 m³/s; tirante 1D − 2D: media +0.009 m, scarto q. m. 0.037 m, medio ass. 0.028 m
+                               colmo S6000 81.83 m³/s a 15.01 h (2D 81.72 a 13.75 h); anticipo della discesa 4 min
+                               volumi: uscito verso la piana 963864 m³, rientrato 855193 m³, rimasto nella piana 108671 m³
+
+fittizio_4
+  1D, rilascio lento 24 h      NSE 0.9972, RMSE 1.27 m³/s; tirante 1D − 2D: media +0.003 m, scarto q. m. 0.038 m, medio ass. 0.029 m
+                               onda 1: colmo S6000 69.82 m³/s a 9.81 h (2D 69.33 a 9.75 h); anticipo della discesa 21 min
+                               onda 2: colmo S6000 76.79 m³/s a 24.41 h (2D 78.58 a 24.75 h); anticipo della discesa 16 min
+                               volumi: uscito verso la piana 546986 m³, rientrato 451817 m³, rimasto nella piana 95169 m³
+  1D, rilascio lento 32 h      NSE 0.9980, RMSE 1.07 m³/s; tirante 1D − 2D: media +0.001 m, scarto q. m. 0.036 m, medio ass. 0.027 m
+                               onda 1: colmo S6000 69.89 m³/s a 9.80 h (2D 69.33 a 9.75 h); anticipo della discesa 20 min
+                               onda 2: colmo S6000 77.28 m³/s a 24.41 h (2D 78.58 a 24.75 h); anticipo della discesa 15 min
+                               volumi: uscito verso la piana 555801 m³, rientrato 447930 m³, rimasto nella piana 107871 m³
+

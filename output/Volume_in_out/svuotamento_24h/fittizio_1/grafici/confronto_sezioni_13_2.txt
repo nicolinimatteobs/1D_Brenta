@@ -1,0 +1,27 @@
+Sezione S3650 (x = 3.65 km, talweg 422.47 m s.l.m.), 1D - 2D, 91 istanti 2D bagnati (dati ogni 15 min)
+tirante massimo: 2D 2.937 m a 9.50 h | 1D 2.909 m a 9.57 h | differenza -0.028 m
+tirante: differenza media +0.006 m, scarto quadratico medio 0.037 m, massimo +0.098 m
+portata massima: 2D 68.96 m3/s a 9.50 h | 1D 66.87 m3/s a 9.47 h | differenza -2.10 m3/s
+portata: differenza media -0.30 m3/s, scarto quadratico medio 1.43 m3/s
+a parità di portata, tirante - scalini 2D: 1D media +0.010 m (scarto quadratico medio 0.018 m), 2D media -0.010 m (0.059 m)
+
+Sezione S4400 (x = 4.40 km, talweg 420.44 m s.l.m.), 1D - 2D, 89 istanti 2D bagnati (dati ogni 15 min)
+tirante massimo: 2D 3.277 m a 9.75 h | 1D 3.282 m a 9.69 h | differenza +0.005 m
+tirante: differenza media +0.015 m, scarto quadratico medio 0.043 m, massimo -0.106 m
+portata massima: 2D 69.29 m3/s a 9.75 h | 1D 69.36 m3/s a 9.65 h | differenza +0.07 m3/s
+portata: differenza media +0.13 m3/s, scarto quadratico medio 1.35 m3/s
+a parità di portata, tirante - scalini 2D: 1D media +0.003 m (scarto quadratico medio 0.013 m), 2D media +0.000 m (0.010 m)
+
+Sezione S5200 (x = 5.20 km, talweg 419.06 m s.l.m.), 1D - 2D, 88 istanti 2D bagnati (dati ogni 15 min)
+tirante massimo: 2D 2.998 m a 9.75 h | 1D 3.021 m a 9.76 h | differenza +0.023 m
+tirante: differenza media +0.027 m, scarto quadratico medio 0.046 m, massimo +0.082 m
+portata massima: 2D 69.35 m3/s a 9.75 h | 1D 69.56 m3/s a 9.73 h | differenza +0.21 m3/s
+portata: differenza media +0.28 m3/s, scarto quadratico medio 1.29 m3/s
+a parità di portata, tirante - scalini 2D: 1D media +0.010 m (scarto quadratico medio 0.016 m), 2D media +0.000 m (0.010 m)
+
+Sezione S5750 (x = 5.75 km, talweg 418.16 m s.l.m.), 1D - 2D, 87 istanti 2D bagnati (dati ogni 15 min)
+tirante massimo: 2D 2.623 m a 9.75 h | 1D 2.653 m a 9.79 h | differenza +0.030 m
+tirante: differenza media +0.032 m, scarto quadratico medio 0.046 m, massimo +0.076 m
+portata massima: 2D 69.35 m3/s a 9.75 h | 1D 69.78 m3/s a 9.78 h | differenza +0.43 m3/s
+portata: differenza media +0.46 m3/s, scarto quadratico medio 1.24 m3/s
+a parità di portata, tirante - scalini 2D: 1D media +0.011 m (scarto quadratico medio 0.013 m), 2D media +0.000 m (0.004 m)

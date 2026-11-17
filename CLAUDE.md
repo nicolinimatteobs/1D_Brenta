@@ -76,9 +76,16 @@ Numerazione dei grafici in `<output>/grafici`:
 come `BILANCIO_DI_MASSA`, i volumi entrati, usciti a valle, usciti verso la piana e rientrati (da `Q_lat.csv`) e il
 volume in alveo (aree delle tabelle della riga 1): volumi cumulati, entrato = uscito a valle + rimasto nella piana +
 aumento in alveo, errore nel tempo (sotto 0,02 m³, solo arrotondamenti dei file) e portate scambiate.
-In `output/Volume_in_out/fittizio_1` … `fittizio_4` (tabelle `S_50m_q2`, scambio `tabella` con i valori tarati, rilascio
-lento e serbatoio attivo compresi) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
-scenari, è copiato in ognuna).
+In `output/Volume_in_out/svuotamento_32h/fittizio_1` … `fittizio_4` (tabelle `S_50m_q2`, scambio `tabella` con i valori
+tarati, rilascio lento in 32 h e serbatoio attivo) e in `output/Volume_in_out/svuotamento_24h/` (uguale, con il rilascio
+lento in 24 h, riga 32) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
+scenari, è copiato in ognuna). Il confronto tra le due è in `output/Volume_in_out/confronto/`, fatto con
+`strumenti/confronto_simulazioni_2D.jl` (`<cartella di uscita> <cartella 1> <etichetta 1> <cartella 2> <etichetta 2> ...`,
+ogni cartella con `fittizio_1` … `fittizio_4`): portata e tirante nel tempo in S1000, S3500, S4200 e S6000 (grafici 1-2
+per scenario), colmo e tirante massimo lungo il tratto (3), portata 1D − 2D in S6000 (4), indici in `confronto.txt`.
+Le due versioni sono quasi uguali: con 24 h NSE medio in S6000 0,997 contro 0,998, scarto quadratico medio del tirante
+3,6-4,0 cm contro 3,5-3,7, nella piana restano 12 000-13 000 m³ in meno (circa 95 000 invece di 108 000; 72 000 e 84 000 nel `fittizio_2`) e nel ramo calante finale il 1D sta
+0,2-0,3 m³/s più in alto; anticipo della discesa in S6000 quasi uguale (4-21 min).
 Legende: nei grafici 8, 12 e 13 stanno sopra i pannelli, nel 10 a destra, nella GIF 9 e nella 11 in alto a destra,
 per non coprire le curve. `confronto_reference.jl`, se trova `Q_lat.csv`, prende da lì uscite e rientri del grafico 8
 (le 4 uscite e i 4 rientri maggiori tra 2,5 e 4 km, elencati in un riquadro); per i risultati vecchi usa ancora la
@@ -184,9 +191,9 @@ Letto **per posizione** (33 righe, non spostarle; dopo ci sono la legenda e vecc
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 - Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m_q2/`,
-  idrogramma `fittizio_1`, output in `output/Volume_in_out/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
+  idrogramma `fittizio_1`, output in `output/Volume_in_out/svuotamento_32h/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
   `tabella` con i valori tarati (righe 29-33: 150000, 0.5, 1, 32, `si`). I risultati in
-  `output/Volume_in_out/fittizio_N` sono fatti con questo `settings.txt` (righe 14 e 22 a parte).
+  `output/Volume_in_out/svuotamento_32h/fittizio_N` sono fatti con questo `settings.txt` (righe 14 e 22 a parte).
   I risultati in `output/S_50m/fittizio_N` sono invece con la geometria `S_50m` e lo scambio `sfioro`
   (righe 1-2 su `S_50m`, riga 28 `sfioro`), fatti in una copia temporanea. Per gli
   altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
@@ -1100,7 +1107,10 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 scritto (17/11/2026), da committare insieme a esso:
 - `Source/`: serbatoio attivo (riga 33, `piana_attiva` in `Parametri`, `Q_extra` nello scambio `tabella`);
 - `settings.txt`: riga 33 (`si`) e legenda;
-- `output/Volume_in_out/fittizio_1` … `fittizio_4`: simulazioni rifatte con il serbatoio attivo e grafici 1-15;
+- `output/Volume_in_out/`: le uscite di prima spostate in `svuotamento_32h/`, simulazioni rifatte con il serbatoio
+  attivo (rilascio lento 32 h) e grafici 1-15; nuova `svuotamento_24h/` (rilascio lento 24 h) con i grafici 1-15;
+  `confronto/` tra le due;
+- `strumenti/confronto_simulazioni_2D.jl`: nuovo, confronto di più simulazioni dei fittizi tra loro e con il 2D;
 - `calibrazione_scambio/`: `esegui.jl` e `simula_fittizi.jl` con la riga 33, `attivo.jl`, `riepilogo_attivo.jl`,
   `risultati/attivo.csv`, `riepilogo_attivo.txt`, `13_colmo_attivo.txt`, `anticipo_attivo.txt`, grafici 12-13,
   `leggimi.md` aggiornato;

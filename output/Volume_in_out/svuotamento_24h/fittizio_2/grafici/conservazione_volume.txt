@@ -1,0 +1,10 @@
+Conservazione del volume nella simulazione (dopo il riempimento), fittizio_2, volumi in m3
+volume in alveo all'inizio                  48792.6
+volume in alveo alla fine                   53592.5
+entrato da monte                          2474924.6
+uscito a valle                            2398213.8  (96.90%)
+uscito verso la piana                      133704.2  (5.40%)
+rientrato dalla piana                       61793.3  (46.22% dell'uscito verso la piana)
+rimasto nella piana                         71910.9  (2.91%)
+aumento in alveo                             4799.9
+errore del bilancio                            0.00  (0.00000% dell'entrato; massimo nel tempo 0.01)
