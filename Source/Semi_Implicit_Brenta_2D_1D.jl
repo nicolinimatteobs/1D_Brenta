@@ -4,7 +4,7 @@
     params = INITIAL_SETTINGS!()
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
+    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
             parametri_sezioni, local_slope, output_dir, time = params
 
     # --- ALLOCAZIONE ARRAY ---
@@ -283,6 +283,9 @@
         #     tau_piana ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo tau_piana;
         #     T_lento   rilascio lento della parte sotto la soglia, in T_lento, sulle sezioni di rientro
         #               (anche quando la tabella non chiede rientri, es. nel ramo calante; 0: nessun rilascio);
+        #   Riga 33, serbatoio attivo (piana_attiva): la parte oltre la soglia rientra comunque al ritmo Q_disp;
+        #   quello che la tabella non chiede (ramo calante) va sulle sezioni di rientro con i pesi w_rientro.
+        #   Senza, dopo il colmo la tabella smette di chiedere rientri e l'acqua oltre la soglia resta ferma;
         # - nessuno: nessuno scambio.
         if scambio == :sfioro
             @inbounds for i in 1:imax
@@ -315,13 +318,17 @@
             f_rientro = Q_rientro > 0.0 ? min(1.0, Q_disp/Q_rientro) : 0.0
             # rilascio lento della parte sotto la soglia: V_sotto/T_lento, sulle sezioni di rientro (w_rientro)
             Q_lento = T_lento > 0.0 ? min(V_sotto/T_lento, V_sotto/dt) : 0.0
+            # serbatoio attivo: la parte di Q_disp che la tabella non chiede rientra sulle sezioni di rientro
+            Q_extra = piana_attiva ? max(Q_disp - f_rientro*Q_rientro, 0.0) : 0.0
             @inbounds for i in 1:imax
                 Q_lat[i] > 0.0 && (Q_lat[i] *= f_rientro)
                 T_lento > 0.0 && (Q_lat[i] += Q_lento*w_rientro[i])
+                piana_attiva  && (Q_lat[i] += Q_extra*w_rientro[i])
                 rhs[i] += dt/dx_int[i] * Q_lat[i]
             end
-            V_piana     += dt*(Q_esce - f_rientro*Q_rientro - Q_lento)
-            V_rientrato += dt*f_rientro*Q_rientro + dt*Q_lento   # scritto così: con Q_lento = 0 i conti sono quelli senza rilascio lento
+            # scritto così: con Q_lento = 0 e Q_extra = 0 i conti sono quelli senza rilascio lento e serbatoio attivo
+            V_piana     += dt*(Q_esce - f_rientro*Q_rientro - Q_lento - Q_extra)
+            V_rientrato += dt*f_rientro*Q_rientro + dt*Q_lento + dt*Q_extra
         end
         ####  FINE SCAMBIO LATERALE
 

@@ -15,6 +15,7 @@ struct Parametri
     T_piana            ::Float64  # tempo di svuotamento [s]
     tau_piana          ::Float64  # ritardo di percorrenza [s]
     T_lento            ::Float64  # tempo di rilascio lento della parte sotto la soglia [s] (0 = nessun rilascio)
+    piana_attiva       ::Bool     # serbatoio attivo: la parte oltre la soglia rientra anche se la tabella non lo chiede
     n_row              ::Int
     imax               ::Int
     n_col              ::Int

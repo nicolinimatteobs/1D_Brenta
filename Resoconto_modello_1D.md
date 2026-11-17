@@ -211,7 +211,7 @@ monte costante e passo massimo più piccolo durante il riempimento, file di usci
 
 ## 6. Passo 1: lettura di `settings.txt`
 
-`settings.txt` è letto **per posizione**: conta il numero di riga, non c'è un'etichetta. Le prime 32 righe
+`settings.txt` è letto **per posizione**: conta il numero di riga, non c'è un'etichetta. Le prime 33 righe
 sono la configurazione; dopo ci sono una legenda e vecchie configurazioni, che il modello ignora.
 
 | Riga | Contenuto | Esempio |
@@ -232,14 +232,15 @@ sono la configurazione; dopo ci sono una legenda e vecchie configurazioni, che i
 | 30 | Serbatoio della piana: tempo di svuotamento [h] | `0.5` |
 | 31 | Serbatoio della piana: ritardo [h] | `1` |
 | 32 | Serbatoio della piana: rilascio lento [h] | `32` |
+| 33 | Serbatoio attivo | `si` / `no` |
 
 La lettura è in `INITIAL_SETTINGS!` (`Source/module.jl`):
 
 ```julia
 function INITIAL_SETTINGS!()
-    # Legge esattamente 32 righe e rimuove spazi
+    # Legge esattamente 33 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:32]
+        [strip(readline(f)) for _ in 1:33]
     end
     parametri_sezioni = righe[1]
     local_slope       = righe[2]
@@ -255,13 +256,14 @@ function INITIAL_SETTINGS!()
     T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], ...)   # ore → secondi
     tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], ...)
     T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[32], ...)
+    piana_attiva      = PARSE_SI_NO(righe[33], "riga 33 di settings.txt (serbatoio attivo)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
     ...
     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir, Ks, time, dtmax, Nmax,
-                     con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, n_row, imax, n_col)
+                     con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva, n_row, imax, n_col)
 end
 ```
 
@@ -276,7 +278,7 @@ Note:
 
 ```julia
 params = INITIAL_SETTINGS!()
-@unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
+@unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
         parametri_sezioni, local_slope, output_dir, time = params
 ```
 
@@ -874,7 +876,7 @@ rientri: il modello crea acqua e diverge. Nel 2D invece può rientrare solo l'ac
 
 **La soluzione: un serbatoio virtuale per la piana.** L'acqua che esce va in un serbatoio unico per tutto il
 tratto; i rientri sono quelli della tabella ma **limitati da quanto il serbatoio può restituire**, e ridotti
-tutti della stessa frazione. Il serbatoio ha quattro parametri (righe 29-32):
+tutti della stessa frazione. Il serbatoio ha quattro parametri e un interruttore (righe 29-33):
 
 | Parametro | Significato fisico | Effetto nel codice |
 |---|---|---|
@@ -882,6 +884,7 @@ tutti della stessa frazione. Il serbatoio ha quattro parametri (righe 29-32):
 | `T_piana` [h] | tempo con cui la piana restituisce | rientro al massimo `(V − soglia)/T_piana` |
 | ritardo `tau_piana` [h] | tempo per attraversare la piana | l'acqua uscita arriva al serbatoio dopo `tau_piana` |
 | rilascio lento `T_lento` [h] | la piana si svuota lentamente anche dopo la piena | la parte sotto la soglia torna al fiume in `T_lento` |
+| serbatoio attivo `piana_attiva` (si/no) | la piana piena restituisce acqua anche quando il fiume cala | la parte oltre la soglia rientra al ritmo `(V − soglia)/T_piana` anche se la tabella non chiede rientri |
 
 Il calcolo, a ogni passo:
 
@@ -910,18 +913,24 @@ elseif scambio == :tabella
     f_rientro = Q_rientro > 0.0 ? min(1.0, Q_disp/Q_rientro) : 0.0
     # rilascio lento della parte sotto la soglia
     Q_lento = T_lento > 0.0 ? min(V_sotto/T_lento, V_sotto/dt) : 0.0
+    # serbatoio attivo: la parte di Q_disp che la tabella non chiede rientra comunque
+    Q_extra = piana_attiva ? max(Q_disp - f_rientro*Q_rientro, 0.0) : 0.0
     for i in 1:imax
         Q_lat[i] > 0.0 && (Q_lat[i] *= f_rientro)
         T_lento > 0.0 && (Q_lat[i] += Q_lento*w_rientro[i])
+        piana_attiva  && (Q_lat[i] += Q_extra*w_rientro[i])
         rhs[i] += dt/dx_int[i] * Q_lat[i]
     end
-    V_piana     += dt*(Q_esce - f_rientro*Q_rientro - Q_lento)
-    V_rientrato += dt*f_rientro*Q_rientro + dt*Q_lento
+    V_piana     += dt*(Q_esce - f_rientro*Q_rientro - Q_lento - Q_extra)
+    V_rientrato += dt*f_rientro*Q_rientro + dt*Q_lento + dt*Q_extra
 end
 ```
 
 - `VOLUME_AT` interpola la storia del volume uscito per sapere quanto ne era uscito `tau_piana` secondi fa.
-- Il rilascio lento va nelle sezioni in cui la tabella prevede rientri, con pesi `w_rientro` proporzionali al
+- Senza serbatoio attivo, dopo il colmo il livello scende, la tabella smette di chiedere rientri e l'acqua oltre
+  la soglia resta ferma nel serbatoio: il 1D scende prima del 2D. Con il serbatoio attivo quell'acqua (`Q_extra`)
+  rientra comunque al ritmo `Q_disp`.
+- Il rilascio lento e il serbatoio attivo vanno nelle sezioni in cui la tabella prevede rientri, con pesi `w_rientro` proporzionali al
   ΔQ massimo positivo di ogni sezione (calcolati una volta all'inizio):
 
 ```julia
@@ -933,7 +942,7 @@ w_rientro ./= max(sum(w_rientro), 1e-12)
   conserva per costruzione (lo controlla `BILANCIO_DI_MASSA`, §12.2).
 
 I valori dei parametri sono stati tarati sui quattro scenari fittizi confrontando con il 2D (soglia
-150 000 m³, T 0,5 h, ritardo 1 h, rilascio lento 32 h): codici, risultati e grafici sono in
+150 000 m³, T 0,5 h, ritardo 1 h, rilascio lento 32 h, serbatoio attivo): codici, risultati e grafici sono in
 `calibrazione_scambio/` con il suo `leggimi.md`.
 
 ### 11.3 `nessuno`

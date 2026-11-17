@@ -1,27 +1,27 @@
 Sezione S2400 (x = 2.40 km, talweg 425.03 m s.l.m.), 1D - 2D, 117 istanti 2D bagnati (dati ogni 15 min)
 tirante massimo: 2D 2.689 m a 13.00 h | 1D 2.644 m a 13.45 h | differenza -0.044 m
-tirante: differenza media -0.066 m, scarto quadratico medio 0.073 m, massimo -0.142 m
+tirante: differenza media -0.063 m, scarto quadratico medio 0.069 m, massimo -0.143 m
 portata massima: 2D 65.00 m3/s a 8.75 h | 1D 66.90 m3/s a 11.59 h | differenza +1.90 m3/s
-portata: differenza media +0.58 m3/s, scarto quadratico medio 1.17 m3/s
-a parità di portata, tirante - scalini 2D: 1D media -0.157 m (scarto quadratico medio 0.244 m), 2D media +0.012 m (0.037 m)
+portata: differenza media +0.68 m3/s, scarto quadratico medio 1.11 m3/s
+a parità di portata, tirante - scalini 2D: 1D media -0.156 m (scarto quadratico medio 0.244 m), 2D media +0.012 m (0.037 m)
 
 Sezione S2800 (x = 2.80 km, talweg 423.93 m s.l.m.), 1D - 2D, 116 istanti 2D bagnati (dati ogni 15 min)
 tirante massimo: 2D 3.139 m a 11.00 h | 1D 3.136 m a 13.49 h | differenza -0.003 m
-tirante: differenza media -0.027 m, scarto quadratico medio 0.034 m, massimo -0.084 m
+tirante: differenza media -0.025 m, scarto quadratico medio 0.033 m, massimo +0.066 m
 portata massima: 2D 66.48 m3/s a 12.75 h | 1D 68.51 m3/s a 13.41 h | differenza +2.03 m3/s
-portata: differenza media +0.41 m3/s, scarto quadratico medio 1.00 m3/s
-a parità di portata, tirante - scalini 2D: 1D media -0.039 m (scarto quadratico medio 0.041 m), 2D media +0.000 m (0.007 m)
+portata: differenza media +0.53 m3/s, scarto quadratico medio 0.94 m3/s
+a parità di portata, tirante - scalini 2D: 1D media -0.038 m (scarto quadratico medio 0.042 m), 2D media +0.000 m (0.007 m)
 
 Sezione S2900 (x = 2.90 km, talweg 423.93 m s.l.m.), 1D - 2D, 116 istanti 2D bagnati (dati ogni 15 min)
 tirante massimo: 2D 2.917 m a 12.75 h | 1D 2.937 m a 13.77 h | differenza +0.020 m
-tirante: differenza media -0.011 m, scarto quadratico medio 0.024 m, massimo -0.065 m
+tirante: differenza media -0.007 m, scarto quadratico medio 0.027 m, massimo +0.103 m
 portata massima: 2D 66.40 m3/s a 13.00 h | 1D 68.36 m3/s a 13.42 h | differenza +1.95 m3/s
-portata: differenza media +0.40 m3/s, scarto quadratico medio 0.97 m3/s
-a parità di portata, tirante - scalini 2D: 1D media -0.022 m (scarto quadratico medio 0.027 m), 2D media -0.000 m (0.005 m)
+portata: differenza media +0.51 m3/s, scarto quadratico medio 0.91 m3/s
+a parità di portata, tirante - scalini 2D: 1D media -0.022 m (scarto quadratico medio 0.028 m), 2D media -0.000 m (0.005 m)
 
 Sezione S2950 (x = 2.95 km, talweg 423.93 m s.l.m.), 1D - 2D, 116 istanti 2D bagnati (dati ogni 15 min)
 tirante massimo: 2D 2.893 m a 12.25 h | 1D 2.882 m a 13.78 h | differenza -0.011 m
-tirante: differenza media -0.031 m, scarto quadratico medio 0.038 m, massimo -0.092 m
+tirante: differenza media -0.028 m, scarto quadratico medio 0.037 m, massimo +0.083 m
 portata massima: 2D 66.41 m3/s a 12.25 h | 1D 68.36 m3/s a 13.42 h | differenza +1.95 m3/s
-portata: differenza media +0.40 m3/s, scarto quadratico medio 0.97 m3/s
+portata: differenza media +0.52 m3/s, scarto quadratico medio 0.92 m3/s
 a parità di portata, tirante - scalini 2D: 1D media -0.043 m (scarto quadratico medio 0.046 m), 2D media -0.000 m (0.003 m)

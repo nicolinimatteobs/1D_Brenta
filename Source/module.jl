@@ -5,12 +5,13 @@
 # passo massimo e numero massimo di passi, riga 27 affluenti attivi (si/no), riga 28 scambio
 # laterale con la piana (sfioro, tabella o nessuno), righe 29-31 parametri del serbatoio della
 # piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h], riga 32
-# tempo di rilascio lento della parte sotto la soglia [h]. Numero di righe e di colonne delle
+# tempo di rilascio lento della parte sotto la soglia [h], riga 33 serbatoio attivo (si/no: la parte
+# oltre la soglia rientra anche quando la tabella non chiede rientri). Numero di righe e di colonne delle
 # tabelle e numero di sezioni sono ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
-    # Legge esattamente 32 righe e rimuove spazi
+    # Legge esattamente 33 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:32]
+        [strip(readline(f)) for _ in 1:33]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
@@ -36,6 +37,7 @@ function INITIAL_SETTINGS!()
     T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], "riga 30 di settings.txt (tempo di svuotamento, ore)")
     tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], "riga 31 di settings.txt (ritardo, ore)")
     T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[32], "riga 32 di settings.txt (rilascio lento, ore)")
+    piana_attiva      = PARSE_SI_NO(righe[33], "riga 33 di settings.txt (serbatoio attivo)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
@@ -45,7 +47,7 @@ function INITIAL_SETTINGS!()
 
     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
                      Ks, time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
-                     n_row, imax, n_col)
+                     piana_attiva, n_row, imax, n_col)
 end
 
 # Legge un numero non negativo da settings.txt

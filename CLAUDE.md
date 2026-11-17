@@ -77,7 +77,7 @@ come `BILANCIO_DI_MASSA`, i volumi entrati, usciti a valle, usciti verso la pian
 volume in alveo (aree delle tabelle della riga 1): volumi cumulati, entrato = uscito a valle + rimasto nella piana +
 aumento in alveo, errore nel tempo (sotto 0,02 m³, solo arrotondamenti dei file) e portate scambiate.
 In `output/Volume_in_out/fittizio_1` … `fittizio_4` (tabelle `S_50m_q2`, scambio `tabella` con i valori tarati, rilascio
-lento compreso) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
+lento e serbatoio attivo compresi) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
 scenari, è copiato in ognuna).
 Legende: nei grafici 8, 12 e 13 stanno sopra i pannelli, nel 10 a destra, nella GIF 9 e nella 11 in alto a destra,
 per non coprire le curve. `confronto_reference.jl`, se trova `Q_lat.csv`, prende da lì uscite e rientri del grafico 8
@@ -136,6 +136,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | Percorso | Contenuto |
 |---|---|
 | `main.jl` | Avvia `RUN_SIMULATION.SEMI_IMPLICIT_BRENTA_2D_1D!()` |
+| `Resoconto_modello_1D.md` | Spiegazione di tutto il codice come flusso di lavoro, con i pezzi di codice (per chi lo vede la prima volta) |
 | `Source/Run_Simulation.jl` | Modulo che include gli altri file |
 | `Source/Semi_Implicit_Brenta_2D_1D.jl` | Il solutore: riempimento (condizioni iniziali) e simulazione |
 | `Source/subroutines.jl` | Lettura tabelle e geometria, `READ_VALUES`, `UNIFORM_LEVEL`, idrogrammi, Thomas, `CHECK_NAN` |
@@ -155,7 +156,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 
 ## settings.txt
 
-Letto **per posizione** (32 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
+Letto **per posizione** (33 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
 
 | Riga | Contenuto |
 |---|---|
@@ -175,18 +176,19 @@ Letto **per posizione** (32 righe, non spostarle; dopo ci sono la legenda e vecc
 | 30 | Serbatoio della piana: tempo di svuotamento T [h] (0 = tutto subito) |
 | 31 | Serbatoio della piana: ritardo τ [h] |
 | 32 | Serbatoio della piana: rilascio lento della parte sotto la soglia [h] (0 = resta nella piana) |
+| 33 | Serbatoio attivo: `si` o `no` (la parte oltre la soglia rientra anche quando la tabella non chiede rientri) |
 
 - Numero di righe e colonne delle tabelle e numero di sezioni **sono ricavati dai file**
   (`FILE_SIZE`): non serve più il vecchio `struttura_output.txt`.
 - Tutti gli idrogrammi indicati devono esistere, anche con gli affluenti spenti. `Brenta7.csv`, non
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
-- Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m/`,
-  idrogramma `fittizio_1`, output in `output/S_50m/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
-  `sfioro` (righe 29-32 già sui valori tarati 150000, 0.5, 1, 32: si usano solo con `tabella`). Per lo scambio
-  dalla tabella vanno cambiate anche le righe 1-2 su `input/geometria/Test_Brenta/S_50m_q2/`.
-  I risultati in `output/S_50m/fittizio_N` sono fatti in una copia temporanea con gli stessi sorgenti,
-  la stessa geometria e lo stesso `settings.txt` (righe 14 e 22 a parte). Per gli
+- Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m_q2/`,
+  idrogramma `fittizio_1`, output in `output/Volume_in_out/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
+  `tabella` con i valori tarati (righe 29-33: 150000, 0.5, 1, 32, `si`). I risultati in
+  `output/Volume_in_out/fittizio_N` sono fatti con questo `settings.txt` (righe 14 e 22 a parte).
+  I risultati in `output/S_50m/fittizio_N` sono invece con la geometria `S_50m` e lo scambio `sfioro`
+  (righe 1-2 su `S_50m`, riga 28 `sfioro`), fatti in una copia temporanea. Per gli
   altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
   gli strumenti leggono tabelle e geometria dalle righe 1-2.
 
@@ -348,18 +350,22 @@ servono la formula dello sfioro né le quote degli argini.
   NaN ma con il passo che va a zero).
 - Per questo c'è un **serbatoio virtuale unico per tutto il tratto** (la piana): le uscite (ΔQ < 0) sono quelle
   della tabella e vanno nel serbatoio; i rientri (ΔQ > 0, solo dove la tabella li prevede) sono ridotti tutti
-  della stessa frazione in modo da non superare quanto il serbatoio può restituire. Parametri (righe 29-32):
+  della stessa frazione in modo da non superare quanto il serbatoio può restituire. Parametri (righe 29-33):
   - **soglia** [m³]: la piana trattiene i primi m³ usciti, rientra solo il volume oltre la soglia;
   - **T** [h]: rientro al massimo (V − soglia)/T (0 = subito tutto ciò che è disponibile);
   - **τ** [h]: ritardo di percorrenza, l'acqua uscita arriva al serbatoio dopo τ (storia del volume uscito,
     `VOLUME_AT`; il tempo conta anche il riempimento);
   - **rilascio lento** [h]: la parte sotto la soglia torna al fiume in questo tempo, nelle sezioni di rientro con
     pesi proporzionali al ΔQ massimo positivo della tabella (`w_rientro`), anche quando la tabella non chiede
-    rientri (ramo calante, fra due onde).
-- Tarati sui fittizi 1-4 con le tabelle `S_50m_q2`: **soglia 150 000 m³, T = 0,5 h, τ = 1 h, rilascio lento 32 h**
-  (il rilascio lento tarato dopo, con gli altri fissi). Tutta la taratura (94 combinazioni, circa 400
-  simulazioni, tutte stabili e con il bilancio chiuso) è in `calibrazione_scambio/` con codici, risultati,
-  grafici 1-11 e `leggimi.md`. Medie sui quattro scenari:
+    rientri (ramo calante, fra due onde);
+  - **serbatoio attivo** (`si`/`no`, `piana_attiva`): la parte oltre la soglia rientra comunque al ritmo
+    (V − soglia)/T; quello che la tabella non chiede (`Q_extra`, ramo calante) va nelle sezioni di rientro con gli
+    stessi pesi `w_rientro`. Senza, dopo il colmo la tabella smette di chiedere rientri e l'acqua oltre la soglia
+    resta ferma nel serbatoio. Con `no` i risultati sono identici byte per byte a quelli di prima.
+- Tarati sui fittizi 1-4 con le tabelle `S_50m_q2`: **soglia 150 000 m³, T = 0,5 h, τ = 1 h, rilascio lento 32 h,
+  serbatoio attivo** (il rilascio lento tarato dopo, con gli altri fissi; con il serbatoio attivo T e soglia sono
+  stati ritarati e restano gli stessi). Tutta la taratura (115 combinazioni, circa 480 simulazioni, tutte stabili
+  e con il bilancio chiuso) è in `calibrazione_scambio/` con codici, risultati, grafici 1-13 e `leggimi.md`. Medie sui quattro scenari:
 
   | Scambio | NSE in S6000 | Errore del colmo lungo il tratto | Errore del livello |
   |---|---|---|---|
@@ -368,10 +374,11 @@ servono la formula dello sfioro né le quote degli argini.
   | tabella, solo T = 4 h | 0,986 | 1,86 m³/s | 3,6 cm |
   | tabella, soglia 150 000 m³, T = 1 h | 0,989 | 1,11 m³/s | 3,3 cm |
   | tabella, soglia 150 000 m³, T = 0,5 h, τ = 1 h | 0,991 | 1,02 m³/s | 3,1 cm |
-  | **tabella, come sopra con rilascio lento in 32 h** | **0,994** | **1,05 m³/s** | **3,2 cm** |
+  | tabella, come sopra con rilascio lento in 32 h | 0,994 | 1,05 m³/s | 3,2 cm |
+  | **tabella, come sopra con il serbatoio attivo** | **0,998** | **1,08 m³/s** | **2,7 cm** |
 
-  - Colmo in S6000, 2D → 1D tarato: 69,3 → 69,9; 63,6 → 63,4; 81,7 → 81,8; 78,6 → 77,9 m³/s (`fittizio_4`: 2ª
-    onda). Con lo sfioro era circa 60 in tutti.
+  - Colmo in S6000, 2D → 1D tarato: 69,3 → 69,9; 63,6 → 63,4; 81,7 → 81,8; 78,6 → 77,3 m³/s (`fittizio_4`: 2ª
+    onda; 77,9 senza serbatoio attivo). Con lo sfioro era circa 60 in tutti.
   - Con T = 0 tutta l'acqua uscita rientra subito (colmo in uscita uguale a quello in ingresso): le tabelle
     descrivono la piana già piena. Con il solo T il rientro è graduale e troppo presto; nel 2D arriva a scatto,
     quando la piana si è riempita. Nel 2D il volume che resta fuori è simile nei quattro scenari (154-215 mila
@@ -383,8 +390,13 @@ servono la formula dello sfioro né le quote degli argini.
     della seconda onda scende a 23 min (prime onde: 4-11 min dopo il 2D), quello della discesa in S6000 (portata
     sotto 50 m³/s) da 39 a 32 min, e nel `fittizio_2` rientrano 47 000 m³ (2D 51 000). Un rilascio più veloce
     (4 h) dà la discesa quasi esatta ma il rientro 48 min tardi.
-  - Limiti: nel ramo calante il 1D scende ancora circa 30 min prima e a fine evento sta circa 1 m³/s sopra;
-    il 1D fa uscire il 10-35% di acqua in meno del 2D; un solo serbatoio per tutto il tratto; quattro parametri
+  - Con il serbatoio attivo l'anticipo della discesa in S6000 scende da 32 a 14 min in media (36 → 20, 10 → 10,
+    36 → 4, 36 → 20 e 39 → 15 min per `fittizio_1`, 2, 3 e le due onde del 4), l'errore sull'istante del rientro in
+    S4200 da 12 a 7 min, lo scarto quadratico medio della quota nella GIF 9 da 4,8 a 3,9 cm (`fittizio_1`). Con T o
+    soglia più grandi il serbatoio restituisce acqua prima del colmo e i colmi calano.
+  - Limiti: nel ramo calante il 1D scende ancora 14 min prima in media (20 nel `fittizio_1`, in parte per l'invaso
+    del canale che manca anche a monte del rientro: 15-24 min già a 2,4-3,5 km); il 1D fa uscire il 10-35% di acqua
+    in meno del 2D; un solo serbatoio per tutto il tratto; quattro parametri
     tarati e verificati sugli stessi quattro scenari.
 
 ## Stato attuale e risultati
@@ -1006,8 +1018,8 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 - **Criterio di arresto del riempimento:** la tolleranza assoluta 0,01 m³/s su `|q − qn|` è poco
   adatta alle portate molto basse; `T_assestamento`, `T_fermo` e `tol_fermo` sono provati solo su
   Test_Brenta (6 km) e rettangolare (30 km).
-- **Scambio dalla tabella con il serbatoio della piana** (fatto, con il rilascio lento; vedi "Scambio laterale
-  con la piana"): restano il ramo calante che scende circa 30 min prima del 2D, il serbatoio unico per tutto il
+- **Scambio dalla tabella con il serbatoio della piana** (fatto, con il rilascio lento e il serbatoio attivo; vedi
+  "Scambio laterale con la piana"): restano il ramo calante che scende ancora 14 min prima del 2D, il serbatoio unico per tutto il
   tratto e la mancanza di una piena di verifica indipendente. I ragionamenti qui sotto sono quelli che hanno portato a questa soluzione.
 - **Rientro dell'acqua sfiorata.** Nel 2D l'acqua uscita rientra più a valle (vedi
   "Rientro dell'acqua nel 2D"); nel 1D esce e non torna, ed è ormai la causa principale dello scarto
@@ -1084,20 +1096,21 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 
 ## Ultimo commit descritto
 
-`693a592` ("aggiunta grafici taratura"), più le modifiche successive non ancora committate quando questo file
-è stato scritto (17/11/2026), da committare insieme a esso:
-- `Source/`: rilascio lento della parte sotto la soglia (riga 32, `T_lento`, pesi `w_rientro`) e controllo del
-  bilancio di massa a fine simulazione (`BILANCIO_DI_MASSA` in `writing.jl`, `bilancio.txt`);
-- `settings.txt`: riga 32 (32 h) e legenda (la configurazione attuale punta su `S_50m_q2`, scambio `tabella`, output
-  `output/Volume_in_out/fittizio_4`);
-- `strumenti/`: nuovo `grafico_volumi.jl` (grafico 15), `confronto_reference.jl` con `Q_lat.csv`, `confronto_valle.jl`
-  con le cartelle `_q2`/`_q5`, legende spostate in `confronto_reference.jl`, `confronto_valle.jl`, `grafici_spinup.jl` e
-  `animazioni_2D.jl`;
-- `output/Volume_in_out/fittizio_1` … `fittizio_4`: simulazioni con lo scambio dalla tabella e grafici 1-15;
-- `CLAUDE.md`: corretta la frase sul bilancio dei fittizi a 50 m (i 3 400-3 800 m³ sono l'aumento del volume in alveo);
-- `calibrazione_scambio/`: `esegui.jl` e `simula_fittizi.jl` con la riga 32, `rilascio_lento.jl`,
-  `grafici_rilascio_lento.jl`, `risultati/rilascio_lento.csv` e riepiloghi, grafici 9-11, `leggimi.md`
-  aggiornato.
+`28c071f` ("tutorial modello 1D"), più le modifiche successive non ancora committate quando questo file è stato
+scritto (17/11/2026), da committare insieme a esso:
+- `Source/`: serbatoio attivo (riga 33, `piana_attiva` in `Parametri`, `Q_extra` nello scambio `tabella`);
+- `settings.txt`: riga 33 (`si`) e legenda;
+- `output/Volume_in_out/fittizio_1` … `fittizio_4`: simulazioni rifatte con il serbatoio attivo e grafici 1-15;
+- `calibrazione_scambio/`: `esegui.jl` e `simula_fittizi.jl` con la riga 33, `attivo.jl`, `riepilogo_attivo.jl`,
+  `risultati/attivo.csv`, `riepilogo_attivo.txt`, `13_colmo_attivo.txt`, `anticipo_attivo.txt`, grafici 12-13,
+  `leggimi.md` aggiornato;
+- `Resoconto_modello_1D.md`: riga 33 e serbatoio attivo.
+
+Commit `a451948`, `1c1278c` e `28c071f` (già descritti qui sopra): rilascio lento (riga 32, `T_lento`, `w_rientro`),
+controllo del bilancio di massa (`BILANCIO_DI_MASSA`, `bilancio.txt`), `strumenti/grafico_volumi.jl` (grafico 15),
+`confronto_reference.jl` con `Q_lat.csv`, `confronto_valle.jl` con le cartelle `_q2`/`_q5`, legende spostate,
+`output/Volume_in_out/fittizio_1` … `fittizio_4` con i grafici 1-15, taratura del rilascio lento in
+`calibrazione_scambio/` (grafici 9-11), `Resoconto_modello_1D.md` (spiegazione del codice come flusso di lavoro).
 
 Commit `07dc616` e `693a592` (già descritti qui sopra): scambio laterale scelto con la riga 28 (`sfioro`,
 `tabella`, `nessuno`), lettura della colonna ΔQ (`READ_EXCHANGE`), serbatoio della piana con soglia, T e ritardo
