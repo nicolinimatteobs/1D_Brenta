@@ -1,0 +1,10 @@
+Bilancio di massa della simulazione (dopo il riempimento), volumi in m3
+volume in alveo all'inizio                          48790.1
+volume in alveo alla fine                           53398.2
+entrato da monte                                  2474923.4
+uscito a valle                                    2386074.4
+entrato dagli affluenti                                 0.0
+scambio con la piana (+ entra, − esce)             -84240.9
+errore                                                  0.0  (0.0000% del volume da monte)
+serbatoio della piana alla fine                     85203.2
+uscito e non rientrato, riempimento compreso          85203.2  (deve essere uguale al serbatoio)

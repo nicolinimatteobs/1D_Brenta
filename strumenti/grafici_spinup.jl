@@ -46,8 +46,8 @@ serieQ(i) = i == 1 ? Q[:, 1] : i == imax ? Q[:, end] : Qs[:, i]
 nomi(i) = i == 1 ? @sprintf("ingresso (x = %.1f km)", x[i]) : i == imax ? @sprintf("uscita (x = %.1f km)", x[i]) : @sprintf("x = %.1f km", x[i])
 
 # --- Figura riassuntiva ---
-a = plot(; title = "Portata nel tempo", ylabel = "portata [m³/s]", legend = :bottomright, xlims = (0, t[end]), st...)
-b = plot(; title = "Tirante nel tempo", ylabel = "tirante [m]", legend = :bottomright, xlims = (0, t[end]), ylims = (0, 1.08 * maximum(H[:, sez])), xlabel = "tempo di riempimento [h]", st...)
+a = plot(; title = "Portata nel tempo", ylabel = "portata [m³/s]", legend = :outerright, xlims = (0, t[end]), st...)
+b = plot(; title = "Tirante nel tempo", ylabel = "tirante [m]", legend = :outerright, xlims = (0, t[end]), ylims = (0, 1.08 * maximum(H[:, sez])), xlabel = "tempo di riempimento [h]", st...)
 for (j, i) in enumerate(sez)
     plot!(a, t, serieQ(i); label = nomi(i), color = cols[j], linewidth = 1.8)
     plot!(b, t, H[:, i]; label = nomi(i), color = cols[j], linewidth = 1.8)
@@ -81,7 +81,7 @@ function scena(k)
              ylabel = "portata [m³/s]", xlabel = "distanza [km]", legend = :topright, title = "Portata lungo il tratto", st...)
     plot!(b, x, Qs[k, :]; label = "stato corrente", color = BLU, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
     c = plot(t, Q[:, end]; label = false, color = GRI, linewidth = 1, alpha = 0.5, ylims = (0, Qmax), xlims = (0, t[end]),
-             ylabel = "portata [m³/s]", xlabel = "tempo di riempimento [h]", legend = :bottomright, title = @sprintf("Portata in uscita (x = %.1f km)", x[end]), st...)
+             ylabel = "portata [m³/s]", xlabel = "tempo di riempimento [h]", legend = :topright, title = @sprintf("Portata in uscita (x = %.1f km)", x[end]), st...)
     plot!(c, t[1:k], Q[1:k, end]; label = false, color = ARA, linewidth = 2)
     vline!(c, [tc]; color = :black, linestyle = :dash, linewidth = 1, label = @sprintf("portata ferma e bilancio chiuso (%.2f h)", tc))
     scatter!(c, [t[k]], [Q[k, end]]; color = ARA, markersize = 6, markerstrokecolor = :white, label = false)

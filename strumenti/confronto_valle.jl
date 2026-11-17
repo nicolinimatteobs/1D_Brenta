@@ -9,7 +9,8 @@
 # cui il 2D è ancora asciutto (livello o portata nulli, 2D che parte da alveo asciutto) non sono disegnati
 # e sono esclusi dai numeri. Le colonne 2D sono associate alle sezioni arrotondando l'ascissa ai 50 m.
 # Il confronto a parità di portata usa la scala di deflusso degli scalini 2D (moto permanente, da cui vengono
-# le tabelle), letta da calcolo_tabelle_daBM/input/S_0050_6000 se c'è il file della sezione: lo scarto è il
+# le tabelle), letta da calcolo_tabelle_daBM/input/S_0050_6000_q5 (o _q2 con le tabelle S_50m_q2) se c'è il
+# file della sezione: lo scarto è il
 # tirante meno quello degli scalini alla stessa portata.
 # Con più sezioni, l'opzione --nome=<numero> cambia il numero del grafico e del file di testo
 # (es. --nome=13_1 dà 13_1_confronto_sezioni_tirante_portata.png e confronto_sezioni_13_1.txt), così
@@ -29,7 +30,8 @@ const D    = joinpath(R, ARGS[1])
 const WSE2 = joinpath(R, ARGS[2])
 const Q2F  = joinpath(R, ARGS[3])
 const OUT  = joinpath(D, "grafici"); mkpath(OUT)
-const SCALINI = joinpath(R, "calcolo_tabelle_daBM/input/S_0050_6000/ns_50_scalini_")
+# scalini da cui vengono le tabelle della riga 1: a 2 m³/s per S_50m_q2, altrimenti quelli a circa 5 m³/s
+const SCALINI = joinpath(R, "calcolo_tabelle_daBM/input/S_0050_6000_" * (occursin("S_50m_q2", SET[1]) ? "q2" : "q5") * "/ns_50_scalini_")
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)
 
@@ -101,17 +103,17 @@ end
 th = t1 ./ 3600; t2h = t2 ./ 3600
 m2 = (color = ARA, linewidth = 2, markershape = :circle, markersize = 2.5, markerstrokewidth = 0)
 function pannelli(s, titolo)
-    a = plot(; title = "$titolo: tirante", ylabel = "tirante [m]", legend = :topright, xlims = (0, th[end]), st...)
-    plot!(a, th, s.h1; label = "1D con sfioro", color = BLU, linewidth = 2)
+    a = plot(; title = "$titolo: tirante", ylabel = "tirante [m]", legend = :outertop, legend_columns = -1, xlims = (0, th[end]), st...)
+    plot!(a, th, s.h1; label = "1D", color = BLU, linewidth = 2)
     plot!(a, t2h, s.h2; label = "2D", m2...)
     hmax = max(maximum(s.h1), maximum(filter(!isnan, s.h2)))
     for (n, z) in zip(("argine destro", "argine sinistro"), s.argini)
         isfinite(z) && z - s.zb < 1.3 * hmax &&
             hline!(a, [z - s.zb]; label = n, color = GRI, linestyle = n == "argine destro" ? :dash : :dot, linewidth = 1)
     end
-    b = plot(; title = "$titolo: portata", ylabel = "portata [m³/s]", legend = :topright, xlims = (0, th[end]), st...)
+    b = plot(; title = "$titolo: portata", ylabel = "portata [m³/s]", legend = :outertop, legend_columns = -1, xlims = (0, th[end]), st...)
     plot!(b, th, qin; label = "ingresso da monte (1D)", color = GRI, linestyle = :dash, linewidth = 1)
-    plot!(b, th, s.q1; label = "1D con sfioro", color = BLU, linewidth = 2)
+    plot!(b, th, s.q1; label = "1D", color = BLU, linewidth = 2)
     plot!(b, t2h, s.q2; label = "2D", m2...)
     return a, b
 end
@@ -122,10 +124,10 @@ if isempty(SEZ)
     a, b = pannelli(s, "Sezione di valle $(s.nome)")
     xlabel!(b, "tempo [h]")
     c = plot(; title = "Sezione di valle $(s.nome): tirante a parità di portata", xlabel = "portata [m³/s]",
-             ylabel = "tirante [m]", legend = :bottomright, st...)
+             ylabel = "tirante [m]", legend = :outertop, legend_columns = -1, st...)
     s.scalini === nothing || plot!(c, s.scalini...; label = "scalini 2D (moto permanente)", color = :black, linewidth = 1,
                                    linestyle = :dash, markershape = :diamond, markersize = 3, markerstrokewidth = 0)
-    plot!(c, s.q1, s.h1; label = "1D con sfioro", color = BLU, linewidth = 2)
+    plot!(c, s.q1, s.h1; label = "1D", color = BLU, linewidth = 2)
     plot!(c, s.q2, s.h2; label = "2D", m2...)
     savefig(plot(a, b, c; layout = (3, 1), size = (1000, 1100), dpi = 130, left_margin = 6Plots.mm),
             joinpath(OUT, "12_confronto_valle_tirante_portata.png"))

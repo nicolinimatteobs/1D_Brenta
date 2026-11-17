@@ -66,12 +66,12 @@ function quadro(j)
     m2 = (color = ARA, linewidth = 2, markershape = :circle, markersize = imax > 60 ? 1.5 : 3, markerstrokewidth = 0)
     a = plot(xk, zb; label = "talweg", color = GRI, fillrange = minimum(zb) - 1, fillcolor = GRI, fillalpha = 0.15,
              ylims = ylz, ylabel = "quota [m s.l.m.]", legend = :topright, st...)
-    plot!(a, xk, E1c[j, :]; label = "1D con sfioro", color = BLU, linewidth = 2)
+    plot!(a, xk, E1c[j, :]; label = "1D", color = BLU, linewidth = 2)
     plot!(a, xk, E2[j, :]; label = "2D", m2...)
     c = plot(xk, dE[j, :]; ylims = (-dmax, dmax), ylabel = "quota 1D − 2D [m]", legend = false, color = :black, linewidth = 1.5, st...)
     hline!(c, [0.0]; color = GRI, linewidth = 0.8)
-    b = plot(xk, Q1c[j, :]; ylims = ylq, ylabel = "portata [m³/s]", xlabel = "distanza [km]", label = "1D con sfioro",
-             color = BLU, linewidth = 2, legend = :bottomleft, st...)
+    b = plot(xk, Q1c[j, :]; ylims = ylq, ylabel = "portata [m³/s]", xlabel = "distanza [km]", label = "1D",
+             color = BLU, linewidth = 2, legend = :topright, st...)
     plot!(b, xk, Q2[j, :]; label = "2D", m2...)
     plot(a, c, b; layout = grid(3, 1, heights = [0.46, 0.2, 0.34]), size = (1000, 850), dpi = 100, left_margin = 6Plots.mm,
          plot_title = ttl(j) * @sprintf(", portata in ingresso: 1D %.1f m³/s, 2D (%s) %.1f m³/s", Qin[j], nomesez(x[1]), Q2[j, 1]),

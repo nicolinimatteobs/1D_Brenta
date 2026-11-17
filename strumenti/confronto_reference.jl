@@ -86,34 +86,55 @@ for i in eachindex(x)
 end
 prv = ifelse.(cok, pr, NaN); tprv = ifelse.(cok, tpr, NaN)       # colmi del riferimento non raggiunti: esclusi
 
-# Sfioro del 1D sezione per sezione: volume uscito dall'argine destro e dal sinistro in tutta la simulazione
-Vdx = zeros(length(x)); Vsx = zeros(length(x))
-if all(r -> length(r) >= 6, G)
+# Scambio del 1D con la piana sezione per sezione, in tutta la simulazione: volume uscito e volume rientrato.
+# Se c'è Q_lat.csv (scambio salvato dal modello, positivo se entra) si usa quello, valido con ogni scambio;
+# altrimenti (risultati vecchi) l'uscita è ricavata da eta.csv con la formula dello sfioro, argine per argine.
+Vdx = zeros(length(x)); Vsx = zeros(length(x)); Vin = zeros(length(x))
+const DA_QLAT = isfile(joinpath(D, "Q_lat.csv"))
+if DA_QLAT
+    L1 = mat("Q_lat.csv")
+    Vdx .= [vol(t, max.(-L1[:, k], 0.0)) for k in eachindex(x)]   # uscita totale (il lato non è noto)
+    Vin .= [vol(t, max.(L1[:, k], 0.0)) for k in eachindex(x)]
+elseif all(r -> length(r) >= 6, G)
     E1  = mat("eta.csv"); dxb = diff(x)
     dxc = [k == 1 ? dxb[1] : k == length(x) ? dxb[end] : 0.5*(dxb[k] + dxb[k-1]) for k in eachindex(x)]   # lunghezza della cella
     qsf(η, z) = (Y = max(η - z, 0.0); 0.385*sqrt(2*9.81*Y^3))   # sfioro libero per unità di lunghezza [m²/s]
     Vdx .= [vol(t, qsf.(E1[:, k], G[k][5]) .* dxc[k]) for k in eachindex(x)]
     Vsx .= [vol(t, qsf.(E1[:, k], G[k][6]) .* dxc[k]) for k in eachindex(x)]
 end
-sfiora = findall(k -> TRATTO[1] <= x[k]/1000 <= TRATTO[2] && Vdx[k] + Vsx[k] > 1.0, eachindex(x))
+# Sezioni segnate nel tratto: con lo sfioro tutte quelle che sfiorano; con Q_lat.csv (scambio anche dalla tabella,
+# dove quasi tutte le sezioni scambiano un po' d'acqua) solo le 4 uscite e i 4 rientri maggiori, oltre 1000 m³
+nel_tratto(k) = TRATTO[1] <= x[k]/1000 <= TRATTO[2]
+principali(v, soglia, n) = (c = findall(k -> nel_tratto(k) && v[k] > soglia, eachindex(x)); sort(c[sortperm(v[c]; rev = true)][1:min(n, end)]))
+sfiora  = DA_QLAT ? principali(Vdx, 1000.0, 4) : findall(k -> nel_tratto(k) && Vdx[k] + Vsx[k] > 1.0, eachindex(x))
+rientra = principali(Vin, 1000.0, 4)
 nomesez(xi) = @sprintf("S%04d", round(Int, xi/50)*50)
-lato(k) = Vdx[k] > 1.0 && Vsx[k] > 1.0 ? "due argini" : Vdx[k] > 1.0 ? "argine destro" : "argine sinistro"
+lato(k) = DA_QLAT ? "uscita" : Vdx[k] > 1.0 && Vsx[k] > 1.0 ? "due argini" : Vdx[k] > 1.0 ? "argine destro" : "argine sinistro"
 km_it(v) = replace(@sprintf("%g", v), "." => ",")
 nota = parz ? @sprintf(" (fino a %.2f h, fine del riferimento)", tfin/3600) : ""
-q1 = plot(; title = "Portata al colmo lungo il tratto" * nota, ylabel = "portata [m³/s]", legend = isempty(sfiora) ? :topright : :bottomleft, st...)
+q1 = plot(; title = "Portata al colmo lungo il tratto" * nota, ylabel = "portata [m³/s]", legend = :outertop, legend_columns = -1, st...)
 plot!(q1, x ./ 1000, prv; label = "riferimento 2D", color = :black, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 plot!(q1, x ./ 1000, pm; label = "modello 1D", color = BLU, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
+alto = maximum(filter(!isnan, vcat(prv, pm))) - minimum(filter(!isnan, vcat(prv, pm)))
 if !isempty(sfiora)
-    # nomi delle sezioni del 1D che sfiorano nel tratto indicato, a destra del punto
-    scatter!(q1, x[sfiora] ./ 1000, pm[sfiora]; label = "1D: sezioni con sfioro tra $(km_it(TRATTO[1])) e $(km_it(TRATTO[2])) km",
+    # nomi delle sezioni del 1D che fanno uscire acqua nel tratto indicato, a destra del punto
+    scatter!(q1, x[sfiora] ./ 1000, pm[sfiora]; label = DA_QLAT ? "1D: uscite principali" : "1D: sezioni che sfiorano",
              markershape = :diamond, markersize = 7, color = ARA, markerstrokecolor = :white, markerstrokewidth = 1)
-    alto = maximum(filter(!isnan, vcat(prv, pm))) - minimum(filter(!isnan, vcat(prv, pm)))
-    for k in sfiora
-        annotate!(q1, x[k]/1000 + 0.05, pm[k] + 0.015alto,
-                  text(@sprintf("%s (%s, %.0f mila m³ usciti)", nomesez(x[k]), lato(k), (Vdx[k] + Vsx[k])/1000), 8, :left, :bottom, :black))
-    end
 end
-q2 = plot(; title = "Istante del colmo" * nota, xlabel = "distanza [km]", ylabel = "tempo [h]", legend = :topleft, st...)
+if !isempty(rientra)
+    scatter!(q1, x[rientra] ./ 1000, pm[rientra]; label = "1D: rientri principali",
+             markershape = :utriangle, markersize = 7, color = "#1baf7a", markerstrokecolor = :white, markerstrokewidth = 1)
+end
+# nomi e volumi in un riquadro di testo in basso a destra (zona vuota: a valle il colmo resta sopra il minimo), invece che
+# accanto ai punti, dove le sezioni vicine si sovrapporrebbero
+righe_txt = String[]
+isempty(sfiora) || push!(righe_txt, "uscite: " * join([@sprintf("%s %.0f%s", nomesez(x[k]), (Vdx[k] + Vsx[k])/1000, DA_QLAT ? "" : " ($(lato(k)))") for k in sfiora], ", ") * " mila m³")
+isempty(rientra) || push!(righe_txt, "rientri: " * join([@sprintf("%s %.0f", nomesez(x[k]), Vin[k]/1000) for k in rientra], ", ") * " mila m³")
+if !isempty(righe_txt)
+    ymin = minimum(filter(!isnan, vcat(prv, pm)))
+    annotate!(q1, x[end]/1000, ymin, text(join(["1D tra $(km_it(TRATTO[1])) e $(km_it(TRATTO[2])) km"; righe_txt], "\n"), 8, :right, :bottom, :black))
+end
+q2 = plot(; title = "Istante del colmo" * nota, xlabel = "distanza [km]", ylabel = "tempo [h]", legend = :outertop, legend_columns = -1, st...)
 plot!(q2, x ./ 1000, tprv ./ 3600; label = "riferimento 2D (dati ogni 15 min)", color = :black, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 plot!(q2, x ./ 1000, tpm ./ 3600; label = "modello 1D", color = BLU, linewidth = 2, markershape = :circle, markersize = 3, markerstrokewidth = 0)
 if !all(cok)
@@ -148,9 +169,14 @@ else
     println(io)
 end
 if sum(Vdx) + sum(Vsx) > 1.0
-    @printf(io, "sfioro del 1D in tutta la simulazione (da eta.csv, formula del modello): %.0f m3 da %d sezioni\n",
+    @printf(io, "uscito dal 1D in tutta la simulazione (%s): %.0f m3 da %d sezioni\n", DA_QLAT ? "da Q_lat.csv" : "da eta.csv, formula dello sfioro",
             sum(Vdx) + sum(Vsx), count(>(1.0), Vdx .+ Vsx))
-    @printf(io, "sezioni del 1D che sfiorano tra %s e %s km: %s\n", km_it(TRATTO[1]), km_it(TRATTO[2]), isempty(sfiora) ? "nessuna" :
+    @printf(io, "sezioni del 1D che fanno uscire acqua tra %s e %s km: %s\n", km_it(TRATTO[1]), km_it(TRATTO[2]), isempty(sfiora) ? "nessuna" :
             join([@sprintf("%s %.0f m3 (%s)", nomesez(x[k]), Vdx[k] + Vsx[k], lato(k)) for k in sfiora], ", "))
+end
+if sum(Vin) > 1.0
+    @printf(io, "rientrato nel 1D in tutta la simulazione (da Q_lat.csv): %.0f m3 in %d sezioni\n", sum(Vin), count(>(1.0), Vin))
+    @printf(io, "sezioni del 1D con rientro tra %s e %s km (le 4 maggiori oltre 1000 m3): %s\n", km_it(TRATTO[1]), km_it(TRATTO[2]),
+            isempty(rientra) ? "nessuna" : join([@sprintf("%s %.0f m3", nomesez(x[k]), Vin[k]) for k in rientra], ", "))
 end
 s = String(take!(io)); write(joinpath(OUT, "confronto_S6000.txt"), s); println(s)

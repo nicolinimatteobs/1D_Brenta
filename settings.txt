@@ -1,5 +1,5 @@
-input/geometria/Test_Brenta/S_50m/tabella_sezioni.csv
-input/geometria/Test_Brenta/S_50m/localslope_xcoord.csv
+input/geometria/Test_Brenta/S_50m_q2/tabella_sezioni.csv
+input/geometria/Test_Brenta/S_50m_q2/localslope_xcoord.csv
 input/idrogrammi/vaia/Brenta1.csv
 input/idrogrammi/vaia/Brenta2.csv
 input/idrogrammi/vaia/Brenta3.csv
@@ -19,13 +19,13 @@ input/idrogrammi/vaia/Chieppena.csv
 input/idrogrammi/vaia/Grigno.csv
 input/idrogrammi/vaia/Maso.csv
 input/idrogrammi/vaia/Moggio.csv
-output/S_50m/fittizio_1
+output/Volume_in_out/fittizio_1
 33.00
 0
 60
 1e9
 no
-sfioro
+tabella
 150000
 0.5
 1

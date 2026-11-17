@@ -1,0 +1,10 @@
+Confronto S6000 (modello 1D - riferimento ns_50_fittizio_3_discharge.csv), dati ogni 15 min
+il riferimento in S6000 è asciutto fino a 2.50 h: il confronto parte da lì
+colmo riferimento 81.72 m3/s a 13.75 h | modello 81.82 m3/s a 15.00 h | differenza +0.10 m3/s (+0.13%), +75 min
+RMSE 2.182 m3/s, scarto massimo 9.830 m3/s, NSE 0.9943 (111 istanti)
+volume transitato nel periodo confrontato: riferimento 4304779 m3, modello 4298155 m3 (-0.15%)
+colmo lungo il tratto: differenza massima 4.28 m3/s; ritardo del colmo dalla prima all'ultima sezione: riferimento 75 min, modello 473 min
+uscito dal 1D in tutta la simulazione (da Q_lat.csv): 958418 m3 da 118 sezioni
+sezioni del 1D che fanno uscire acqua tra 2,5 e 4 km: S2850 2614 m3 (uscita), S3650 3394 m3 (uscita)
+rientrato nel 1D in tutta la simulazione (da Q_lat.csv): 786309 m3 in 119 sezioni
+sezioni del 1D con rientro tra 2,5 e 4 km (le 4 maggiori oltre 1000 m3): S2700 33731 m3, S3550 85775 m3, S3600 18641 m3, S3700 15151 m3

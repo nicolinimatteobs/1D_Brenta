@@ -70,6 +70,19 @@ Numerazione dei grafici in `<output>/grafici`:
 | 13 | `13_confronto_sezioni_tirante_portata.png` (e `confronto_sezioni.txt`) | `confronto_valle.jl` con i nomi delle sezioni |
 | 13_1, 13_2 | come il 13, sezioni scelte con il grafico 14 (e `confronto_sezioni_13_N.txt`) | `confronto_valle.jl --nome=13_N` |
 | 14 | `14_errore_tirante_sezioni.png` (e `errore_tirante_sezioni.txt`), in `output/S_50m/grafici/` | `errore_tirante_sezioni.jl` |
+| 15 | `15_conservazione_volume.png` (e `conservazione_volume.txt`) | `grafico_volumi.jl` |
+
+`grafico_volumi.jl` (`julia --project=. strumenti/grafico_volumi.jl <cartella degli output>`) ricostruisce passo per passo,
+come `BILANCIO_DI_MASSA`, i volumi entrati, usciti a valle, usciti verso la piana e rientrati (da `Q_lat.csv`) e il
+volume in alveo (aree delle tabelle della riga 1): volumi cumulati, entrato = uscito a valle + rimasto nella piana +
+aumento in alveo, errore nel tempo (sotto 0,02 m³, solo arrotondamenti dei file) e portate scambiate.
+In `output/Volume_in_out/fittizio_1` … `fittizio_4` (tabelle `S_50m_q2`, scambio `tabella` con i valori tarati, rilascio
+lento compreso) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
+scenari, è copiato in ognuna).
+Legende: nei grafici 8, 12 e 13 stanno sopra i pannelli, nel 10 a destra, nella GIF 9 e nella 11 in alto a destra,
+per non coprire le curve. `confronto_reference.jl`, se trova `Q_lat.csv`, prende da lì uscite e rientri del grafico 8
+(le 4 uscite e i 4 rientri maggiori tra 2,5 e 4 km, elencati in un riquadro); per i risultati vecchi usa ancora la
+formula dello sfioro. Le etichette "1D con sfioro" sono diventate "1D".
 
 La GIF della piena del solo 1D (vecchio 7) e quella del solo 2D (vecchio 10) sono state tolte. Le cartelle
 `output/tratto_brenta*`, `output/rettangolare` e `output/vaia` hanno ancora la numerazione vecchia. Il
@@ -545,8 +558,10 @@ massimo 60 s. È la configurazione del `settings.txt` committato (con le righe 1
 Tabelle e geometria sono quelle rifatte dagli scalini 2D con la mesh nuova, con l'argine destro di S2950
 corretto (vedi "Costruzione delle tabelle"); il confronto usa i riferimenti 2D nuovi.
 
-- Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso entro lo 0,15%
-  (entrato − uscito − sfiorato tra 3 400 e 3 800 m³).
+- Nessun NaN; riempimento finito a 2,5 h in tutti e quattro; bilancio di massa chiuso. Entrato − uscito −
+  sfiorato vale 3 400-3 800 m³, ma non è un errore: è l'aumento del volume in alveo, perché a fine evento la
+  portata (circa 6 m³/s) è più alta di quella iniziale (5). Con il controllo di `bilancio.txt` nel `fittizio_1`:
+  variazione in alveo 3 870,4 m³, entrato − uscito − sfiorato 3 870,5 m³, errore circa 0,1 m³ (0,0000%).
 - Al colmo il livello supera la quota massima delle tabelle in S2100 e S2150, di 2,5-3,5 cm (0,6-0,7 cm
   nel `fittizio_2`): lì i valori sono estrapolati. Con le tabelle vecchie non succedeva.
 - **In uscita la portata si ferma a circa 60 m³/s in tutti gli scenari** (55 con le tabelle vecchie,
@@ -895,8 +910,8 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 | a 2 m³/s (0, 1, 2, 4 … 99,9; 52 livelli) | `input/S_0050_6000_q2/` | `input/geometria/Test_Brenta/S_50m_q2/`, output in `calcolo_tabelle_daBM/output/S_50m_q2/` | **configurazione attuale dello script**, con ΔQ |
 
 - Le due cartelle hanno la stessa mesh, gli stessi argini e le stesse ascisse; il `.h5` degli scalini a 2 m³/s
-  (133 MB) è in Git LFS. La vecchia `input/S_0050_6000/` non esiste più: `strumenti/confronto_valle.jl` (riga 32,
-  scala di deflusso degli scalini nei grafici 12-13) punta ancora lì e va corretto su `_q5` o `_q2`.
+  (133 MB) è in Git LFS. La vecchia `input/S_0050_6000/` non esiste più: `strumenti/confronto_valle.jl` (scala di
+  deflusso degli scalini nei grafici 12-13) usa `_q2` se la riga 1 di `settings.txt` è su `S_50m_q2`, altrimenti `_q5`.
 - L'interruttore `β_dal_2D` sceglie β (1 o dal 2D); oggi entrambi i casi scrivono in `S_50m_q2`: per rifare
   `S_50m_beta` vanno cambiate le cartelle.
 - **ΔQ** (`discharge_difference`): Q della sezione − Q della sezione precedente allo stesso scalino, dai dati 2D
@@ -1065,8 +1080,6 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
   - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
     minimo di 10 cm, non con la partenza cumulata, e stampa ancora il Ks della riga 23 come se fosse usato;
   - `exp_dt` e il campo `Ks` di `Parametri` restano nel codice ma non sono più usati;
-  - `strumenti/confronto_valle.jl` cerca gli scalini in `calcolo_tabelle_daBM/input/S_0050_6000/`, che non esiste
-    più (ora `_q5` e `_q2`);
   - gli strumenti leggono solo le prime 26 righe di `settings.txt` e non sanno dello scambio `tabella`.
 
 ## Ultimo commit descritto
@@ -1075,7 +1088,13 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 è stato scritto (17/11/2026), da committare insieme a esso:
 - `Source/`: rilascio lento della parte sotto la soglia (riga 32, `T_lento`, pesi `w_rientro`) e controllo del
   bilancio di massa a fine simulazione (`BILANCIO_DI_MASSA` in `writing.jl`, `bilancio.txt`);
-- `settings.txt`: riga 32 (32 h) e legenda;
+- `settings.txt`: riga 32 (32 h) e legenda (la configurazione attuale punta su `S_50m_q2`, scambio `tabella`, output
+  `output/Volume_in_out/fittizio_4`);
+- `strumenti/`: nuovo `grafico_volumi.jl` (grafico 15), `confronto_reference.jl` con `Q_lat.csv`, `confronto_valle.jl`
+  con le cartelle `_q2`/`_q5`, legende spostate in `confronto_reference.jl`, `confronto_valle.jl`, `grafici_spinup.jl` e
+  `animazioni_2D.jl`;
+- `output/Volume_in_out/fittizio_1` … `fittizio_4`: simulazioni con lo scambio dalla tabella e grafici 1-15;
+- `CLAUDE.md`: corretta la frase sul bilancio dei fittizi a 50 m (i 3 400-3 800 m³ sono l'aumento del volume in alveo);
 - `calibrazione_scambio/`: `esegui.jl` e `simula_fittizi.jl` con la riga 32, `rilascio_lento.jl`,
   `grafici_rilascio_lento.jl`, `risultati/rilascio_lento.csv` e riepiloghi, grafici 9-11, `leggimi.md`
   aggiornato.
