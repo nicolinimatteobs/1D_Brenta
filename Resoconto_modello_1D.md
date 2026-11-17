@@ -35,6 +35,34 @@ codice.
 16. [Glossario delle variabili](#16-glossario-delle-variabili)
 17. [Limiti noti](#17-limiti-noti)
 
+### Approfondimenti in PDF
+
+Per ogni passo c'è un PDF che lo spiega nel dettaglio, con le equazioni, i flowchart, il codice commentato e
+esempi con i numeri del Test_Brenta. I link sono anche alla fine di ogni sezione. I PDF si rigenerano con
+`python approfondimenti/genera/genera.py` (serve `reportlab`).
+
+- [01 · Equazioni e schema numerico](approfondimenti/01_equazioni_e_schema.pdf)
+- [02 · Lettura di settings.txt](approfondimenti/02_lettura_settings.pdf)
+- [03 · Geometria e griglia sfalsata](approfondimenti/03_geometria_e_griglia.pdf)
+- [04 · Le tabelle delle sezioni](approfondimenti/04_tabelle_delle_sezioni.pdf)
+- [05 · Gli idrogrammi](approfondimenti/05_idrogrammi.pdf)
+- [06 · Gli affluenti](approfondimenti/06_affluenti.pdf)
+- [07 · Lo stato iniziale](approfondimenti/07_stato_iniziale.pdf)
+- [08 · Interfacce e passo temporale](approfondimenti/08_interfacce_e_passo_temporale.pdf)
+- [09 · La parte esplicita](approfondimenti/09_parte_esplicita_rusanov.pdf)
+- [10 · L'attrito implicito](approfondimenti/10_attrito_implicito.pdf)
+- [11 · Il sistema per i livelli](approfondimenti/11_sistema_dei_livelli.pdf)
+- [12 · Newton + Thomas](approfondimenti/12_newton_thomas.pdf)
+- [13 · Portate, salvataggio, tabelle](approfondimenti/13_portate_salvataggio_tabelle.pdf)
+- [14 · Il controllo dei NaN](approfondimenti/14_controllo_nan.pdf)
+- [15 · Lo sfioro sugli argini](approfondimenti/15_sfioro_argini.pdf)
+- [16 · Lo scambio dalla tabella ΔQ](approfondimenti/16_scambio_tabella.pdf)
+- [17 · Il serbatoio della piana](approfondimenti/17_serbatoio_della_piana.pdf)
+- [18 · La fine del riempimento](approfondimenti/18_fine_riempimento.pdf)
+- [19 · Il bilancio di massa](approfondimenti/19_bilancio_di_massa.pdf)
+- [20 · I file di uscita](approfondimenti/20_file_di_uscita.pdf)
+- [21 · La costruzione delle tabelle](approfondimenti/21_costruzione_tabelle.pdf)
+
 ---
 
 ## 1. A cosa serve
@@ -113,6 +141,8 @@ Le equazioni si risolvono con uno **schema semi-implicito alle differenze finite
   lineare è **tridiagonale** e si risolve con l'**algoritmo di Thomas**.
 
 Il dettaglio è nel §10.
+
+> **Approfondimento (PDF):** [01 Equazioni e schema numerico](approfondimenti/01_equazioni_e_schema.pdf)
 
 ---
 
@@ -207,6 +237,8 @@ La stessa funzione, `SEMI_IMPLICIT_BRENTA_2D_1D!`, fa sia il **riempimento** sia
 variabile `IC` vale 1 durante il riempimento e 0 dopo. Le differenze tra le due fasi sono poche: portata di
 monte costante e passo massimo più piccolo durante il riempimento, file di uscita diversi (`IC_*.csv`).
 
+> **Approfondimento (PDF):** [01 Equazioni e schema numerico](approfondimenti/01_equazioni_e_schema.pdf)
+
 ---
 
 ## 6. Passo 1: lettura di `settings.txt`
@@ -285,6 +317,8 @@ params = INITIAL_SETTINGS!()
 Subito dopo, `ALLOCATE_ARRAYS!(imax)` crea tutti i vettori del modello, inizializzati a zero: quelli lunghi
 `imax` stanno nelle sezioni (es. `eta`, `A_b`), quelli lunghi `imax+1` nelle interfacce (es. `q`, `A_int`).
 
+> **Approfondimento (PDF):** [02 Lettura di settings.txt](approfondimenti/02_lettura_settings.pdf)
+
 ---
 
 ## 7. Passo 2: geometria, griglia e tabelle delle sezioni
@@ -351,6 +385,8 @@ end
 
 `dx_int` (lunghezza della cella) entra nella continuità, `dx_b` (distanza tra sezioni) nella quantità di
 moto.
+
+> **Approfondimento (PDF):** [03 Geometria e griglia sfalsata](approfondimenti/03_geometria_e_griglia.pdf)
 
 ### 7.3 Le tabelle delle sezioni
 
@@ -423,6 +459,8 @@ end
 `FIND_ROW` prova prima l'ultima riga usata e le due vicine; solo se il livello è cambiato molto passa alla
 ricerca binaria.
 
+> **Approfondimento (PDF):** [04 Le tabelle delle sezioni](approfondimenti/04_tabelle_delle_sezioni.pdf)
+
 ---
 
 ## 8. Passo 3: idrogrammi e affluenti
@@ -447,6 +485,8 @@ end
 Durante la simulazione la portata di un idrogramma al tempo `time + dt` si calcola con
 un'**interpolazione di Lagrange su tre punti** (`LAGRANGE_INTERPOLATION!`), che segue meglio di una
 retta le curve dell'idrogramma.
+
+> **Approfondimento (PDF):** [05 Gli idrogrammi](approfondimenti/05_idrogrammi.pdf)
 
 ### 8.2 Gli affluenti
 
@@ -476,6 +516,8 @@ end
 ```
 
 Gli affluenti entrano **solo nella continuità** (portano volume, non quantità di moto), vedi §10.6.
+
+> **Approfondimento (PDF):** [06 Gli affluenti](approfondimenti/06_affluenti.pdf)
 
 ---
 
@@ -527,6 +569,8 @@ end
 
 In un fiume reale (sezioni diverse una dall'altra) il moto uniforme sezione per sezione non è ancora
 l'equilibrio: ci sono rigurgiti. Per questo segue il riempimento.
+
+> **Approfondimento (PDF):** [07 Lo stato iniziale](approfondimenti/07_stato_iniziale.pdf)
 
 ---
 
@@ -581,6 +625,8 @@ if time >= tend
 end
 ```
 
+> **Approfondimento (PDF):** [08 Interfacce e passo temporale](approfondimenti/08_interfacce_e_passo_temporale.pdf)
+
 ### 10.3 La parte esplicita: `qstar` e condizioni al contorno
 
 `qstar` è la portata "provvisoria" che contiene solo la parte esplicita della quantità di moto (il
@@ -612,6 +658,8 @@ end
 - **Flusso di Rusanov**: è la media dei flussi `β·u·Q` delle due celle meno un termine di diffusione
   numerica proporzionale alla velocità massima. Rende stabile la parte convettiva.
 
+> **Approfondimento (PDF):** [09 La parte esplicita](approfondimenti/09_parte_esplicita_rusanov.pdf)
+
 ### 10.4 Perché l'attrito è implicito
 
 La quantità di moto discretizzata nell'interfaccia `i` è
@@ -628,6 +676,8 @@ q_i^(n+1) = [qstar_i − g·A_int·dt/dx_b·(η_i − η_(i−1))^(n+1)] / (1 + 
 
 Il denominatore `1 + dt·γ` non va mai a zero né cambia segno: anche con attrito molto grande e `dt` grande la
 portata viene smorzata ma non oscilla. È per questo che si usa `A_int_g = A_int/(1 + dt·γ)`.
+
+> **Approfondimento (PDF):** [10 L'attrito implicito](approfondimenti/10_attrito_implicito.pdf)
 
 ### 10.5 Il sistema per i livelli
 
@@ -669,6 +719,8 @@ bb[imax]  = -aa[imax] - cc[imax]
 rhs[imax] = A_bn[imax] - dt/dx_int[imax]*(qstar[imax+1] - qstar[imax]/(1+dt*γ[imax]))
 ```
 
+> **Approfondimento (PDF):** [11 Il sistema per i livelli](approfondimenti/11_sistema_dei_livelli.pdf)
+
 ### 10.6 Gli affluenti nel termine noto
 
 Gli affluenti si aggiungono al termine noto della continuità (volume entrato in `dt` diviso per la lunghezza
@@ -692,6 +744,8 @@ end
 
 Allo stesso modo entra lo **scambio con la piana** `Q_lat` (positivo se entra, negativo se esce): è
 descritto nel §11 perché ha diverse varianti.
+
+> **Approfondimento (PDF):** [06 Gli affluenti](approfondimenti/06_affluenti.pdf)
 
 ### 10.7 Newton + Thomas: i nuovi livelli
 
@@ -756,6 +810,8 @@ function THOMAS_ALGORITHM!(imax, aa, cc, di, ff, deta)
 end
 ```
 
+> **Approfondimento (PDF):** [12 Newton + Thomas](approfondimenti/12_newton_thomas.pdf)
+
 ### 10.8 Le nuove portate
 
 Con i livelli nuovi si calcolano le portate alle interfacce, con la formula del §10.4:
@@ -790,6 +846,8 @@ for i in 1:imax
 end
 ```
 
+> **Approfondimento (PDF):** [13 Portate, salvataggio, tabelle](approfondimenti/13_portate_salvataggio_tabelle.pdf)
+
 ### 10.10 Il controllo dei NaN
 
 Dopo ogni fase delicata `CHECK_NAN` controlla i vettori appena calcolati. Se trova un NaN ferma il programma
@@ -806,6 +864,8 @@ function CHECK_NAN(fase, nCS, time, IC; vettori...)
     end
 end
 ```
+
+> **Approfondimento (PDF):** [14 Il controllo dei NaN](approfondimenti/14_controllo_nan.pdf)
 
 ---
 
@@ -845,6 +905,8 @@ if scambio == :sfioro
 ```
 
 Limite: l'acqua uscita non torna mai indietro. Nel 2D invece in molti punti rientra.
+
+> **Approfondimento (PDF):** [15 Lo sfioro sugli argini](approfondimenti/15_sfioro_argini.pdf)
 
 ### 11.2 `tabella`: scambio dagli scalini 2D con il serbatoio della piana
 
@@ -945,6 +1007,8 @@ I valori dei parametri sono stati tarati sui quattro scenari fittizi confrontand
 150 000 m³, T 0,5 h, ritardo 1 h, rilascio lento 32 h, serbatoio attivo): codici, risultati e grafici sono in
 `calibrazione_scambio/` con il suo `leggimi.md`.
 
+> **Approfondimento (PDF):** [16 Lo scambio dalla tabella ΔQ](approfondimenti/16_scambio_tabella.pdf) · [17 Il serbatoio della piana](approfondimenti/17_serbatoio_della_piana.pdf)
+
 ### 11.3 `nessuno`
 
 Nessuno scambio: l'acqua resta tutta nel canale.
@@ -991,6 +1055,8 @@ end
 
 Da quel momento il tempo riparte da zero e la portata di monte segue l'idrogramma.
 
+> **Approfondimento (PDF):** [18 La fine del riempimento](approfondimenti/18_fine_riempimento.pdf)
+
 ### 12.2 Il controllo del bilancio di massa
 
 Durante la simulazione il modello somma, passo per passo, i volumi entrati e usciti:
@@ -1027,6 +1093,8 @@ errore                                                  0.0  (0.0000% del volume
 L'aumento del volume in alveo (3 870 m³) è uguale all'entrato meno l'uscito (a valle e dagli argini): il
 modello conserva l'acqua.
 
+> **Approfondimento (PDF):** [19 Il bilancio di massa](approfondimenti/19_bilancio_di_massa.pdf)
+
 ---
 
 ## 13. I file di uscita
@@ -1042,6 +1110,8 @@ Nella cartella della riga 22, separati da spazi, una riga per passo temporale:
 | `time.csv` | tempo [s] | 1 |
 | `IC_*.csv` | gli stessi file per il riempimento | |
 | `bilancio.txt` | bilancio di massa della simulazione | |
+
+> **Approfondimento (PDF):** [20 I file di uscita](approfondimenti/20_file_di_uscita.pdf)
 
 ---
 
@@ -1081,6 +1151,8 @@ end
 Nell'ultima sezione `jden` è ricavato con la pendenza usata dal modello per la condizione di valle, così la
 portata in uscita segue la scala di deflusso del 2D. Le tabelle sono scritte direttamente in
 `input/geometria/Test_Brenta/<caso>/`. Dettagli in `CLAUDE.md`, "Costruzione delle tabelle".
+
+> **Approfondimento (PDF):** [21 La costruzione delle tabelle](approfondimenti/21_costruzione_tabelle.pdf)
 
 ---
 

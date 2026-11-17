@@ -144,6 +144,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 |---|---|
 | `main.jl` | Avvia `RUN_SIMULATION.SEMI_IMPLICIT_BRENTA_2D_1D!()` |
 | `Resoconto_modello_1D.md` | Spiegazione di tutto il codice come flusso di lavoro, con i pezzi di codice (per chi lo vede la prima volta) |
+| `approfondimenti/` | 21 PDF di approfondimento collegati dal resoconto (teoria, equazioni, flowchart, codice, esempi con i numeri del Test_Brenta), uno per passo o funzione; si rigenerano con `python approfondimenti/genera/genera.py [numeri]` (Python con `reportlab` e `matplotlib`; gli estratti di codice sono presi dai sorgenti, quindi vanno rigenerati quando il codice cambia) |
 | `Source/Run_Simulation.jl` | Modulo che include gli altri file |
 | `Source/Semi_Implicit_Brenta_2D_1D.jl` | Il solutore: riempimento (condizioni iniziali) e simulazione |
 | `Source/subroutines.jl` | Lettura tabelle e geometria, `READ_VALUES`, `UNIFORM_LEVEL`, idrogrammi, Thomas, `CHECK_NAN` |
@@ -191,9 +192,11 @@ Letto **per posizione** (33 righe, non spostarle; dopo ci sono la legenda e vecc
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 - Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m_q2/`,
-  idrogramma `fittizio_1`, output in `output/Volume_in_out/svuotamento_32h/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
-  `tabella` con i valori tarati (righe 29-33: 150000, 0.5, 1, 32, `si`). I risultati in
-  `output/Volume_in_out/svuotamento_32h/fittizio_N` sono fatti con questo `settings.txt` (righe 14 e 22 a parte).
+  dt massimo 60 s, affluenti spenti, scambio `tabella` (righe 29-33: 150000, 0.5, 1, 24, `si`), con l'ultima prova:
+  idrogramma `fittizio_4`, output in `output/Volume_in_out/svuotamento_24h/fittizio_4`, rilascio lento 24 h. Il valore
+  tarato del rilascio lento resta 32 h (`svuotamento_32h`, di poco migliore: vedi "Scambio laterale con la piana"). I
+  risultati in `output/Volume_in_out/svuotamento_32h/` e `svuotamento_24h/` sono fatti con questo `settings.txt`
+  (righe 14, 22 e 32 a parte).
   I risultati in `output/S_50m/fittizio_N` sono invece con la geometria `S_50m` e lo scambio `sfioro`
   (righe 1-2 su `S_50m`, riga 28 `sfioro`), fatti in una copia temporanea. Per gli
   altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
@@ -1103,18 +1106,17 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 
 ## Ultimo commit descritto
 
-`28c071f` ("tutorial modello 1D"), più le modifiche successive non ancora committate quando questo file è stato
-scritto (17/11/2026), da committare insieme a esso:
-- `Source/`: serbatoio attivo (riga 33, `piana_attiva` in `Parametri`, `Q_extra` nello scambio `tabella`);
-- `settings.txt`: riga 33 (`si`) e legenda;
-- `output/Volume_in_out/`: le uscite di prima spostate in `svuotamento_32h/`, simulazioni rifatte con il serbatoio
-  attivo (rilascio lento 32 h) e grafici 1-15; nuova `svuotamento_24h/` (rilascio lento 24 h) con i grafici 1-15;
-  `confronto/` tra le due;
-- `strumenti/confronto_simulazioni_2D.jl`: nuovo, confronto di più simulazioni dei fittizi tra loro e con il 2D;
-- `calibrazione_scambio/`: `esegui.jl` e `simula_fittizi.jl` con la riga 33, `attivo.jl`, `riepilogo_attivo.jl`,
-  `risultati/attivo.csv`, `riepilogo_attivo.txt`, `13_colmo_attivo.txt`, `anticipo_attivo.txt`, grafici 12-13,
-  `leggimi.md` aggiornato;
-- `Resoconto_modello_1D.md`: riga 33 e serbatoio attivo.
+`ad0c802` ("prova con diverso tempo di svuotameno della piana"), più le modifiche successive non ancora committate
+quando questo file è stato scritto (17/11/2026), da committare insieme a esso:
+- `Resoconto_modello_1D.md`: elenco dei PDF di approfondimento in testa e un link alla fine di ogni sezione;
+- `approfondimenti/`: nuovi, 21 PDF e il generatore in `approfondimenti/genera/` (la cache delle immagini non va nel
+  repository, `.gitignore`);
+- `CLAUDE.md`: `approfondimenti/` nella struttura, `settings.txt` committato con la prova a 24 h.
+
+Commit `f3340ce` e `ad0c802` (già descritti qui sopra): serbatoio attivo (riga 33, `piana_attiva`, `Q_extra`),
+`esegui.jl`, `simula_fittizi.jl`, `attivo.jl`, `riepilogo_attivo.jl` e risultati e grafici 12-13 in `calibrazione_scambio/`,
+`output/Volume_in_out/svuotamento_32h/` e `svuotamento_24h/` con i grafici 1-15, `confronto/` e
+`strumenti/confronto_simulazioni_2D.jl`, `settings.txt` con la riga 33.
 
 Commit `a451948`, `1c1278c` e `28c071f` (già descritti qui sopra): rilascio lento (riga 32, `T_lento`, `w_rientro`),
 controllo del bilancio di massa (`BILANCIO_DI_MASSA`, `bilancio.txt`), `strumenti/grafico_volumi.jl` (grafico 15),
