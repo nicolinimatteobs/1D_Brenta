@@ -10,6 +10,10 @@ struct Parametri
     dtmax              ::Float64
     Nmax               ::Int
     con_affluenti      ::Bool
+    scambio            ::Symbol   # scambio laterale: :sfioro, :tabella o :nessuno
+    V_soglia           ::Float64  # serbatoio della piana (scambio :tabella): volume trattenuto prima del rientro [m3]
+    T_piana            ::Float64  # tempo di svuotamento [s]
+    tau_piana          ::Float64  # ritardo di percorrenza [s]
     n_row              ::Int
     imax               ::Int
     n_col              ::Int

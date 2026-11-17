@@ -2,7 +2,7 @@
 # Restituisce i percorsi dei file: IC_* per le condizioni iniziali, gli altri per la simulazione
 function INIT_OUTPUT(out_dir)
     mkpath(out_dir)
-    nomi  = (:IC_Q, :IC_eta, :IC_h, :IC_time, :Q, :eta, :h, :time)
+    nomi  = (:IC_Q, :IC_eta, :IC_h, :IC_time, :IC_Q_lat, :Q, :eta, :h, :time, :Q_lat)
     files = NamedTuple{nomi}(Tuple(joinpath(out_dir, string(n, ".csv")) for n in nomi))
     for f in files
         write(f, "")

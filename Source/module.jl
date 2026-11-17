@@ -2,13 +2,15 @@
 # vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2
 # geometria, righe 3-21 idrogrammi (raccolti in hydro_files), riga 22 cartella degli output,
 # righe 23-26 Ks (non più usato: l'uscita usa la tabella dell'ultima sezione), tempo iniziale,
-# passo massimo e numero massimo di passi, riga 27 affluenti
-# attivi (si/no). Numero di righe e di colonne delle tabelle e numero di sezioni sono ricavati
-# direttamente dai file di input
+# passo massimo e numero massimo di passi, riga 27 affluenti attivi (si/no), riga 28 scambio
+# laterale con la piana (sfioro, tabella o nessuno), righe 29-31 parametri del serbatoio della
+# piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h].
+# Numero di righe e di colonne delle tabelle e numero di sezioni sono ricavati direttamente
+# dai file di input
 function INITIAL_SETTINGS!()
-    # Legge esattamente 27 righe e rimuove spazi
+    # Legge esattamente 31 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:27]
+        [strip(readline(f)) for _ in 1:31]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
@@ -29,13 +31,35 @@ function INITIAL_SETTINGS!()
     dtmax             = parse(Float64, righe[25])
     Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi
     con_affluenti     = PARSE_SI_NO(righe[27], "riga 27 di settings.txt (affluenti attivi)")
+    scambio           = PARSE_SCAMBIO(righe[28])
+    V_soglia          = PARSE_NON_NEGATIVO(righe[29], "riga 29 di settings.txt (soglia del serbatoio della piana, m3)")
+    T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], "riga 30 di settings.txt (tempo di svuotamento, ore)")
+    tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], "riga 31 di settings.txt (ritardo, ore)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
+    scambio == :tabella && n_col < 14 &&
+        error("Riga 28 di settings.txt: lo scambio 'tabella' richiede le colonne ΔQ e ΔQ_s in $parametri_sezioni")
 
     return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
-                     Ks, time, dtmax, Nmax, con_affluenti, n_row, imax, n_col)
+                     Ks, time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana,
+                     n_row, imax, n_col)
+end
+
+# Legge un numero non negativo da settings.txt
+function PARSE_NON_NEGATIVO(s, dove)
+    v = tryparse(Float64, strip(s))
+    (v === nothing || v < 0) && error("Valore '$s' non valido per $dove: serve un numero non negativo")
+    return v
+end
+
+# Legge lo scambio laterale con la piana (riga 28 di settings.txt): sfioro (sfioro libero sugli
+# argini, solo uscente), tabella (ΔQ delle tabelle, entrante e uscente) o nessuno
+function PARSE_SCAMBIO(s)
+    v = lowercase(strip(s))
+    v in ("sfioro", "tabella", "nessuno") && return Symbol(v)
+    error("Valore '$s' non valido per la riga 28 di settings.txt (scambio laterale): usare sfioro, tabella o nessuno")
 end
 
 # Legge un sì/no da settings.txt: accetta si, sì, no, true, false, 1, 0 (maiuscole o minuscole)

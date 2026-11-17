@@ -25,6 +25,10 @@ output/S_50m/fittizio_1
 60
 1e9
 no
+sfioro
+150000
+0.5
+1
 
 CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 1      - Tabelle delle sezioni, con la quota del pelo libero in colonna 2, in input/geometria/<caso>/
@@ -38,6 +42,12 @@ CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 25     - Passo temporale massimo [s]
 26     - Numero massimo di passi temporali
 27     - Affluenti attivi: si o no (stato iniziale, riempimento e simulazione)
+28     - Scambio laterale con la piana: sfioro (sfioro libero sugli argini, solo uscente), tabella (colonna ΔQ delle
+         tabelle, uscite e rientri con il serbatoio della piana; servono tabelle a 14 colonne, es. S_50m_q2) o nessuno
+29     - Serbatoio della piana (solo con tabella): soglia [m3], volume trattenuto prima che l'acqua rientri
+30     - Serbatoio della piana (solo con tabella): tempo di svuotamento T [h], rientro al massimo (V − soglia)/T; 0 = subito
+31     - Serbatoio della piana (solo con tabella): ritardo τ [h], tempo dopo cui l'acqua uscita arriva al serbatoio
+         (valori tarati sui fittizi 1-4 con le tabelle S_50m_q2: 150000, 0.5, 1; vedi calibrazione_scambio/)
 
 Input/dx_70/h_01/struttura_output.txt
 4

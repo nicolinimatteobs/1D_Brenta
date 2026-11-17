@@ -164,12 +164,41 @@ end
 
 
 
-# Legge il file delle tabelle delle sezioni e le restituisce come matrice n_row x n_col:
-# per ogni sezione una riga per ogni tirante
+# Legge il file delle tabelle delle sezioni e le restituisce come matrice n_row x 14:
+# per ogni sezione una riga per ogni tirante. Le colonne 13-14 sono ΔQ e la sua pendenza
+# (scambio laterale, vedi READ_EXCHANGE): le tabelle a 12 colonne restano valide e hanno ΔQ = 0
 function LOAD_SECTION_TABLES(filename, n_row, n_col)
+    n_col in (12, 14) || error("Il file '$filename' ha $n_col colonne: ne servono 12, oppure 14 con ΔQ e ΔQ_s")
     data = Array{Float64}(undef, n_row, n_col)
     LOAD_DATA!(data, filename, n_row, n_col)
+    n_col == 12 && (data = hcat(data, zeros(n_row, 2)))
     return data
+end
+
+# Volume cumulato al tempo t, interpolato linearmente sulla storia (ts crescenti, Vs cumulati);
+# prima del primo istante vale Vs[1], dopo l'ultimo Vs[end]
+function VOLUME_AT(ts, Vs, t)
+    t <= ts[1] && return Vs[1]
+    t >= ts[end] && return Vs[end]
+    j = searchsortedlast(ts, t)
+    return Vs[j] + (Vs[j+1] - Vs[j]) * (t - ts[j]) / (ts[j+1] - ts[j])
+end
+
+# Scambio laterale con la piana [m3/s] nella sezione k per la quota eta, dalla colonna ΔQ della
+# tabella (portata della sezione meno quella della sezione precedente, dagli scalini 2D): positivo
+# se l'acqua entra, negativo se esce. Interpolazione lineare con la colonna 14; sotto la prima
+# quota la prima riga e, a differenza di READ_VALUES, oltre l'ultima quota l'ultimo valore, senza
+# estrapolare (ΔQ può cambiare molto tra le ultime righe)
+@inline function READ_EXCHANGE(data, ys, first_row, last_row, k, eta)
+    @inbounds begin
+        lo = first_row[k]
+        hi = first_row[k+1] - 1
+        eta <= ys[lo] && return data[13,lo]
+        eta >= ys[hi] && return data[13,hi]
+        r = FIND_ROW(ys, lo, hi, eta, last_row[k])
+        last_row[k] = r
+        return data[13,r] + data[14,r]*(eta - ys[r])
+    end
 end
 
 

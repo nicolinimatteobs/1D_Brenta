@@ -33,6 +33,9 @@ julia --project=. strumenti/grafici_spinup.jl          # figura e animazione del
 julia --project=. strumenti/confronto_reference.jl     # confronto con il 2D in reference/
 ```
 
+La taratura dello scambio laterale con la piana (soglia, T, ritardo) ha i suoi script in
+`calibrazione_scambio/`, descritti in `calibrazione_scambio/leggimi.md` (vedi "Scambio laterale con la piana").
+
 Tutti i comandi vanno lanciati dalla cartella del progetto: i percorsi in `settings.txt` sono relativi.
 Gli script dei grafici accettano argomenti facoltativi, per lavorare su una cartella diversa da quella
 della riga 22 di `settings.txt` senza modificarlo:
@@ -127,18 +130,19 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | `Source/struct.jl` | `struct Parametri` |
 | `Source/writing.jl` | `INIT_OUTPUT` e funzioni di salvataggio |
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
-| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (quella in uso, β = 1) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
+| `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (scalini a circa 5 m³/s, quella dei risultati salvati in `output/S_50m`), `Test_Brenta/S_50m_q2/` (scalini a 2 m³/s, con le colonne ΔQ: serve per lo scambio `tabella`) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
 | `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
 | `input/hq_relations/` | Scale di deflusso dei manufatti, `quota [m s.l.m.], portata [m³/s]` senza intestazione: `hq_P17_dtm.csv` (ponte P17). Usata solo dal prototipo del ponte, non dal modello (vedi "Ponte P17") |
 | `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D); `output/S_50m_hq/` contiene le prove del ponte P17 con il prototipo (descritte in `leggimi.txt`) |
-| `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`). Quelli dei fittizi vengono da `../Test_Brenta/results/inputs/ns_50_fittizio_N_results.h5` (mesh nuova, vedi "Scenari fittizi"); i livelli sono estratti con `strumenti/estrai_wse_2D.jl` |
+| `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`). Quelli dei fittizi vengono da `../Test_Brenta/results/inputs/ns_50_fittizio_N_results.h5` (mesh nuova, vedi "Scenari fittizi"); i livelli sono estratti con `strumenti/estrai_wse_2D.jl`. `ns_50_scalini_discharge.csv` e `ns_50_scalini_wse.csv` sono le portate e i livelli degli scalini a 2 m³/s (52 righe, ogni 10 h) |
 | `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata e le scrive anche negli input del modello (vedi "Costruzione delle tabelle") |
+| `calibrazione_scambio/` | Taratura del serbatoio della piana per lo scambio `tabella`: script, `risultati/taratura.csv`, riepiloghi e grafici, `leggimi.md`; le uscite delle simulazioni (`out/`) non sono nel repository |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
 
 ## settings.txt
 
-Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
+Letto **per posizione** (31 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
 
 | Riga | Contenuto |
 |---|---|
@@ -153,6 +157,10 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
 | 25 | Passo temporale massimo [s] |
 | 26 | Numero massimo di passi |
 | 27 | Affluenti attivi: `si` o `no` (accetta anche `sì`, `true`/`false`, `1`/`0`) |
+| 28 | Scambio laterale con la piana: `sfioro` (sfioro libero sugli argini), `tabella` (colonna ΔQ delle tabelle e serbatoio della piana; servono tabelle a 14 colonne, es. `S_50m_q2`) o `nessuno` |
+| 29 | Serbatoio della piana (solo con `tabella`): soglia [m³] |
+| 30 | Serbatoio della piana: tempo di svuotamento T [h] (0 = tutto subito) |
+| 31 | Serbatoio della piana: ritardo τ [h] |
 
 - Numero di righe e colonne delle tabelle e numero di sezioni **sono ricavati dai file**
   (`FILE_SIZE`): non serve più il vecchio `struttura_output.txt`.
@@ -160,7 +168,9 @@ Letto **per posizione** (27 righe, non spostarle; dopo ci sono la legenda e vecc
   ancora usato, non è più in `settings.txt`.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 - Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m/`,
-  idrogramma `fittizio_1`, output in `output/S_50m/fittizio_1`, dt massimo 60 s, affluenti spenti.
+  idrogramma `fittizio_1`, output in `output/S_50m/fittizio_1`, dt massimo 60 s, affluenti spenti, scambio
+  `sfioro` (righe 29-31 già sui valori tarati 150000, 0.5, 1: si usano solo con `tabella`). Per lo scambio
+  dalla tabella vanno cambiate anche le righe 1-2 su `input/geometria/Test_Brenta/S_50m_q2/`.
   I risultati in `output/S_50m/fittizio_N` sono fatti in una copia temporanea con gli stessi sorgenti,
   la stessa geometria e lo stesso `settings.txt` (righe 14 e 22 a parte). Per gli
   altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
@@ -182,6 +192,9 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
   deflusso degli scalini 2D (vedi "Condizione al contorno di valle").
 - `β` è il coefficiente di quantità di moto: 1 nelle tabelle in uso, calcolato dal 2D in quelle di
   `S_50m_beta` (vedi "Costruzione delle tabelle").
+- **Colonne 13-14 facoltative, `ΔQ, ΔQ_s`** (tabelle `S_50m_q2`): portata della sezione meno quella della
+  sezione precedente negli scalini 2D, riga per riga, e la sua pendenza rispetto alla quota. Il modello le usa
+  solo con lo scambio `tabella`; le tabelle a 12 colonne restano valide (ΔQ = 0).
 
 **Geometria**: `section, local_slope, x_coord_[m], talweg_[m]`, una riga per sezione. La pendenza
 locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
@@ -192,6 +205,8 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
 - `Q.csv`: portate alle **interfacce** (imax+1 valori: l'ultimo è l'uscita);
 - `eta.csv`, `h.csv`: quota del pelo libero e tirante nelle **sezioni** (imax valori);
 - `time.csv`: tempo [s];
+- `Q_lat.csv`: scambio laterale con la piana in ogni sezione [m³/s], positivo se l'acqua entra, negativo se esce
+  (imax valori; con lo sfioro è l'uscita cambiata di segno);
 - `IC_*`: gli stessi file per la fase di riempimento.
 
 ## Il metodo numerico
@@ -282,7 +297,14 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 - Si accendono e spengono con la **riga 27 di `settings.txt`** (`con_affluenti` in `Parametri`), che
   vale per stato iniziale, riempimento e simulazione. Non serve toccare il codice.
 
-## Esondazione (portata uscente)
+## Scambio laterale con la piana (esondazione e rientro)
+
+Scelto con la riga 28 di `settings.txt`: `sfioro`, `tabella` o `nessuno`. In tutti i casi è un termine
+sorgente nella sola continuità, esplicito (`eta` del passo precedente), salvato in `Q_lat.csv` (positivo se
+l'acqua entra) e compreso nel bilancio del riempimento. Con `sfioro` i risultati sono identici byte per byte a
+quelli del codice precedente (controllato sul `fittizio_1` e sul `fittizio_3`).
+
+### Sfioro sugli argini (`sfioro`, solo uscente)
 
 - Sfioro libero sugli argini, formula 16 di `reference/siviglia_stocchino_colombini_ASCE2009.pdf`:
   `q_l = Cd·√(2g·Y₀³)` [m²/s], con `Cd = 0.385` e `Y₀` tirante sopra la cresta (`FREE_OVERFLOW`).
@@ -291,7 +313,52 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 - Entra solo nella continuità, come gli affluenti ma con segno opposto (`rhs -= dt/dx * Q_lat`), ed è
   esplicito (`eta` del passo precedente). È attivo anche nel riempimento e compare nel suo bilancio.
 - L'acqua uscita non rientra: non ci sono golene né sfioro rigurgitato.
-- `Q_lat` non viene salvato: si ricava da `eta.csv` con la stessa formula.
+- Il grafico 8 di `confronto_reference.jl` ricava lo sfioro da `eta.csv` con la stessa formula: con lo scambio
+  `tabella` quei valori non valgono (usare `Q_lat.csv`).
+
+### Scambio dalla tabella ΔQ con il serbatoio della piana (`tabella`)
+
+Idea: negli scalini 2D, a moto permanente, la portata cambia lungo il tratto solo per lo scambio con la piana,
+quindi ΔQ = Q della sezione − Q della sezione precedente (colonne 13-14 delle tabelle `S_50m_q2`) è lo scambio
+del tratto con il suo segno: negativo dove l'acqua esce, positivo dove rientra, in funzione del livello. Non
+servono la formula dello sfioro né le quote degli argini.
+- `READ_EXCHANGE` (`subroutines.jl`) legge ΔQ al livello della sezione e lo mette nella cella della sezione; sotto
+  la prima quota la prima riga, **oltre l'ultima quota l'ultimo valore, senza estrapolare**.
+- **Da solo è instabile:** dove l'acqua rientra ΔQ cresce con il livello, il livello cresce con i rientri, e il
+  modello crea acqua (prova sul `fittizio_1`: a 4-5 km 93-95 m³/s con 81 in ingresso, divergenza a 6,4 h, senza
+  NaN ma con il passo che va a zero).
+- Per questo c'è un **serbatoio virtuale unico per tutto il tratto** (la piana): le uscite (ΔQ < 0) sono quelle
+  della tabella e vanno nel serbatoio; i rientri (ΔQ > 0, solo dove la tabella li prevede) sono ridotti tutti
+  della stessa frazione in modo da non superare quanto il serbatoio può restituire. Parametri (righe 29-31):
+  - **soglia** [m³]: la piana trattiene i primi m³ usciti, rientra solo il volume oltre la soglia;
+  - **T** [h]: rientro al massimo (V − soglia)/T (0 = subito tutto ciò che è disponibile);
+  - **τ** [h]: ritardo di percorrenza, l'acqua uscita arriva al serbatoio dopo τ (storia del volume uscito,
+    `VOLUME_AT`; il tempo conta anche il riempimento).
+- Tarati sui fittizi 1-4 con le tabelle `S_50m_q2`: **soglia 150 000 m³, T = 0,5 h, τ = 1 h**. Tutta la taratura
+  (73 combinazioni, circa 300 simulazioni, tutte stabili e con il bilancio chiuso) è in `calibrazione_scambio/`
+  con codici, risultati, grafici e `leggimi.md`. Medie sui quattro scenari:
+
+  | Scambio | NSE in S6000 | Errore del colmo lungo il tratto | Errore del livello |
+  |---|---|---|---|
+  | sfioro (tabelle q2) | 0,937 | – | – |
+  | tabella, serbatoio con T = 0 | 0,926 | 4,18 m³/s | 5,9 cm |
+  | tabella, solo T = 4 h | 0,986 | 1,86 m³/s | 3,6 cm |
+  | tabella, soglia 150 000 m³, T = 1 h | 0,989 | 1,11 m³/s | 3,3 cm |
+  | **tabella, valori tarati** | **0,991** | **1,02 m³/s** | **3,1 cm** |
+
+  - Colmo in S6000, 2D → 1D tarato: 69,3 → 70,1; 63,6 → 63,2; 81,7 → 81,9; 78,6 → 78,8 m³/s (`fittizio_4`: 2ª
+    onda). Con lo sfioro era circa 60 in tutti.
+  - Con T = 0 tutta l'acqua uscita rientra subito (colmo in uscita uguale a quello in ingresso): le tabelle
+    descrivono la piana già piena. Con il solo T il rientro è graduale e troppo presto; nel 2D arriva a scatto,
+    quando la piana si è riempita. Nel 2D il volume che resta fuori è simile nei quattro scenari (154-215 mila
+    m³), da qui la soglia.
+  - Il ritardo cambia poco gli indici medi ma porta il rientro al momento giusto: in S4200 la portata supera
+    67 m³/s 44-50 min prima del 2D senza ritardo, 1-7 min dopo con τ = 1 h.
+  - Limiti: nella seconda onda del `fittizio_4` il rientro arriva circa 110 min prima (il serbatoio non si
+    svuota mai sotto la soglia, quindi la piana risulta già piena); nel ramo calante il 1D scende 0,5-1 h prima;
+    nel `fittizio_2` non rientra niente (escono 136 000 m³, meno della soglia; nel 2D rientra il 25%), ma il colmo
+    è giusto; il 1D fa uscire il 10-30% di acqua in meno del 2D; un solo serbatoio per tutto il tratto;
+    taratura e verifica sugli stessi quattro scenari.
 
 ## Stato attuale e risultati
 
@@ -805,13 +872,26 @@ Scartata perché equivale ad alzare l'argine: una maschera che spegne lo sfioro 
 ## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
 
 `julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Lavora solo sul caso
-a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000). L'interruttore
-`β_dal_2D` in testa al file sceglie β:
+a 50 m (prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000). Le costanti in testa al file scelgono gli
+scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 
-| `β_dal_2D` | β | Output dello script | Input del modello (scritti direttamente) |
+| Scalini 2D | Cartella di input | Tabelle | Stato |
 |---|---|---|---|
-| `false` (attivo) | 1 | `calcolo_tabelle_daBM/output/S_50m/` | `input/geometria/Test_Brenta/S_50m/` |
-| `true` | dal 2D | `calcolo_tabelle_daBM/output/S_50m_beta/` | `input/geometria/Test_Brenta/S_50m_beta/` |
+| a circa 5 m³/s (1, 5, 10 … 99,9; 22 livelli) | `input/S_0050_6000_q5/` | `input/geometria/Test_Brenta/S_50m/` (e `S_50m_beta/`) | quelle dei risultati salvati |
+| a 2 m³/s (0, 1, 2, 4 … 99,9; 52 livelli) | `input/S_0050_6000_q2/` | `input/geometria/Test_Brenta/S_50m_q2/`, output in `calcolo_tabelle_daBM/output/S_50m_q2/` | **configurazione attuale dello script**, con ΔQ |
+
+- Le due cartelle hanno la stessa mesh, gli stessi argini e le stesse ascisse; il `.h5` degli scalini a 2 m³/s
+  (133 MB) è in Git LFS. La vecchia `input/S_0050_6000/` non esiste più: `strumenti/confronto_valle.jl` (riga 32,
+  scala di deflusso degli scalini nei grafici 12-13) punta ancora lì e va corretto su `_q5` o `_q2`.
+- L'interruttore `β_dal_2D` sceglie β (1 o dal 2D); oggi entrambi i casi scrivono in `S_50m_q2`: per rifare
+  `S_50m_beta` vanno cambiate le cartelle.
+- **ΔQ** (`discharge_difference`): Q della sezione − Q della sezione precedente allo stesso scalino, dai dati 2D
+  originali; 0 nella prima sezione e dove una delle due è asciutta; ΔQ_s è la pendenza rispetto alla quota.
+  Nelle tabelle q2 la mediana di |ΔQ| è 0,002 m³/s; uscite fino a −6,6 m³/s (S0500), rientri fino a +8,8 (S4150),
+  +5,8 (S5700), +5,0 (S1700); le uscite e i rientri coincidono con quelli di "Rientro dell'acqua nel 2D".
+- Scalini a 2 m³/s: il primo scalino (1 m³/s) non è a regime a valle del ponte P17 (da S3050 a S6000 passano
+  0,66 m³/s); 32 righe con portata che cala salendo di livello (S3550-S3750, S1500, S5650); in S0050 scartate 8
+  righe sopra 79 m³/s (livello che scende). Pendenza di S5950 alla prima riga bagnata corretta come prima.
 
 - `tabella_sezioni.csv` e `localslope_xcoord.csv` sono scritti sia nell'output dello script sia negli
   input del modello (`ModelFolder`), quindi sono sempre uguali: non vanno più copiati a mano.
@@ -887,7 +967,7 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
 - **Esondazione, il punto principale per avvicinare il 1D al riferimento.** Includere le golene nelle
   tabelle sarebbe la strategia migliore, ma non è banale, soprattutto dove l'acqua in golena arriva da
   monte invece di uscire in quella sezione. Si procede quindi, un passo alla volta, con una **portata
-  laterale uscente** (vedi "Esondazione"). I dati 2D di riferimento non sono ancora definitivi: per
+  laterale** (vedi "Scambio laterale con la piana"). I dati 2D di riferimento non sono ancora definitivi: per
   ora interessa l'effetto del termine, non far combaciare gli idrogrammi. La corrispondenza dei
   livelli a parità di portata è invece considerata **chiusa** (vedi "Livelli 1D e 2D a parità di portata").
 - **Upwind:** l'instabilità con area e attrito insieme su veli sottili e tratti lunghi è da
@@ -897,7 +977,11 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
 - **Criterio di arresto del riempimento:** la tolleranza assoluta 0,01 m³/s su `|q − qn|` è poco
   adatta alle portate molto basse; `T_assestamento`, `T_fermo` e `tol_fermo` sono provati solo su
   Test_Brenta (6 km) e rettangolare (30 km).
-- **Rientro dell'acqua sfiorata: il prossimo passo.** Nel 2D l'acqua uscita rientra più a valle (vedi
+- **Scambio dalla tabella con il serbatoio della piana** (fatto, vedi "Scambio laterale con la piana"): restano
+  l'anticipo del rientro nella seconda onda del `fittizio_4` (in prova uno svuotamento lento della parte sotto
+  la soglia), il ramo calante che scende prima del 2D, il serbatoio unico per tutto il tratto e la mancanza di
+  una piena di verifica indipendente. I ragionamenti qui sotto sono quelli che hanno portato a questa soluzione.
+- **Rientro dell'acqua sfiorata.** Nel 2D l'acqua uscita rientra più a valle (vedi
   "Rientro dell'acqua nel 2D"); nel 1D esce e non torna, ed è ormai la causa principale dello scarto
   con il 2D (da 3,6 km in poi il 1D ha 4-22 m³/s in meno; a valle di 3 km i livelli sono in media 2-13 cm
   più bassi). L'idea è includerlo **senza
@@ -967,19 +1051,26 @@ a 50 m (`input/S_0050_6000/`, prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
   - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
     minimo di 10 cm, non con la partenza cumulata, e stampa ancora il Ks della riga 23 come se fosse usato;
-  - `exp_dt` e il campo `Ks` di `Parametri` restano nel codice ma non sono più usati.
+  - `exp_dt` e il campo `Ks` di `Parametri` restano nel codice ma non sono più usati;
+  - `strumenti/confronto_valle.jl` cerca gli scalini in `calcolo_tabelle_daBM/input/S_0050_6000/`, che non esiste
+    più (ora `_q5` e `_q2`);
+  - gli strumenti leggono solo le prime 26 righe di `settings.txt` e non sanno dello scambio `tabella`.
 
 ## Ultimo commit descritto
 
-`23c5d31` ("inserita scala di deflusso per il ponte"), più le modifiche successive non ancora
-committate quando questo file è stato scritto (16/11/2026), da committare insieme a esso (nessuna
-modifica a `Source/`, `settings.txt` e `main.jl`):
-- riferimenti 2D dei fittizi rifatti con la mesh nuova: `reference/ns_50_fittizio_N_discharge.csv` (messi
-  dall'utente) e `ns_50_fittizio_N_wse.csv`, estratti con il nuovo `strumenti/estrai_wse_2D.jl`;
-- `output/S_50m/fittizio_1` … `fittizio_4` rifatti con tabelle, argine di S2950 e riferimenti attuali
-  (risultati e tutti i grafici; non `log_tempi.txt`), e il grafico 14 in `output/S_50m/grafici/`;
-- `output/S_50m_hq/riferimenti_nuovi/` (prova del ponte con la configurazione attuale) e la terza prova
-  in `output/S_50m_hq/leggimi.txt`.
+`ebbf337` ("aggiornate tabelle con deltaQ"), più le modifiche successive non ancora committate quando
+questo file è stato scritto (17/11/2026), da committare insieme a esso:
+- `Source/`: scambio laterale scelto con la riga 28 (`sfioro`, `tabella`, `nessuno`), lettura della colonna ΔQ
+  (`READ_EXCHANGE`, tabelle a 12 colonne completate con zeri), serbatoio della piana con soglia, T e ritardo
+  (righe 29-31, `VOLUME_AT`), bilancio con lo scambio netto, nuovi output `Q_lat.csv` e `IC_Q_lat.csv`;
+- `settings.txt`: righe 28-31 (`sfioro`, 150000, 0.5, 1) e legenda;
+- `calibrazione_scambio/`: codici, risultati e grafici della taratura (le uscite `out/` sono escluse con il suo
+  `.gitignore`).
+
+Commit descritti in questo aggiornamento: `f842f23` (riferimenti 2D dei fittizi rifatti con la mesh nuova,
+`strumenti/estrai_wse_2D.jl`, `output/S_50m/fittizio_N` e grafico 14 rifatti, `output/S_50m_hq/riferimenti_nuovi/`),
+`660e5a8`/`ff6cb56` (scalini 2D a 2 m³/s in `calcolo_tabelle_daBM/input/S_0050_6000_q2/`, quelli vecchi spostati
+in `_q5`, `reference/ns_50_scalini_*.csv`), `ecad5e4` (tabelle `S_50m_q2`), `ebbf337` (colonne ΔQ e ΔQ_s).
 
 Commit descritti in precedenza: fino a `21b8f7a`, poi `c753289`-`373ba48` (geometria a 50 m, risultati
 dei fittizi, grafici), `d7ee4e6` e `282eaf2` (analisi dei livelli e della condizione di valle),

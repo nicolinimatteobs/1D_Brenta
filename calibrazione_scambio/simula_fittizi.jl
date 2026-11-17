@@ -1,0 +1,12 @@
+# Lancia i fittizi 1-4 con le tabelle S_50m_q2 e uno scambio laterale, con le uscite in out/<nome>/fittizio_N:
+# servono per gli idrogrammi e l'anticipo del rientro (sfioro come termine di paragone, combinazioni scelte).
+# Uso, dalla cartella del progetto:
+#   julia --project=. -O2 calibrazione_scambio/simula_fittizi.jl <nome> <sfioro|tabella|nessuno> [soglia [m3] T [h] τ [h]]
+#   es. julia --project=. -O2 calibrazione_scambio/simula_fittizi.jl sfioro sfioro
+#       julia --project=. -O2 calibrazione_scambio/simula_fittizi.jl tarato tabella 150000 0.5 1
+include(joinpath(@__DIR__, "esegui.jl"))
+const NOME, SC = ARGS[1], ARGS[2]
+const V, T, τ = length(ARGS) >= 5 ? parse.(Float64, ARGS[3:5]) : (0.0, 0.0, 0.0)
+for k in 1:4
+    simula(geometria = "S_50m_q2", scenario = k, out = joinpath(@__DIR__, "out", NOME, "fittizio_$k"), scambio = SC, V = V, T = T, τ = τ)
+end

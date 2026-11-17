@@ -4,7 +4,7 @@
     params = INITIAL_SETTINGS!()
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti,
+    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana,
             parametri_sezioni, local_slope, output_dir, time = params
 
     # --- ALLOCAZIONE ARRAY ---
@@ -109,8 +109,15 @@
     # Alternativa: velo d'acqua costante di y_ini in tutte le sezioni
     #eta .= b_min .+ y_ini
 
-    Q_lat = zeros(imax)  # Vettore portate uscenti per esondazione
-    Cd    = 0.385        # Coefficiente di efflusso dello sfioro sugli argini
+    Q_lat = zeros(imax)  # Scambio laterale con la piana per cella [m3/s]: positivo se entra, negativo se esce
+    Cd    = 0.385        # Coefficiente di efflusso dello sfioro sugli argini (scambio = :sfioro)
+    # Serbatoio virtuale della piana (scambio = :tabella). V_soglia [m3], T_piana [s] e tau_piana [s]
+    # vengono dalle righe 29-31 di settings.txt
+    V_piana     = 0.0                 # Volume uscito e non ancora rientrato [m3]
+    V_rientrato = 0.0                 # Volume rientrato dall'inizio [m3]
+    Vu_tot      = 0.0                 # Volume uscito dall'inizio [m3]
+    t_tot       = 0.0                 # Tempo dall'inizio, riempimento compreso (time riparte da 0) [s]
+    t_storia    = [0.0]; Vu_storia = [0.0]   # Storia del volume uscito, per il ritardo
     eta_fermo = copy(eta)  # Livello all'inizio della finestra di controllo del riempimento
     t_fermo   = time       # Inizio della finestra
     fermo     = false      # true se nell'ultima finestra il livello è rimasto fermo
@@ -252,14 +259,55 @@
         end
         ####  FINE INSERIMENTO AFFLUENTI
 
-        ####  PORTATA USCENTE PER ESONDAZIONE
-        # Termine sorgente nella sola continuità, come gli affluenti ma con segno opposto: un contributo
-        # per ogni argine superato, con lo sfioro lungo tutta la cella (dx_int) e la quota eta del passo precedente
-        @inbounds for i in 1:imax
-            Q_lat[i] = (FREE_OVERFLOW(eta[i], argine_dx[i], Cd, g) + FREE_OVERFLOW(eta[i], argine_sx[i], Cd, g))*dx_int[i]
-            rhs[i]  -= dt/dx_int[i] * Q_lat[i]
+        ####  SCAMBIO LATERALE CON LA PIANA (riga 28 di settings.txt)
+        # Termine sorgente nella sola continuità, come gli affluenti, esplicito (quota eta del passo
+        # precedente). Q_lat è positivo se l'acqua entra, negativo se esce.
+        # - sfioro: sfioro libero, solo uscente, un contributo per ogni argine superato, lungo tutta la cella (dx_int);
+        # - tabella: ΔQ della tabella della sezione (portata della sezione meno quella della precedente negli
+        #   scalini 2D), entrante o uscente; sostituisce lo sfioro, che vi è già compreso. Le uscite sono
+        #   quelle della tabella e finiscono in un serbatoio virtuale unico per tutto il tratto (la piana).
+        #   I rientri sono quelli della tabella, ma limitati dal serbatoio e ridotti tutti della stessa
+        #   frazione: senza limite crescono con il livello, che cresce con i rientri, e il modello crea acqua.
+        #   Parametri (righe 29-31 di settings.txt):
+        #     V_soglia  la piana trattiene i primi V_soglia m3 (si riempie): rientra solo il volume oltre;
+        #     T_piana   tempo di svuotamento: rientro al massimo (V − V_soglia)/T_piana (0: tutto subito);
+        #     tau_piana ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo tau_piana;
+        # - nessuno: nessuno scambio.
+        if scambio == :sfioro
+            @inbounds for i in 1:imax
+                Q_lat[i] = -(FREE_OVERFLOW(eta[i], argine_dx[i], Cd, g) + FREE_OVERFLOW(eta[i], argine_sx[i], Cd, g))*dx_int[i]
+                rhs[i] += dt/dx_int[i] * Q_lat[i]
+            end
+        elseif scambio == :tabella
+            Q_esce   = 0.0  # portata uscente totale [m3/s]
+            Q_rientro = 0.0  # rientro richiesto dalle tabelle [m3/s]
+            @inbounds for i in 1:imax
+                Q_lat[i] = READ_EXCHANGE(data_depth, ys, first_row, last_row, i, eta[i])
+                Q_lat[i] < 0.0 ? (Q_esce -= Q_lat[i]) : (Q_rientro += Q_lat[i])
+            end
+            # Portata che il serbatoio può restituire in questo passo: volume oltre la soglia diviso per
+            # T_piana, e comunque non più dell'acqua disponibile
+            if tau_piana > 0.0
+                # con il ritardo il volume disponibile è quello uscito fino a tau_piana prima della fine
+                # del passo (storia del volume uscito, t_tot conta anche il riempimento)
+                Vu_tot += dt*Q_esce
+                push!(t_storia, t_tot + dt); push!(Vu_storia, Vu_tot)
+                V_arrivato = VOLUME_AT(t_storia, Vu_storia, t_tot + dt - tau_piana)
+                V_oltre    = max(V_arrivato - V_rientrato - V_soglia, 0.0)
+                Q_disp     = T_piana > 0.0 ? min(V_oltre/T_piana, V_oltre/dt) : V_oltre/dt
+            else
+                V_oltre   = max(V_piana - V_soglia, 0.0)
+                Q_disp    = T_piana > 0.0 ? min(V_oltre/T_piana, V_oltre/dt + Q_esce) : V_oltre/dt + Q_esce
+            end
+            f_rientro = Q_rientro > 0.0 ? min(1.0, Q_disp/Q_rientro) : 0.0
+            @inbounds for i in 1:imax
+                Q_lat[i] > 0.0 && (Q_lat[i] *= f_rientro)
+                rhs[i] += dt/dx_int[i] * Q_lat[i]
+            end
+            V_piana     += dt*(Q_esce - f_rientro*Q_rientro)
+            V_rientrato += dt*f_rientro*Q_rientro
         end
-        ####  FINE PORTATA USCENTE PER ESONDAZIONE
+        ####  FINE SCAMBIO LATERALE
 
 
         CHECK_NAN("termine noto e affluenti", nCS, time, IC; rhs, aa, cc)
@@ -310,9 +358,10 @@
 
         # --- Aggiornamento tempo e counter ---
         time += dt
+        t_tot += dt
         nCS  += 1
         Q_aff_tot = sum(Q_aff)  # Somma degli affluenti, per il bilancio
-        Q_lat_tot = sum(Q_lat)  # Somma delle portate uscenti per esondazione, per il bilancio
+        Q_lat_tot = sum(Q_lat)  # Scambio laterale netto (positivo se entra), per il bilancio
         Q_aff .= 0.0  # Reset portate affluenti
         # --- Salvataggio risultati ---
         if nCS % 500 == 0
@@ -326,11 +375,13 @@
             save_time!(out.IC_time, time)
             save_eta!(out.IC_eta, eta)
             save_h!(out.IC_h, eta .- b_min)
+            save_Q!(out.IC_Q_lat, Q_lat)
         else
             save_Q!(out.Q, q)
             save_time!(out.time, time)
             save_eta!(out.eta, eta)
             save_h!(out.h, eta .- b_min)
+            save_Q!(out.Q_lat, Q_lat)
         end
 
 
@@ -364,7 +415,7 @@
             end
 
             # Stazionario: durata minima passata, q ferma, livello fermo nell'ultima finestra e ingressi uguali all'uscita
-            Q_in_tot = q[1] + Q_aff_tot - Q_lat_tot
+            Q_in_tot = q[1] + Q_aff_tot + Q_lat_tot
             if IC_counter == imax && time >= T_assestamento && fermo && abs(Q_in_tot - q[imax+1]) < 1e-3*Q_in_tot
                 println("Condizioni iniziali raggiunte al tempo: ", nCS, ", time = ", time)
                 IC           = 0 # Disattiva condizioni iniziali
