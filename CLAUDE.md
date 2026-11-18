@@ -153,7 +153,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | `Source/writing.jl` | `INIT_OUTPUT` e funzioni di salvataggio |
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
 | `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (scalini a circa 5 m³/s, quella dei risultati salvati in `output/S_50m`), `Test_Brenta/S_50m_q2/` (scalini a 2 m³/s, con le colonne ΔQ: serve per lo scambio `tabella`) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
-| `input/idrogrammi/<evento>/` | Idrogrammi `t [s], Q [m3/s]` |
+| `input/idrogrammi/<evento>/` | Tutti gli idrogrammi di un evento (`t [s], Q [m3/s]`): monte, affluenti e il loro elenco `affluenti.csv` (vedi "Idrogrammi di un evento" in "Formato degli input") |
 | `input/hq_relations/` | Scale di deflusso dei manufatti, `quota [m s.l.m.], portata [m³/s]` senza intestazione: `hq_P17_dtm.csv` (ponte P17). Usata solo dal prototipo del ponte, non dal modello (vedi "Ponte P17") |
 | `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D); `output/S_50m_hq/` contiene le prove del ponte P17 con il prototipo (descritte in `leggimi.txt`) |
 | `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`). Quelli dei fittizi vengono da `../Test_Brenta/results/inputs/ns_50_fittizio_N_results.h5` (mesh nuova, vedi "Scenari fittizi"); i livelli sono estratti con `strumenti/estrai_wse_2D.jl`. `ns_50_scalini_discharge.csv` e `ns_50_scalini_wse.csv` sono le portate e i livelli degli scalini a 2 m³/s (52 righe, ogni 10 h) |
@@ -227,6 +227,69 @@ quote crescenti): `sezione, WSE, Ω, Ω_s, β, β_s, jden, jden_s, W, W_s, RH, R
 locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono esserci
 `argine_dx_[m], argine_sx_[m]`, quote assolute degli argini (in `calcolo_tabelle_daBM` vengono da
 `bankpoints.csv` nella cartella di input del caso). I file a 4 colonne restano validi: gli argini valgono `Inf` e non c'è sfioro.
+
+**Idrogrammi di un evento.** Regola: tutti gli idrogrammi di un evento stanno in una sola cartella,
+`input/idrogrammi/<nome_evento>/`. Nella cartella ci sono:
+- l'idrogramma della **condizione di monte**, per esempio `monte.csv`;
+- un file per ogni **affluente**, per esempio `Ceggio.csv`, `Centa.csv`;
+- il file degli affluenti **`affluenti.csv`**, che li elenca.
+
+In `settings.txt` la riga 3 punta all'idrogramma di monte e la riga 4 a `affluenti.csv` della stessa cartella:
+
+```
+input/idrogrammi/<nome_evento>/monte.csv          (riga 3)
+input/idrogrammi/<nome_evento>/affluenti.csv      (riga 4)
+```
+
+Formato degli idrogrammi (monte e affluenti):
+- **due colonne**, tempo [s] e portata [m³/s], **senza intestazione**;
+- separate da virgola, spazi o tabulazione; le righe vuote sono saltate;
+- il primo tempo **deve essere 0** e il passo **costante** (per esempio 900 s): `LAGRANGE_INTERPOLATION!` sceglie i
+  punti supponendo così (vedi l'approfondimento 05);
+- tutti gli idrogrammi dell'evento devono durare almeno quanto la simulazione: la durata simulata è il tempo finale
+  più breve tra quelli letti (monte e, se attivi, affluenti);
+- la prima portata è quella dello stato iniziale e del riempimento.
+
+```
+0,5.07
+900,5.07
+1800,5.12
+...
+```
+
+Struttura di `affluenti.csv`:
+- CSV con la riga di intestazione **`nome,idrogramma,sezione`** e poi **una riga per affluente, da monte a valle**;
+- il numero di affluenti è il numero di righe: nessun limite e nessuna modifica al codice;
+- `nome`: un nome qualunque, usato nei messaggi;
+- `idrogramma`: percorso del file **relativo alla cartella del progetto** (come in `settings.txt`), quindi
+  `input/idrogrammi/<nome_evento>/<file>.csv`;
+- `sezione`: numero della sezione di sbocco, da 1 al numero di sezioni (la riga del file della geometria, colonna
+  `section`). Se è vuota, l'affluente k dell'elenco va in `round(k*imax/(n_aff+1))`, cioè gli affluenti senza sezione
+  sono distribuiti uniformemente lungo il tratto. La sezione dipende dalla geometria: cambiando la geometria
+  (per esempio da 200 a 50 m) va riscritta;
+- gli affluenti con picco ≥ 10 m³/s entrano sulla sezione indicata e sulle due vicine.
+
+```
+nome,idrogramma,sezione
+Ceggio,input/idrogrammi/<nome_evento>/Ceggio.csv,25
+Levico,input/idrogrammi/<nome_evento>/Levico.csv,
+Centa,input/idrogrammi/<nome_evento>/Centa.csv,62
+```
+
+Controlli e casi particolari:
+- Se l'evento non ha affluenti, si scrive `nessuno` nella riga 4, oppure `no` nella riga 9. Con `no` il file non
+  viene letto, quindi può anche mancare.
+- `READ_TRIBUTARIES` controlla il file all'avvio: file mancante, idrogramma mancante, sezione fuori dal tratto o non
+  numerica, numero di colonne diverso da 3 fermano il programma con il numero di riga.
+- Prima di lanciare, `julia --project=. strumenti/controllo_input.jl` stampa gli affluenti letti, con la loro sezione o
+  "auto", e la durata simulata.
+
+Le cartelle di oggi seguono la regola solo in parte:
+- `input/idrogrammi/vaia/` è completa: il monte è `Caldonazzo.csv`, ci sono i 18 affluenti e `affluenti.csv`, tutti
+  senza sezione (`IC_Vaia.txt` è un vecchio file non usato);
+- `fittizio_1` … `fittizio_4` e `prova_tratto_brenta` hanno solo l'idrogramma di monte (`piena.csv`), perché sono stati
+  usati sempre con gli affluenti spenti. Per usarli con degli affluenti vanno aggiunti nella cartella, con il loro
+  `affluenti.csv`.
 
 **Output** (separati da spazi, una riga per passo temporale):
 - `Q.csv`: portate alle **interfacce** (imax+1 valori: l'ultimo è l'uscita);
@@ -1128,6 +1191,7 @@ quando questo file è stato scritto (18/11/2026), da committare insieme a esso:
   riga del Ks: `Source/` (`struct.jl`, `module.jl` con `READ_TRIBUTARIES`, `subroutines.jl`, solutore),
   `settings.txt`, nuovo `input/idrogrammi/vaia/affluenti.csv`, `strumenti/` (righe lette), `controllo_input.jl`,
   `calibrazione_scambio/esegui.jl` e commenti, `Resoconto_modello_1D.md`, PDF 02, 05, 06 e numeri di riga negli altri;
+  in `CLAUDE.md` le istruzioni per inserire gli idrogrammi di un evento ("Idrogrammi di un evento");
 - `approfondimenti/`: PDF resi generali (tolti risultati e riferimenti alle prove sul Test_Brenta, esempi con dati
   sintetici di `tabella_sintetica` e `idrogramma_sintetico` in `genera/stile.py`), codice senza commenti e a capo dentro
   il riquadro, titoli che non restano soli in fondo alla pagina, correzioni al testo dei PDF 1 e 3.
