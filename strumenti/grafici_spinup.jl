@@ -4,9 +4,9 @@
 # Uso, dalla cartella del progetto:  julia --project=. strumenti/grafici_spinup.jl [cartella degli output] [cartella dei grafici]
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
-const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[22])   # cartella degli output (riga 22, o primo argomento)
+const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[5])    # cartella degli output (riga 5, o primo argomento)
 const OUT = length(ARGS) >= 2 ? joinpath(R, ARGS[2]) : joinpath(D, "grafici"); mkpath(OUT)
 const BLU = "#2a78d6"; const ARA = "#eb6834"; const VER = "#1baf7a"; const ROS = "#d55181"; const GRI = "#7a7a7a"
 st = (framestyle = :box, gridalpha = 0.25, titlefontsize = 10, guidefontsize = 9, tickfontsize = 8, legendfontsize = 8)

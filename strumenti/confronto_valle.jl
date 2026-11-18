@@ -19,7 +19,7 @@
 #   julia --project=. strumenti/confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [--nome=13_1] [sezioni...]
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
 length(ARGS) >= 3 || error("Uso: confronto_valle.jl <cartella degli output> <livelli 2D> <portate 2D> [--nome=13_1] [sezioni...]")
 const OPZ  = filter(a -> startswith(a, "--nome="), ARGS[4:end])

@@ -4,8 +4,8 @@
     params = INITIAL_SETTINGS!()
 
     # --- CREAZIONE ALIAS PER ACCEDERE AI CAMPI DELLE STRUCT ---
-    @unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
-            parametri_sezioni, local_slope, output_dir, time = params
+    @unpack imax, n_col, n_row, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
+            parametri_sezioni, local_slope, output_dir, time, aff_sez = params
 
     # --- ALLOCAZIONE ARRAY ---
     @unpack b, dx_b, x_int, dx_int, eta, A_bn, deta, rh_b, rh_int,
@@ -24,36 +24,18 @@
     hydro = LOAD_ALL_HYDROGRAPHS!(params)
     tend  = HYDROGRAPH_END_TIME(hydro)
 
-    # --- FILE DI OUTPUT: cartella indicata nella riga 23 di settings.txt ---
+    # --- FILE DI OUTPUT: cartella indicata nella riga 5 di settings.txt ---
     out = INIT_OUTPUT(output_dir)
 
-    # --- ALIAS IDROGRAMMI (tempi e portate) ---
-    tk_cald       = hydro[:caldonazzo].t;  Qk_cald       = hydro[:caldonazzo].Q
-    tk_brenta1    = hydro[:brenta1].t;     Qk_brenta1    = hydro[:brenta1].Q
-    tk_brenta2    = hydro[:brenta2].t;     Qk_brenta2    = hydro[:brenta2].Q
-    tk_brenta3    = hydro[:brenta3].t;     Qk_brenta3    = hydro[:brenta3].Q
-    tk_brenta4    = hydro[:brenta4].t;     Qk_brenta4    = hydro[:brenta4].Q
-    tk_brenta5    = hydro[:brenta5].t;     Qk_brenta5    = hydro[:brenta5].Q
-    tk_brenta6    = hydro[:brenta6].t;     Qk_brenta6    = hydro[:brenta6].Q
-    tk_brenta_new = hydro[:brenta_new].t;  Qk_brenta_new = hydro[:brenta_new].Q
-    tk_brenta_v1  = hydro[:brenta_v1].t;   Qk_brenta_v1  = hydro[:brenta_v1].Q
-    tk_brenta_v2  = hydro[:brenta_v2].t;   Qk_brenta_v2  = hydro[:brenta_v2].Q
-    tk_brenta_v3  = hydro[:brenta_v3].t;   Qk_brenta_v3  = hydro[:brenta_v3].Q
-    tk_brenta_v4  = hydro[:brenta_v4].t;   Qk_brenta_v4  = hydro[:brenta_v4].Q
-    tk_ceggio     = hydro[:ceggio].t;      Qk_ceggio     = hydro[:ceggio].Q
-    tk_levico     = hydro[:levico].t;      Qk_levico     = hydro[:levico].Q
-    tk_centa      = hydro[:centa].t;       Qk_centa      = hydro[:centa].Q
-    tk_chieppena  = hydro[:chieppena].t;   Qk_chieppena  = hydro[:chieppena].Q
-    tk_grigno     = hydro[:grigno].t;      Qk_grigno     = hydro[:grigno].Q
-    tk_maso       = hydro[:maso].t;        Qk_maso       = hydro[:maso].Q
-    tk_moggio     = hydro[:moggio].t;      Qk_moggio     = hydro[:moggio].Q
-    nr_hydro      = length(tk_cald)  # Numero di righe, uguale per tutti gli idrogrammi
+    # --- IDROGRAMMA DI MONTE (tempi e portate) ---
+    tk_monte      = hydro.monte.t;  Qk_monte = hydro.monte.Q
+    nr_hydro      = length(tk_monte)  # Numero di righe dell'idrogramma di monte
 
 
     # ----- PARAMETRI PER RIEMPIMENTO ----
-    # con_affluenti (riga 27 di settings.txt): se vero i 18 affluenti entrano nello stato iniziale,
+    # con_affluenti (riga 9 di settings.txt): se vero gli affluenti entrano nello stato iniziale,
     # nel riempimento e nella simulazione
-    Qin_idro       = Qk_cald[1]  # Portata in ingresso iniziale
+    Qin_idro       = Qk_monte[1]  # Portata in ingresso iniziale
     Qin_IC_target  = Qin_idro    # Portata di monte durante il riempimento (prima dell'idrogramma)
     y_ini          = 0.0      # Tirante minimo iniziale [m] (si parte dal moto uniforme, ma non sotto y_ini)
     dt_riempimento = 5.0      # Passo massimo durante il riempimento [s]
@@ -61,19 +43,17 @@
     T_fermo        = 1800.0   # Il livello deve restare fermo per almeno questo tempo [s] ...
     tol_fermo      = 1e-3     # ... cioè cambiare meno di tol_fermo [m] in ogni sezione
 
-    # Idrogrammi degli affluenti, nell'ordine delle sezioni di ingresso (da monte a valle)
-    tk_aff = (tk_brenta1, tk_brenta2, tk_brenta3, tk_brenta4, tk_brenta5, tk_brenta6,
-              tk_brenta_new, tk_brenta_v1, tk_brenta_v2, tk_brenta_v3, tk_brenta_v4,
-              tk_ceggio, tk_levico, tk_centa, tk_chieppena, tk_grigno, tk_maso, tk_moggio)
-    Qk_aff = (Qk_brenta1, Qk_brenta2, Qk_brenta3, Qk_brenta4, Qk_brenta5, Qk_brenta6,
-              Qk_brenta_new, Qk_brenta_v1, Qk_brenta_v2, Qk_brenta_v3, Qk_brenta_v4,
-              Qk_ceggio, Qk_levico, Qk_centa, Qk_chieppena, Qk_grigno, Qk_maso, Qk_moggio)
+    # Idrogrammi degli affluenti, nell'ordine del file della riga 4 di settings.txt (da monte a valle);
+    # vuoti se gli affluenti sono spenti
+    tk_aff   = [h.t for h in hydro.aff]
+    Qk_aff   = [h.Q for h in hydro.aff]
     Q_aff_IC = [Qk[1] for Qk in Qk_aff]  # Portate degli affluenti nelle condizioni iniziali
     Q_aff_t  = zeros(length(Qk_aff))     # Portate degli affluenti al passo corrente (simulazione)
 
-    # Sezioni di ingresso degli affluenti, distribuite equamente lungo il canale
-    n_aff   = 18
-    sez_aff = [round(Int, k*imax/(n_aff + 1)) for k in 1:n_aff]
+    # Sezioni di ingresso degli affluenti: quelle indicate nel file; dove manca, distribuite equamente
+    # lungo il canale secondo la posizione dell'affluente nel file
+    n_aff   = length(Qk_aff)
+    sez_aff = [aff_sez[k] > 0 ? aff_sez[k] : round(Int, k*imax/(n_aff + 1)) for k in 1:n_aff]
 
     # Gli affluenti con picco oltre Q_soglia_aff entrano su 3 sezioni (sez_aff e le due vicine),
     # con la portata divisa in parti uguali; gli altri entrano in una sola sezione
@@ -112,7 +92,7 @@
     Q_lat = zeros(imax)  # Scambio laterale con la piana per cella [m3/s]: positivo se entra, negativo se esce
     Cd    = 0.385        # Coefficiente di efflusso dello sfioro sugli argini (scambio = :sfioro)
     # Serbatoio virtuale della piana (scambio = :tabella). V_soglia [m3], T_piana [s], tau_piana [s] e
-    # T_lento [s] vengono dalle righe 29-32 di settings.txt
+    # T_lento [s] vengono dalle righe 11-14 di settings.txt
     V_piana     = 0.0                 # Volume uscito e non ancora rientrato [m3]
     V_rientrato = 0.0                 # Volume rientrato dall'inizio [m3]
     Vu_tot      = 0.0                 # Volume uscito dall'inizio [m3]
@@ -207,14 +187,14 @@
                 if IC == 1
                     qstar[i] = Qin_IC_target
                 else
-                    Qin_idro = LAGRANGE_INTERPOLATION!(nr_hydro, tk_cald, Qk_cald, time, dt)
+                    Qin_idro = LAGRANGE_INTERPOLATION!(nr_hydro, tk_monte, Qk_monte, time, dt)
                     qstar[i] = Qin_idro
                 end
             elseif i == imax+1
                 # Uscita: moto uniforme con l'attrito della tabella dell'ultima sezione (jden) e la sua
                 # pendenza locale. In calcolo_tabelle_daBM il jden dell'ultima sezione è ricavato proprio con
                 # questa pendenza, quindi la portata in uscita segue la scala di deflusso degli scalini 2D.
-                # Prima si usava Manning con il Ks di settings.txt (riga 23, ora non più usato):
+                # Prima si usava Manning con un Ks unico letto da settings.txt (riga tolta):
                 #uout = Ks*sqrt(abs(bx[imax]))*(rh_int[i]+tol)^exp_dt
                 #qstar[i] = A_int[i]*uout
                 qstar[i] = UNIFORM_DISCHARGE(A_int[i], den_γ_int[i], bx[imax])
@@ -268,7 +248,7 @@
         end
         ####  FINE INSERIMENTO AFFLUENTI
 
-        ####  SCAMBIO LATERALE CON LA PIANA (riga 28 di settings.txt)
+        ####  SCAMBIO LATERALE CON LA PIANA (riga 10 di settings.txt)
         # Termine sorgente nella sola continuità, come gli affluenti, esplicito (quota eta del passo
         # precedente). Q_lat è positivo se l'acqua entra, negativo se esce.
         # - sfioro: sfioro libero, solo uscente, un contributo per ogni argine superato, lungo tutta la cella (dx_int);
@@ -277,7 +257,7 @@
         #   quelle della tabella e finiscono in un serbatoio virtuale unico per tutto il tratto (la piana).
         #   I rientri sono quelli della tabella, ma limitati dal serbatoio e ridotti tutti della stessa
         #   frazione: senza limite crescono con il livello, che cresce con i rientri, e il modello crea acqua.
-        #   Parametri (righe 29-32 di settings.txt):
+        #   Parametri (righe 11-14 di settings.txt):
         #     V_soglia  la piana trattiene i primi V_soglia m3 (si riempie): rientra solo il volume oltre;
         #     T_piana   tempo di svuotamento: rientro al massimo (V − V_soglia)/T_piana (0: tutto subito);
         #     tau_piana ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo tau_piana;

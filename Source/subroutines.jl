@@ -230,19 +230,13 @@ end
 
 
 
-# Carica tutti gli idrogrammi scritti in settings.txt chiamando LOAD_HYDROGRAPH! per ciascuno.
-# Restituisce un dizionario, es. hydro[:centa].Q; i file non presenti vengono saltati con un avviso
+# Carica l'idrogramma di monte (riga 3 di settings.txt) e quelli degli affluenti (file della riga 4, solo se
+# attivi) chiamando LOAD_HYDROGRAPH! per ciascuno. Restituisce monte = (t, Q) e aff = vettore di (t, Q),
+# nell'ordine del file degli affluenti
 function LOAD_ALL_HYDROGRAPHS!(params)
-    hydro = Dict{Symbol, @NamedTuple{t::Vector{Float64}, Q::Vector{Float64}}}()
-    for (name, filename) in pairs(params.hydro_files)
-        if isfile(filename)
-            hydro[name] = LOAD_HYDROGRAPH!(filename)
-        else
-            println("Attenzione: idrogramma '$filename' non trovato, non viene caricato")
-        end
-    end
-
-    return hydro
+    monte = LOAD_HYDROGRAPH!(params.file_monte)
+    aff   = [LOAD_HYDROGRAPH!(f) for f in params.aff_file]
+    return (monte = monte, aff = aff)
 end
 
 
@@ -250,7 +244,7 @@ end
 # Calcola il tempo finale della simulazione: il minore tra i tempi finali degli idrogrammi.
 # Stampa un avviso se i tempi finali non sono tutti uguali
 function HYDROGRAPH_END_TIME(hydro)
-    t_fin = [v.t[end] for v in values(hydro)]
+    t_fin = [hydro.monte.t[end]; [v.t[end] for v in hydro.aff]]
     tend  = minimum(t_fin)
     if maximum(t_fin) != tend
         println("Attenzione: tempi finali diversi, uso tend = $tend")

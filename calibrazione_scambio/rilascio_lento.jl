@@ -1,4 +1,4 @@
-# Taratura del rilascio lento della parte sotto la soglia (riga 32 di settings.txt): per ogni T_lento [h] e soglia [m3],
+# Taratura del rilascio lento della parte sotto la soglia (riga 14 di settings.txt): per ogni T_lento [h] e soglia [m3],
 # con T e τ fissi [h], lancia i fittizi 1-4 (tabelle S_50m_q2) e aggiunge a risultati/rilascio_lento.csv gli indici,
 # l'anticipo del rientro in S4200 (portata oltre 67 m³/s) e l'anticipo della discesa in S6000 (portata sotto 50 m³/s
 # dopo il colmo), una riga per onda (fittizio_4: due onde). Uscite tenute per le coppie "T_lento:soglia" del quinto argomento.

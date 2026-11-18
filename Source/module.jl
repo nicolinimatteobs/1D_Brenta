@@ -1,53 +1,71 @@
-# Legge settings.txt e restituisce i parametri della simulazione. Le righe di settings.txt
-# vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2
-# geometria, righe 3-21 idrogrammi (raccolti in hydro_files), riga 22 cartella degli output,
-# righe 23-26 Ks (non più usato: l'uscita usa la tabella dell'ultima sezione), tempo iniziale,
-# passo massimo e numero massimo di passi, riga 27 affluenti attivi (si/no), riga 28 scambio
-# laterale con la piana (sfioro, tabella o nessuno), righe 29-31 parametri del serbatoio della
-# piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h], riga 32
-# tempo di rilascio lento della parte sotto la soglia [h], riga 33 serbatoio attivo (si/no: la parte
-# oltre la soglia rientra anche quando la tabella non chiede rientri). Numero di righe e di colonne delle
-# tabelle e numero di sezioni sono ricavati direttamente dai file di input
+# Legge settings.txt e restituisce i parametri della simulazione. Le prime 15 righe di settings.txt
+# vengono lette per posizione: non vanno spostate. Riga 1 tabelle delle sezioni, riga 2 geometria,
+# riga 3 idrogramma di monte, riga 4 file degli affluenti (o "nessuno"), riga 5 cartella degli output,
+# righe 6-8 tempo iniziale, passo massimo e numero massimo di passi, riga 9 affluenti attivi (si/no),
+# riga 10 scambio laterale con la piana (sfioro, tabella o nessuno), righe 11-13 parametri del serbatoio
+# della piana per lo scambio 'tabella': soglia [m3], tempo di svuotamento [h] e ritardo [h], riga 14 tempo
+# di rilascio lento della parte sotto la soglia [h], riga 15 serbatoio attivo (si/no: la parte oltre la
+# soglia rientra anche quando la tabella non chiede rientri). Numero di righe e di colonne delle tabelle,
+# numero di sezioni e numero di affluenti sono ricavati direttamente dai file di input
 function INITIAL_SETTINGS!()
-    # Legge esattamente 33 righe e rimuove spazi
+    # Legge le prime 15 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:33]
+        [strip(readline(f)) for _ in 1:15]
     end
     # Parsing dei dati
     parametri_sezioni = righe[1]
     local_slope       = righe[2]
-    hydro_files = (brenta1    = righe[3],  brenta2    = righe[4],
-                   brenta3    = righe[5],  brenta4    = righe[6],
-                   brenta5    = righe[7],  brenta6    = righe[8],
-                   brenta_new = righe[9],
-                   brenta_v1  = righe[10], brenta_v2  = righe[11],
-                   brenta_v3  = righe[12], brenta_v4  = righe[13],
-                   caldonazzo = righe[14], ceggio     = righe[15],
-                   levico     = righe[16], centa      = righe[17],
-                   chieppena  = righe[18], grigno     = righe[19],
-                   maso       = righe[20], moggio     = righe[21])
-    output_dir        = righe[22]
-    Ks                = parse(Float64, righe[23])   # non più usato, la riga resta per non spostare le altre
-    time              = parse(Float64, righe[24])
-    dtmax             = parse(Float64, righe[25])
-    Nmax              = round(Int, parse(Float64, righe[26]))  # Numero massimo di passi
-    con_affluenti     = PARSE_SI_NO(righe[27], "riga 27 di settings.txt (affluenti attivi)")
-    scambio           = PARSE_SCAMBIO(righe[28])
-    V_soglia          = PARSE_NON_NEGATIVO(righe[29], "riga 29 di settings.txt (soglia del serbatoio della piana, m3)")
-    T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], "riga 30 di settings.txt (tempo di svuotamento, ore)")
-    tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], "riga 31 di settings.txt (ritardo, ore)")
-    T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[32], "riga 32 di settings.txt (rilascio lento, ore)")
-    piana_attiva      = PARSE_SI_NO(righe[33], "riga 33 di settings.txt (serbatoio attivo)")
+    file_monte        = righe[3]
+    file_affluenti    = righe[4]
+    output_dir        = righe[5]
+    time              = parse(Float64, righe[6])
+    dtmax             = parse(Float64, righe[7])
+    Nmax              = round(Int, parse(Float64, righe[8]))  # Numero massimo di passi
+    con_affluenti     = PARSE_SI_NO(righe[9], "riga 9 di settings.txt (affluenti attivi)")
+    scambio           = PARSE_SCAMBIO(righe[10])
+    V_soglia          = PARSE_NON_NEGATIVO(righe[11], "riga 11 di settings.txt (soglia del serbatoio della piana, m3)")
+    T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[12], "riga 12 di settings.txt (tempo di svuotamento, ore)")
+    tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[13], "riga 13 di settings.txt (ritardo, ore)")
+    T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[14], "riga 14 di settings.txt (rilascio lento, ore)")
+    piana_attiva      = PARSE_SI_NO(righe[15], "riga 15 di settings.txt (serbatoio attivo)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
     scambio == :tabella && n_col < 14 &&
-        error("Riga 28 di settings.txt: lo scambio 'tabella' richiede le colonne ΔQ e ΔQ_s in $parametri_sezioni")
+        error("Riga 10 di settings.txt: lo scambio 'tabella' richiede le colonne ΔQ e ΔQ_s in $parametri_sezioni")
+    isfile(file_monte) || error("Riga 3 di settings.txt: idrogramma di monte '$file_monte' non trovato")
 
-    return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir,
-                     Ks, time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
+    # Affluenti dal file della riga 4, letto solo se sono attivi
+    aff_nomi, aff_file, aff_sez = con_affluenti ? READ_TRIBUTARIES(file_affluenti, imax) : (String[], String[], Int[])
+
+    return Parametri(parametri_sezioni, local_slope, file_monte, aff_nomi, aff_file, aff_sez, output_dir,
+                     time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
                      piana_attiva, n_row, imax, n_col)
+end
+
+# Legge il file degli affluenti (riga 4 di settings.txt): CSV con l'intestazione nome,idrogramma,sezione e una
+# riga per affluente, da monte a valle. idrogramma è il percorso del file (come quelli di settings.txt);
+# sezione è il numero della sezione di sbocco (1 … imax) e può restare vuota: allora la sezione è scelta in
+# automatico, distribuendo gli affluenti uniformemente lungo il tratto. "nessuno" vuol dire nessun affluente.
+# Ogni errore indica la riga del file
+function READ_TRIBUTARIES(filename, imax)
+    nomi, file, sez = String[], String[], Int[]
+    lowercase(filename) in ("nessuno", "") && return nomi, file, sez
+    isfile(filename) || error("Riga 4 di settings.txt: file degli affluenti '$filename' non trovato")
+    for (n, line) in enumerate(eachline(filename))
+        (n == 1 || isempty(strip(line))) && continue   # intestazione e righe vuote
+        c = String.(strip.(split(line, ',')))
+        length(c) == 2 && push!(c, "")
+        length(c) == 3 || error("Riga $n di '$filename': servono 3 colonne (nome,idrogramma,sezione), trovate $(length(c))")
+        isempty(c[1]) && error("Riga $n di '$filename': manca il nome dell'affluente")
+        isfile(c[2]) || error("Riga $n di '$filename': idrogramma '$(c[2])' dell'affluente $(c[1]) non trovato")
+        s = isempty(c[3]) ? 0 : tryparse(Int, c[3])
+        (s === nothing || (!isempty(c[3]) && !(1 <= s <= imax))) &&
+            error("Riga $n di '$filename': sezione '$(c[3])' dell'affluente $(c[1]) non valida, serve un numero da 1 a $imax o niente")
+        push!(nomi, c[1]); push!(file, c[2]); push!(sez, s)
+    end
+    return nomi, file, sez
 end
 
 # Legge un numero non negativo da settings.txt
@@ -57,12 +75,12 @@ function PARSE_NON_NEGATIVO(s, dove)
     return v
 end
 
-# Legge lo scambio laterale con la piana (riga 28 di settings.txt): sfioro (sfioro libero sugli
+# Legge lo scambio laterale con la piana (riga 10 di settings.txt): sfioro (sfioro libero sugli
 # argini, solo uscente), tabella (ΔQ delle tabelle, entrante e uscente) o nessuno
 function PARSE_SCAMBIO(s)
     v = lowercase(strip(s))
     v in ("sfioro", "tabella", "nessuno") && return Symbol(v)
-    error("Valore '$s' non valido per la riga 28 di settings.txt (scambio laterale): usare sfioro, tabella o nessuno")
+    error("Valore '$s' non valido per la riga 10 di settings.txt (scambio laterale): usare sfioro, tabella o nessuno")
 end
 
 # Legge un sì/no da settings.txt: accetta si, sì, no, true, false, 1, 0 (maiuscole o minuscole)

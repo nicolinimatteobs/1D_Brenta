@@ -5,12 +5,6 @@ from stile import *
 
 SEMI = "Source/Semi_Implicit_Brenta_2D_1D.jl"
 SUB = "Source/subroutines.jl"
-F1 = USCITE + "/fittizio_1"
-
-
-def carica_tabelle():
-    T = np.loadtxt(os.path.join(PROGETTO, TABELLE), delimiter=",", skiprows=1)
-    return [T[T[:, 0] == k] for k in range(1, int(T[:, 0].max()) + 1)]
 
 
 def leggi(tab, eta, col):
@@ -21,13 +15,6 @@ def leggi(tab, eta, col):
     if r == len(ys) - 1 and d > 0:
         return tab[r, col] + (tab[r, col] - tab[r - 1, col]) / (ys[r] - ys[r - 1]) * d
     return tab[r, col] + tab[r, col + 1] * d
-
-
-def stato_al_colmo():
-    t = np.loadtxt(os.path.join(PROGETTO, F1, "time.csv"))
-    Q = np.loadtxt(os.path.join(PROGETTO, F1, "Q.csv")); E = np.loadtxt(os.path.join(PROGETTO, F1, "eta.csv"))
-    n = int(Q[:, 0].argmax())
-    return t, Q, E, n
 
 
 # =============================================================================================== 08
@@ -51,9 +38,9 @@ def p08(D):
         "soluzione stazionaria dello schema centrato quando la cella è lunga rispetto alla distanza in cui il livello "
         "torna al moto uniforme, circa Δx > 0,6·y/S (con y il tirante e S la pendenza). Prendere area e attrito dalla "
         "cella a monte toglie l'oscillazione, al prezzo di un errore del primo ordine nei tratti profondi.")
-    D.attenzione("su un canale rettangolare con un velo di 10 cm su 30 km, l'upwind su area **e** attrito insieme è "
-                 "instabile e va in NaN; solo su uno dei due, o con la media, è stabile. Sul Test_Brenta (tiranti "
-                 "0,4-3 m) funziona. La versione con la media è nel codice, commentata.")
+    D.attenzione("con veli d'acqua molto sottili (pochi centimetri) su tratti lunghi, l'upwind su area **e** attrito "
+                 "insieme può diventare instabile e andare in NaN; upwind su uno solo dei due, o la media, resta stabile. "
+                 "Con tiranti di qualche decimetro o più non dà problemi. La versione con la media è nel codice, commentata.")
     D.estratto(SEMI, "        @inbounds @simd for i in 2:imax", "            smax[i] = abs(β_int[i] * uf[i])", titolo=SEMI)
     D.h1("2. Il passo temporale")
     D.p("Nello schema semi-implicito il gradiente del pelo libero e l'attrito sono impliciti: la celerità delle onde "
@@ -63,29 +50,15 @@ def p08(D):
     D.eq(r"\Delta t=\min\left(\Delta t_{lim},\ \mathrm{CFL}\,\frac{\Delta x_{min}}{\max_{i}\,s_{i-1/2}+\epsilon}\right),\qquad \Delta x_{min}=\min\left(\min_i\Delta x_{i+1/2},\ \min_i\Delta x_i\right)")
     D.tabella([["", "Riempimento (IC = 1)", "Simulazione (IC = 0)"],
                ["CFL", "0,6", "0,95"],
-               ["Δt_{lim}", "`dt_riempimento` = 5 s", "`dtmax` (riga 25), 60 s"],
+               ["Δt_{lim}", "`dt_riempimento` = 5 s", "`dtmax` (riga 7 di `settings.txt`)"],
                ["Scopo", "assestamento senza oscillazioni", "efficienza"]], [0.2, 0.4, 0.4])
     D.p("Infine il passo è accorciato perché la simulazione finisca esattamente a t_{end}, la fine dell'idrogramma più breve.")
     D.estratto(SEMI, "        amax = maximum(smax)", n=12, titolo=SEMI)
-    t = np.loadtxt(os.path.join(PROGETTO, F1, "time.csv")); dt = np.diff(np.r_[0, t])
-    ti = np.loadtxt(os.path.join(PROGETTO, F1, "IC_time.csv"))
-    def graf(fig):
-        ax = fig.add_subplot(111)
-        ax.plot(t[1:] / 3600, dt[1:], color="#2a78d6", lw=1)
-        ax2 = ax.twinx()
-        Q = np.loadtxt(os.path.join(PROGETTO, F1, "Q.csv"))
-        ax2.plot(t / 3600, Q[:, 0], color="#9aa0a6", lw=1, ls="--")
-        ax2.set_ylabel("portata in ingresso [m³/s] (tratteggio)", fontsize=8, color="#5f6368")
-        ax.set_xlabel("tempo [h]", fontsize=8); ax.set_ylabel("passo temporale Δt [s]", fontsize=8, color="#2a78d6")
-        ax.grid(alpha=0.25); ax.tick_params(labelsize=7); ax2.tick_params(labelsize=7)
-    D.grafico(graf, "passo", f"Passo temporale nella simulazione del `fittizio_1` (`svuotamento_32h`): {len(t)} passi, "
-              f"Δt da {dt[1:].min():.1f} a {dt.max():.1f} s, in media {dt.mean():.1f} s. Con la piena le velocità "
-              "crescono e il passo si accorcia. Nel riempimento il passo è sempre 5 s "
-              f"({len(ti)} passi, {ti[-1]/3600:.1f} h).")
-    s_med = 0.95 * 50 / dt.mean()
-    D.p(f"Con Δx = 50 m e CFL = 0,95, un passo medio di {dt.mean():.1f} s corrisponde a una velocità massima di circa "
-        f"{s_med:.1f} m/s. Uno schema esplicito sulle onde di gravità, con h ≈ 3 m, avrebbe avuto bisogno di "
-        f"Δt ≈ 0,95·50/(2 + 5,4) ≈ 6 s: il semi-implicito permette passi circa quattro volte più lunghi.")
+    D.p("Durante una piena le velocità crescono e il passo si accorcia; nel riempimento, con portate basse, il "
+        "passo è di solito fissato dal limite di 5 s.")
+    D.p("Un esempio: con Δx = 50 m, CFL = 0,95 e una velocità massima |βu| = 2 m/s il passo è "
+        "Δt = 0,95·50/2 ≈ 24 s. Uno schema esplicito anche sulle onde di gravità, con h = 3 m e c = √(g h) ≈ 5,4 m/s, "
+        "avrebbe bisogno di Δt ≤ 0,95·50/(2 + 5,4) ≈ 6 s: il semi-implicito permette passi circa quattro volte più lunghi.")
     D.flowchart(dict(dimensioni=(13, 10.6), w=6.6, h=0.95, nodi={
         "a": (6, 10.0, "Inizio del passo", "inizio", 3.2, 0.75),
         "b": (6, 8.8, "qn = q (portata del passo precedente)", "proc"),
@@ -132,13 +105,12 @@ def p09(D):
         "calcola la portata con l'area e l'attrito della tabella dell'ultima sezione al passo precedente:")
     D.eq(r"Q^{*}_{imax+1/2}=A_{imax}\,\sqrt{g\,j_{den,imax}\,|S_{imax}|}")
     D.p("S è la `local_slope` dell'ultima sezione, che `calcolo_tabelle_daBM` pone uguale alla **pendenza media del "
-        "fondo** (0,00213). Lo stesso script ricava il j_{den} dell'ultima sezione proprio con quella pendenza "
+        "fondo**. Lo stesso script ricava il j_{den} dell'ultima sezione proprio con quella pendenza "
         "(approfondimento 21): per costruzione la formula restituisce, livello per livello, la portata degli scalini "
-        "2D in S6000. In altre parole la condizione di valle è la **scala di deflusso** del modello 2D, senza "
-        "tarature a mano.")
-    D.nota("prima si usava Manning con il K_{s} = 33 della riga 23 di `settings.txt`: a 50 m dava in S6000 tiranti "
-           "10-13 cm più alti del 2D, perché nel 2D il pelo libero vicino all'uscita è molto più ripido (richiamo "
-           "dell'uscita del dominio). La riga 23 è rimasta solo per non spostare le altre.")
+        "2D nell'ultima sezione. In altre parole la condizione di valle è la **scala di deflusso** del modello 2D, "
+        "senza tarature a mano.")
+    D.nota("non c'è un K_{s} da impostare in `settings.txt`: l'uscita usa solo la tabella dell'ultima sezione. Se le tabelle non vengono da `calcolo_tabelle_daBM`, il j_{den} dell'ultima sezione "
+           "va ricavato allo stesso modo, con la pendenza scritta nella geometria.")
     D.h1("4. Il codice")
     D.estratto(SEMI, "        @inbounds @simd for i in 1:imax+1", "        CHECK_NAN(\"calcolo di qstar\"", titolo=SEMI)
     D.p("Nello stesso ciclo si calcolano γ e l'area «ridotta» A/(1 + Δtγ) di ogni interfaccia, che servono per "
@@ -156,14 +128,13 @@ def p09(D):
                ("d", "f", "no"), ("f", "g"), ("c.s", "g.w", None, [(2.4, 2.2)]), ("e.s", "g.e", None, [(11.6, 2.2)]), ("g", "h")]),
         didascalia="Flowchart del calcolo di Q* con le condizioni al contorno.", larghezza=0.9)
     D.attenzione("la portata in uscita usa area e attrito del passo precedente: è esplicita. Il livello nell'ultima "
-                 "sezione si adegua nel passo successivo. Con passi di 20-30 s e variazioni lente non dà oscillazioni.")
+                 "sezione si adegua nel passo successivo. Con le variazioni lente di una piena non dà oscillazioni.")
     D.collegamenti([(5, "05_idrogrammi.pdf", "Gli idrogrammi"), (8, "08_interfacce_e_passo_temporale.pdf", "Interfacce e passo"),
                     (10, "10_attrito_implicito.pdf", "L'attrito implicito"), (21, "21_costruzione_tabelle.pdf", "Il jden dell'ultima sezione")])
 
 
 # =============================================================================================== 10
 def p10(D):
-    tabs = carica_tabelle(); t, Q, E, n = stato_al_colmo()
     D.h1("A cosa serve")
     D.p("L'attrito sul fondo e sulle sponde frena la corrente. Nei tratti poco profondi è molto forte: trattarlo in "
         "modo esplicito imporrebbe passi temporali piccolissimi. Il modello lo tratta in modo **implicito**, "
@@ -188,26 +159,17 @@ def p10(D):
         ax.legend(fontsize=7.5, loc="lower left"); ax.grid(alpha=0.25); ax.tick_params(labelsize=7)
         ax.text(2.05, -1.25, "esplicito instabile\n(|fattore| > 1)", fontsize=7.5, color="#b4371f")
     D.grafico(graf, "attrito", "Fattore di riduzione della portata in un passo dovuto al solo attrito.")
-    D.h1("2. Valori di γ nel Test_Brenta")
-    g = []
-    for i in range(len(tabs)):
-        q = 0.5 * (Q[n, i] + Q[n, i + 1]); A = leggi(tabs[i], E[n, i], 2); jd = leggi(tabs[i], E[n, i], 6)
-        g.append(abs(q / A) / jd)
-    g = np.array(g)
-    q0 = [0.5 * (Q[0, i] + Q[0, i + 1]) for i in range(len(tabs))]
-    g0 = np.array([abs(q0[i] / leggi(tabs[i], E[0, i], 2)) / leggi(tabs[i], E[0, i], 6) for i in range(len(tabs))])
-    dtm = np.diff(np.r_[0, t]).mean()
-    D.p(f"Con gli output del `fittizio_1`, all'istante del colmo in ingresso γ va da {g.min():.4f} a {g.max():.4f} 1/s "
-        f"(mediana {np.median(g):.4f}); con la portata di base iniziale da {g0.min():.4f} a {g0.max():.4f} 1/s. Con un "
-        f"passo di circa {dtm:.0f} s, Δtγ arriva a {dtm*max(g.max(), g0.max()):.2f}: lo schema esplicito sarebbe al limite o "
-        "oltre nelle sezioni più scabre o meno profonde, quello implicito non ha problemi.")
-    def graf2(fig):
-        ax = fig.add_subplot(111); x = np.arange(1, len(g) + 1) * 0.05
-        ax.semilogy(x, g0, color="#9aa0a6", lw=1.2, label="portata di base (inizio)")
-        ax.semilogy(x, g, color="#2a78d6", lw=1.4, label="colmo in ingresso")
-        ax.set_xlabel("x [km]", fontsize=8); ax.set_ylabel("γ = |u|/jden [1/s]", fontsize=8)
-        ax.legend(fontsize=7.5); ax.grid(alpha=0.25, which="both"); ax.tick_params(labelsize=7)
-    D.grafico(graf2, "gamma", "γ lungo il tratto nel `fittizio_1`, ricostruito dagli output e dalle tabelle.")
+    D.h1("2. Ordini di grandezza di γ")
+    D.p("γ è grande dove la corrente è veloce, la scabrezza alta e il tirante piccolo. Qualche valore con un passo "
+        "Δt = 30 s:")
+    righe = [["Situazione", "u [m/s]", "K_{s} [m^{1/3}/s]", "R_{h} [m]", "γ [1/s]", "Δt·γ"]]
+    for nome, u, ks, rh in (("alveo profondo, poco scabro", 1.5, 30, 2.0), ("alveo medio", 1.0, 20, 0.5),
+                            ("velo sottile, scabro", 0.5, 15, 0.1)):
+        gm = u / (ks ** 2 * rh ** (4 / 3) / 9.81)
+        righe.append([nome, f"{u}", f"{ks}", f"{rh}", f"{gm:.4f}", f"{30*gm:.2f}"])
+    D.tabella(righe, [0.32, 0.11, 0.17, 0.12, 0.14, 0.14])
+    D.p("Nei tratti poco profondi Δtγ supera facilmente 1 e anche 2: lo schema esplicito oscillerebbe o divergerebbe, "
+        "quello implicito riduce solo la portata.")
     D.h1("3. Nello schema completo")
     D.p("Nella quantità di moto discreta l'attrito si somma al gradiente del pelo libero, anch'esso implicito:")
     D.eq([r"Q^{n+1}_{i+1/2}=Q^{*}_{i+1/2}-g\,A_{i+1/2}\frac{\Delta t}{\Delta x_{i+1/2}}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_i\right)-\Delta t\,\gamma_{i+1/2}\,Q^{n+1}_{i+1/2}",
@@ -283,14 +245,14 @@ def p11(D):
         "(quello che esce dalla cella i entra nella i+1):")
     D.eq(r"\sum_i\Delta x_i\left(A^{n+1}_i-A^{n}_i\right)=\Delta t\left(Q_{1/2}-Q_{imax+1/2}\right)+\Delta t\sum_i\left(Q_{aff,i}+Q_{lat,i}\right)")
     D.p("Se Newton converge, la variazione del volume in alveo è esattamente uguale a quanto entra meno quanto esce: "
-        "è ciò che controlla `BILANCIO_DI_MASSA` (approfondimento 19), con errori di 0,0000%.")
+        "è ciò che controlla `BILANCIO_DI_MASSA` (approfondimento 19), che trova errori dell'ordine degli arrotondamenti.")
     D.collegamenti([(10, "10_attrito_implicito.pdf", "L'attrito implicito"), (12, "12_newton_thomas.pdf", "Newton + Thomas"),
                     (19, "19_bilancio_di_massa.pdf", "Il bilancio di massa")])
 
 
 # =============================================================================================== 12
 def p12(D):
-    tabs = carica_tabelle(); r = tabs[19]
+    r = tabella_sintetica()
     D.h1("A cosa serve")
     D.p("Il sistema dei livelli (approfondimento 11) è **non lineare**, perché l'area A_{i}(η_{i}) viene dalle tabelle. "
         "Si risolve con il metodo di Newton: a ogni iterazione si linearizza attorno ai livelli correnti e si risolve "
@@ -307,16 +269,16 @@ def p12(D):
         "tratto ci arriva in poche iterazioni. A(η) è anche **convessa** (la larghezza cresce con il livello), "
         "il che rende la convergenza monotona.")
     D.h2("Un esempio su una sola cella")
-    D.p("Per vedere il comportamento: nella sezione 20 (S1000) si cerca il livello che dà un'area di 30 m², partendo "
-        "dal fondo, con l'interpolazione della tabella e W come derivata.")
-    At = 30.0; e = r[0, 1] + 0.05; righe = [["Iterazione", "η [m]", "A(η) − 30 [m²]", "W [m]"]]
+    D.p("Per vedere il comportamento: nella sezione di esempio dell'approfondimento 04 si cerca il livello che dà "
+        "un'area di 60 m², partendo dal fondo, con l'interpolazione della tabella e W come derivata.")
+    At = 60.0; e = r[0, 1]; righe = [["Iterazione", "η [m]", "A(η) − 60 [m²]", "W [m]"]]
     for k in range(7):
         A = leggi(r, e, 2); W = leggi(r, e, 8)
         righe.append([str(k), f"{e:.6f}", f"{A-At:+.3e}", f"{W:.3f}"])
         if abs(A - At) < 1e-12: break
         e = e - (A - At) / W
-    D.tabella(righe, [0.2, 0.27, 0.3, 0.23], didascalia="Newton su una sola cella con la tabella vera: pochi passi "
-              "per entrare nel tratto giusto, poi il residuo va a zero.")
+    D.tabella(righe, [0.2, 0.27, 0.3, 0.23], didascalia="Newton su una sola cella con la tabella di esempio: pochi "
+              "passi per entrare nel tratto giusto, poi il residuo va a zero.")
     D.h2("Celle asciutte")
     D.p("Se nelle due interfacce di una cella il raggio idraulico è quasi nullo (R_{h,i−1/2} + R_{h,i+1/2} < 10^{−3} m), la "
         "cella è asciutta: la sua riga diventa δ_{i} = 0 (diagonale 1, residuo 0) e il livello non cambia. Evita "
@@ -325,7 +287,7 @@ def p12(D):
     D.p("Newton si ferma quando la norma euclidea del residuo è sotto `tol` = 10^{−14} m², oppure dopo 100 "
         "iterazioni. La tolleranza è molto stretta, vicina all'errore di arrotondamento sulle aree (decine di m²): "
         "in pratica spesso si fanno tutte le 100 iterazioni anche se il residuo è già trascurabile dopo poche. "
-        "È uno dei punti aperti in `CLAUDE.md`: una tolleranza relativa farebbe risparmiare tempo.")
+        "Una tolleranza relativa farebbe risparmiare tempo.")
     D.estratto(SEMI, "        # --- Ciclo Newton ---", "            eta .= eta .- deta", titolo=SEMI)
     D.h1("2. L'algoritmo di Thomas")
     D.p("Un sistema tridiagonale con N incognite si risolve con l'eliminazione di Gauss senza riempire la matrice: "
@@ -427,9 +389,9 @@ def p14(D):
     D.h2("Un esempio di messaggio")
     D.codice("ERROR: NaN in deta dopo Thomas, iterazione di Newton 3: passo 1532 (simulazione),\n"
              "t = 36842.1 s, posizioni [57, 58] (2 in totale)", titolo="esempio (non da una simulazione reale)")
-    D.p("Il messaggio dà le quattro informazioni che `CLAUDE.md` chiede di riportare quando compare un NaN: la "
-        "**fase**, il **passo**, il **tempo** e le **posizioni** (sezioni o interfacce). Le posizioni sono indici: "
-        "per le sezioni i corrisponde alla sezione S(50·i), per le interfacce i alla faccia tra le sezioni i−1 e i.")
+    D.p("Il messaggio dà le quattro informazioni che servono per capire che cosa è successo: la **fase**, il "
+        "**passo**, il **tempo** e le **posizioni** (sezioni o interfacce). Le posizioni sono indici: per le sezioni "
+        "i è la riga i del file della geometria, per le interfacce i è la faccia tra le sezioni i−1 e i.")
     D.flowchart(dict(dimensioni=(12, 7.8), w=5.6, h=0.95, nodi={
         "a": (5.5, 7.2, "CHECK_NAN(fase, nCS, time, IC; vettori...)", "inizio", 6.6, 0.75),
         "b": (5.5, 5.9, "per ogni vettore (nome, v)", "proc"),

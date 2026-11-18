@@ -205,7 +205,7 @@ Dalla REPL di Julia: `using Pkg; Pkg.activate(".")` e poi `include("main.jl")`. 
 pacchetto (es. `Infiltrator`) di solito è perché l'ambiente del progetto non è attivo.
 
 Prima di lanciare si controlla `settings.txt` (vedi §6): soprattutto le righe 1-2 (tabelle e geometria),
-14 (idrogramma), 22 (cartella dei risultati) e 27-32 (affluenti e scambio con la piana).
+3 (idrogramma di monte), 4 (affluenti), 5 (cartella dei risultati) e 9-15 (affluenti attivi e scambio con la piana).
 
 ---
 
@@ -243,59 +243,61 @@ monte costante e passo massimo più piccolo durante il riempimento, file di usci
 
 ## 6. Passo 1: lettura di `settings.txt`
 
-`settings.txt` è letto **per posizione**: conta il numero di riga, non c'è un'etichetta. Le prime 33 righe
+`settings.txt` è letto **per posizione**: conta il numero di riga, non c'è un'etichetta. Le prime 15 righe
 sono la configurazione; dopo ci sono una legenda e vecchie configurazioni, che il modello ignora.
 
 | Riga | Contenuto | Esempio |
 |---|---|---|
 | 1 | Tabelle delle sezioni | `input/geometria/Test_Brenta/S_50m_q2/tabella_sezioni.csv` |
 | 2 | Geometria | `input/geometria/Test_Brenta/S_50m_q2/localslope_xcoord.csv` |
-| 3-13 | Idrogrammi degli affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4 | |
-| 14 | Idrogramma in ingresso da monte | `input/idrogrammi/fittizio_1/piena.csv` |
-| 15-21 | Idrogrammi degli affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio | |
-| 22 | Cartella dei risultati (creata se non esiste) | `output/Volume_in_out/fittizio_1` |
-| 23 | Ks (non più usato, la riga deve restare) | `33.00` |
-| 24 | Tempo iniziale [s] | `0` |
-| 25 | Passo temporale massimo [s] | `60` |
-| 26 | Numero massimo di passi | `1e9` |
-| 27 | Affluenti attivi | `si` / `no` |
-| 28 | Scambio laterale con la piana | `sfioro` / `tabella` / `nessuno` |
-| 29 | Serbatoio della piana: soglia [m³] | `150000` |
-| 30 | Serbatoio della piana: tempo di svuotamento [h] | `0.5` |
-| 31 | Serbatoio della piana: ritardo [h] | `1` |
-| 32 | Serbatoio della piana: rilascio lento [h] | `32` |
-| 33 | Serbatoio attivo | `si` / `no` |
+| 3 | Idrogramma in ingresso da monte | `input/idrogrammi/fittizio_1/piena.csv` |
+| 4 | File degli affluenti (o `nessuno`), vedi §8.2 | `input/idrogrammi/vaia/affluenti.csv` |
+| 5 | Cartella dei risultati (creata se non esiste) | `output/Volume_in_out/fittizio_1` |
+| 6 | Tempo iniziale [s] | `0` |
+| 7 | Passo temporale massimo [s] | `60` |
+| 8 | Numero massimo di passi | `1e9` |
+| 9 | Affluenti attivi | `si` / `no` |
+| 10 | Scambio laterale con la piana | `sfioro` / `tabella` / `nessuno` |
+| 11 | Serbatoio della piana: soglia [m³] | `150000` |
+| 12 | Serbatoio della piana: tempo di svuotamento [h] | `0.5` |
+| 13 | Serbatoio della piana: ritardo [h] | `1` |
+| 14 | Serbatoio della piana: rilascio lento [h] | `32` |
+| 15 | Serbatoio attivo | `si` / `no` |
 
 La lettura è in `INITIAL_SETTINGS!` (`Source/module.jl`):
 
 ```julia
 function INITIAL_SETTINGS!()
-    # Legge esattamente 33 righe e rimuove spazi
+    # Legge le prime 15 righe e rimuove spazi
     righe = open("settings.txt", "r") do f
-        [strip(readline(f)) for _ in 1:33]
+        [strip(readline(f)) for _ in 1:15]
     end
     parametri_sezioni = righe[1]
     local_slope       = righe[2]
-    hydro_files = (brenta1 = righe[3], ..., caldonazzo = righe[14], ..., moggio = righe[21])
-    output_dir        = righe[22]
-    Ks                = parse(Float64, righe[23])   # non più usato, la riga resta per non spostare le altre
-    time              = parse(Float64, righe[24])
-    dtmax             = parse(Float64, righe[25])
-    Nmax              = round(Int, parse(Float64, righe[26]))
-    con_affluenti     = PARSE_SI_NO(righe[27], "riga 27 di settings.txt (affluenti attivi)")
-    scambio           = PARSE_SCAMBIO(righe[28])
-    V_soglia          = PARSE_NON_NEGATIVO(righe[29], ...)
-    T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[30], ...)   # ore → secondi
-    tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[31], ...)
-    T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[32], ...)
-    piana_attiva      = PARSE_SI_NO(righe[33], "riga 33 di settings.txt (serbatoio attivo)")
+    file_monte        = righe[3]
+    file_affluenti    = righe[4]
+    output_dir        = righe[5]
+    time              = parse(Float64, righe[6])
+    dtmax             = parse(Float64, righe[7])
+    Nmax              = round(Int, parse(Float64, righe[8]))
+    con_affluenti     = PARSE_SI_NO(righe[9], "riga 9 di settings.txt (affluenti attivi)")
+    scambio           = PARSE_SCAMBIO(righe[10])
+    V_soglia          = PARSE_NON_NEGATIVO(righe[11], ...)
+    T_piana           = 3600.0 * PARSE_NON_NEGATIVO(righe[12], ...)   # ore → secondi
+    tau_piana         = 3600.0 * PARSE_NON_NEGATIVO(righe[13], ...)
+    T_lento           = 3600.0 * PARSE_NON_NEGATIVO(righe[14], ...)
+    piana_attiva      = PARSE_SI_NO(righe[15], "riga 15 di settings.txt (serbatoio attivo)")
 
     # Dimensioni lette dai file: righe e colonne delle tabelle, sezioni dal file della geometria
     n_row, n_col = FILE_SIZE(parametri_sezioni)
     imax, _      = FILE_SIZE(local_slope)
     ...
-    return Parametri(parametri_sezioni, local_slope, hydro_files, output_dir, Ks, time, dtmax, Nmax,
-                     con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva, n_row, imax, n_col)
+    # Affluenti dal file della riga 4, letto solo se sono attivi
+    aff_nomi, aff_file, aff_sez = con_affluenti ? READ_TRIBUTARIES(file_affluenti, imax) : (String[], String[], Int[])
+
+    return Parametri(parametri_sezioni, local_slope, file_monte, aff_nomi, aff_file, aff_sez, output_dir,
+                     time, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento,
+                     piana_attiva, n_row, imax, n_col)
 end
 ```
 
@@ -304,14 +306,15 @@ Note:
 - Il **numero di sezioni** `imax` e la dimensione delle tabelle **non si scrivono a mano**: sono ricavati
   contando le righe dei file (`FILE_SIZE`).
 - I valori non validi fermano il programma con un messaggio che indica la riga sbagliata
-  (`PARSE_SI_NO`, `PARSE_SCAMBIO`, `PARSE_NON_NEGATIVO`).
+  (`PARSE_SI_NO`, `PARSE_SCAMBIO`, `PARSE_NON_NEGATIVO`); lo stesso vale per un idrogramma di monte che non
+  esiste e per gli errori nel file degli affluenti (`READ_TRIBUTARIES`, §8.2).
 - Tutti i parametri finiscono nella `struct Parametri` (`Source/struct.jl`), che il solutore "spacchetta"
   all'inizio con `@unpack`:
 
 ```julia
 params = INITIAL_SETTINGS!()
-@unpack imax, n_col, n_row, Ks, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
-        parametri_sezioni, local_slope, output_dir, time = params
+@unpack imax, n_col, n_row, dtmax, Nmax, con_affluenti, scambio, V_soglia, T_piana, tau_piana, T_lento, piana_attiva,
+        parametri_sezioni, local_slope, output_dir, time, aff_sez = params
 ```
 
 Subito dopo, `ALLOCATE_ARRAYS!(imax)` crea tutti i vettori del modello, inizializzati a zero: quelli lunghi
@@ -467,15 +470,15 @@ ricerca binaria.
 
 ### 8.1 Gli idrogrammi
 
-Ogni idrogramma è un file a due colonne `t [s], Q [m³/s]`. `LOAD_ALL_HYDROGRAPHS!` li legge tutti
-(monte e 18 affluenti) in un dizionario, es. `hydro[:caldonazzo].Q`. Tutti i file indicati in
-`settings.txt` devono esistere, anche con gli affluenti spenti.
+Ogni idrogramma è un file a due colonne `t [s], Q [m³/s]`. `LOAD_ALL_HYDROGRAPHS!` legge quello di monte
+(riga 3) e, se gli affluenti sono attivi, quelli elencati nel file degli affluenti (riga 4): `hydro.monte` e
+`hydro.aff`, un vettore nell'ordine del file. Con gli affluenti spenti il file degli affluenti non viene letto.
 
 La **durata della simulazione** è il tempo finale più breve tra tutti gli idrogrammi:
 
 ```julia
 function HYDROGRAPH_END_TIME(hydro)
-    t_fin = [v.t[end] for v in values(hydro)]
+    t_fin = [hydro.monte.t[end]; [v.t[end] for v in hydro.aff]]
     tend  = minimum(t_fin)
     maximum(t_fin) != tend && println("Attenzione: tempi finali diversi, uso tend = $tend")
     return tend
@@ -490,12 +493,27 @@ retta le curve dell'idrogramma.
 
 ### 8.2 Gli affluenti
 
-Gli affluenti (riga 27 `si`) sono 18, distribuiti uniformemente lungo il tratto. Quelli con picco di almeno
-10 m³/s entrano su tre sezioni, gli altri su una:
+Gli affluenti (riga 9 `si`) sono elencati nel file della riga 4 di `settings.txt`: un CSV con
+l'intestazione `nome,idrogramma,sezione` e una riga per affluente, da monte a valle. Il numero di affluenti è
+il numero di righe, quindi per cambiarli non si tocca il codice:
+
+```
+nome,idrogramma,sezione
+Brenta1,input/idrogrammi/vaia/Brenta1.csv,
+Ceggio,input/idrogrammi/vaia/Ceggio.csv,25
+```
+
+`sezione` è il numero della sezione di sbocco (1 … `imax`); se è vuota, l'affluente k dell'elenco va nella
+sezione `round(k*imax/(n_aff + 1))`, cioè gli affluenti sono distribuiti uniformemente lungo il tratto
+(`input/idrogrammi/vaia/affluenti.csv` ha i 18 affluenti dell'evento Vaia, tutti senza sezione). Con
+`nessuno` nella riga 4 non entra nessun affluente. `READ_TRIBUTARIES` (`Source/module.jl`) controlla il file
+all'avvio: idrogrammi che non esistono, sezioni fuori dal tratto e righe con il numero sbagliato di colonne
+fermano il programma con il numero di riga. Quelli con picco di almeno 10 m³/s entrano su tre sezioni,
+gli altri su una:
 
 ```julia
-n_aff   = 18
-sez_aff = [round(Int, k*imax/(n_aff + 1)) for k in 1:n_aff]       # sezione di ingresso
+n_aff   = length(Qk_aff)                                                  # numero di affluenti del file
+sez_aff = [aff_sez[k] > 0 ? aff_sez[k] : round(Int, k*imax/(n_aff + 1)) for k in 1:n_aff]   # sezione di ingresso
 Q_soglia_aff = 10.0
 semi_aff = [Q >= Q_soglia_aff ? 1 : 0 for Q in maximum.(Qk_aff)]  # sezioni in più per lato
 ncel_aff = 2 .* semi_aff .+ 1                                     # sezioni su cui entra
@@ -610,7 +628,7 @@ nei tratti poco profondi. L'upwind lo elimina (vedi `CLAUDE.md`, "Il metodo nume
 ### 10.2 Il passo temporale
 
 Il passo `dt` è il più grande compatibile con la condizione di Courant (CFL) e con il passo massimo
-(`dt_riempimento = 5` s nel riempimento, riga 25 di `settings.txt` dopo):
+(`dt_riempimento = 5` s nel riempimento, riga 7 di `settings.txt` dopo):
 
 ```julia
 amax   = maximum(smax)
@@ -636,7 +654,7 @@ trasporto). La portata finale si otterrà aggiungendo il gradiente del pelo libe
 for i in 1:imax+1
     if i == 1
         # monte: portata dell'idrogramma (costante durante il riempimento)
-        qstar[i] = IC == 1 ? Qin_IC_target : LAGRANGE_INTERPOLATION!(nr_hydro, tk_cald, Qk_cald, time, dt)
+        qstar[i] = IC == 1 ? Qin_IC_target : LAGRANGE_INTERPOLATION!(nr_hydro, tk_monte, Qk_monte, time, dt)
     elseif i == imax+1
         # valle: moto uniforme con l'attrito della tabella dell'ultima sezione
         qstar[i] = UNIFORM_DISCHARGE(A_int[i], den_γ_int[i], bx[imax])
@@ -880,7 +898,7 @@ livelli del passo precedente):
 rhs[i] += dt/dx_int[i] * Q_lat[i]
 ```
 
-La riga 28 di `settings.txt` sceglie come calcolarla.
+La riga 10 di `settings.txt` sceglie come calcolarla.
 
 ### 11.1 `sfioro`: sfioro sugli argini (solo uscita)
 
@@ -938,7 +956,7 @@ rientri: il modello crea acqua e diverge. Nel 2D invece può rientrare solo l'ac
 
 **La soluzione: un serbatoio virtuale per la piana.** L'acqua che esce va in un serbatoio unico per tutto il
 tratto; i rientri sono quelli della tabella ma **limitati da quanto il serbatoio può restituire**, e ridotti
-tutti della stessa frazione. Il serbatoio ha quattro parametri e un interruttore (righe 29-33):
+tutti della stessa frazione. Il serbatoio ha quattro parametri e un interruttore (righe 11-15):
 
 | Parametro | Significato fisico | Effetto nel codice |
 |---|---|---|
@@ -1099,7 +1117,7 @@ modello conserva l'acqua.
 
 ## 13. I file di uscita
 
-Nella cartella della riga 22, separati da spazi, una riga per passo temporale:
+Nella cartella della riga 5, separati da spazi, una riga per passo temporale:
 
 | File | Contenuto | Valori per riga |
 |---|---|---|

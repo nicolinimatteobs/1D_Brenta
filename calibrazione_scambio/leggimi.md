@@ -1,7 +1,7 @@
 # Calibrazione dello scambio laterale con la piana (soglia, T, ritardo, rilascio lento, serbatoio attivo)
 
 Codici, risultati e grafici della taratura dei parametri del **serbatoio della piana**, usato dallo scambio
-laterale `tabella` (riga 28 di `settings.txt`). Tutte le prove sono sui fittizi 1-4 con le tabelle
+laterale `tabella` (riga 10 di `settings.txt`). Tutte le prove sono sui fittizi 1-4 con le tabelle
 `input/geometria/Test_Brenta/S_50m_q2/` (scalini 2D a 2 m³/s, con le colonne ΔQ e ΔQ_s), affluenti spenti,
 dt massimo 60 s, confronto con i riferimenti 2D `reference/ns_50_fittizio_N_*.csv`.
 
@@ -16,7 +16,7 @@ dt massimo 60 s, confronto con i riferimenti 2D `reference/ns_50_fittizio_N_*.cs
   - le **uscite** sono quelle della tabella e finiscono in un **serbatoio virtuale unico** per tutto il tratto;
   - i **rientri** sono quelli della tabella (solo dove ΔQ > 0), ridotti tutti della stessa frazione in modo da
     non superare quanto il serbatoio può restituire.
-- Parametri del serbatoio (righe 29-33 di `settings.txt`):
+- Parametri del serbatoio (righe 11-15 di `settings.txt`):
 
   | Riga | Parametro | Significato |
   | 29 | soglia [m³] | la piana trattiene i primi m³ usciti (si riempie): rientra solo il volume oltre la soglia |
@@ -62,7 +62,7 @@ T e soglia). Medie sui fittizi 1-4:
   nelle prime onde il rientro arriva 4-11 min dopo il 2D. Nel `fittizio_2` ora rientrano 47 000 m³ (2D 51 000).
   Con un rilascio più veloce (4 h) la discesa è quasi esatta (6-8 min) ma il rientro arriva 48 min tardi: la
   piana si svuota troppo presto e va riempita di nuovo. Tempi oltre 32 h non migliorano.
-- **Serbatoio attivo** (riga 33; griglia T 0,25-8 h × soglia 125-250 mila m³, τ 1 h e rilascio lento 32 h fissi,
+- **Serbatoio attivo** (riga 15; griglia T 0,25-8 h × soglia 125-250 mila m³, τ 1 h e rilascio lento 32 h fissi,
   `risultati/attivo.csv`, `riepilogo_attivo.txt`, grafici 12-13). Senza, dopo il colmo la tabella smette di chiedere
   rientri e l'acqua oltre la soglia resta ferma nel serbatoio: il 1D scendeva 32 min prima del 2D. Il migliore resta
   T = 0,5 h e soglia 150 000 m³: NSE medio da 0,994 a 0,998, errore del livello da 3,2 a 2,7 cm, anticipo della
@@ -161,5 +161,5 @@ julia --project=. calibrazione_scambio/anticipo.jl attivo
 da capo, cancellare prima i file. Le tarature sono state fatte con prototipi dello stesso codice, con i parametri
 passati da variabili d'ambiente: con `Source/` attuale i risultati sono identici byte per byte senza rilascio
 lento (controllato su quattro casi) e uguali entro l'ultima cifra stampata (10⁻⁶) con il rilascio lento. Il serbatoio attivo è stato provato con una copia
-di `Source/`: con quello attuale (riga 33) i risultati dei quattro fittizi sono identici byte per byte, e con la riga 33
+di `Source/`: con quello attuale (serbatoio attivo) i risultati dei quattro fittizi sono identici byte per byte, e con il serbatoio attivo
 a `no` sono identici a quelli di prima.

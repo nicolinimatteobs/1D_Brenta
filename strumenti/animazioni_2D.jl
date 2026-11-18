@@ -9,7 +9,7 @@
 # Il nome resta al plurale: prima c'era anche l'animazione del solo 2D (10_piena_2D.gif), tolta.
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const TAB = joinpath(R, SET[1])                                  # tabelle delle sezioni (riga 1)
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
 length(ARGS) == 3 || error("Uso: animazioni_2D.jl <cartella degli output> <livelli 2D> <portate 2D>")

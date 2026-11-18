@@ -1,26 +1,8 @@
 input/geometria/Test_Brenta/S_50m_q2/tabella_sezioni.csv
 input/geometria/Test_Brenta/S_50m_q2/localslope_xcoord.csv
-input/idrogrammi/vaia/Brenta1.csv
-input/idrogrammi/vaia/Brenta2.csv
-input/idrogrammi/vaia/Brenta3.csv
-input/idrogrammi/vaia/Brenta4.csv
-input/idrogrammi/vaia/Brenta5.csv
-input/idrogrammi/vaia/Brenta6.csv
-input/idrogrammi/vaia/BrentaNuovo.csv
-input/idrogrammi/vaia/BrentaVecchio1.csv
-input/idrogrammi/vaia/BrentaVecchio2.csv
-input/idrogrammi/vaia/BrentaVecchio3.csv
-input/idrogrammi/vaia/BrentaVecchio4.csv
 input/idrogrammi/fittizio_4/piena.csv
-input/idrogrammi/vaia/Ceggio.csv
-input/idrogrammi/vaia/Levico.csv
-input/idrogrammi/vaia/Centa.csv
-input/idrogrammi/vaia/Chieppena.csv
-input/idrogrammi/vaia/Grigno.csv
-input/idrogrammi/vaia/Maso.csv
-input/idrogrammi/vaia/Moggio.csv
+input/idrogrammi/vaia/affluenti.csv
 output/Volume_in_out/svuotamento_24h/fittizio_4
-33.00
 0
 60
 1e9
@@ -35,25 +17,28 @@ si
 CONTENUTO DELLE RIGHE (lette per posizione: non spostarle)
 1      - Tabelle delle sezioni, con la quota del pelo libero in colonna 2, in input/geometria/<caso>/
 2      - Geometria: pendenza, ascissa e talweg di ogni sezione (ed eventualmente argini), in input/geometria/<caso>/
-3-13   - Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4, in input/idrogrammi/<evento>/
-14     - Idrogramma in ingresso da monte
-15-21  - Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio (devono esistere tutti)
-22     - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste
-23     - Ks (non più usato: l'uscita usa la tabella dell'ultima sezione; la riga va lasciata)
-24     - Tempo iniziale
-25     - Passo temporale massimo [s]
-26     - Numero massimo di passi temporali
-27     - Affluenti attivi: si o no (stato iniziale, riempimento e simulazione)
-28     - Scambio laterale con la piana: sfioro (sfioro libero sugli argini, solo uscente), tabella (colonna ΔQ delle
+3      - Idrogramma in ingresso da monte (tempo [s], portata [m3/s])
+4      - File degli affluenti (letto solo se la riga 9 è si), o "nessuno". CSV con l'intestazione nome,idrogramma,sezione
+         e una riga per affluente, da monte a valle; sezione = numero della sezione di sbocco (1 … numero di sezioni),
+         oppure vuota: allora gli affluenti senza sezione sono distribuiti uniformemente lungo il tratto
+         (es. input/idrogrammi/vaia/affluenti.csv)
+5      - Cartella in cui salvare gli output (IC_*.csv e *.csv), creata se non esiste
+6      - Tempo iniziale
+7      - Passo temporale massimo [s]
+8      - Numero massimo di passi temporali
+9      - Affluenti attivi: si o no (stato iniziale, riempimento e simulazione)
+10     - Scambio laterale con la piana: sfioro (sfioro libero sugli argini, solo uscente), tabella (colonna ΔQ delle
          tabelle, uscite e rientri con il serbatoio della piana; servono tabelle a 14 colonne, es. S_50m_q2) o nessuno
-29     - Serbatoio della piana (solo con tabella): soglia [m3], volume trattenuto prima che l'acqua rientri
-30     - Serbatoio della piana (solo con tabella): tempo di svuotamento T [h], rientro al massimo (V − soglia)/T; 0 = subito
-31     - Serbatoio della piana (solo con tabella): ritardo τ [h], tempo dopo cui l'acqua uscita arriva al serbatoio
-32     - Serbatoio della piana (solo con tabella): rilascio lento [h], la parte sotto la soglia torna al fiume in questo
+11     - Serbatoio della piana (solo con tabella): soglia [m3], volume trattenuto prima che l'acqua rientri
+12     - Serbatoio della piana (solo con tabella): tempo di svuotamento T [h], rientro al massimo (V − soglia)/T; 0 = subito
+13     - Serbatoio della piana (solo con tabella): ritardo τ [h], tempo dopo cui l'acqua uscita arriva al serbatoio
+14     - Serbatoio della piana (solo con tabella): rilascio lento [h], la parte sotto la soglia torna al fiume in questo
          tempo, nelle sezioni di rientro; 0 = la parte sotto la soglia resta nella piana
-33     - Serbatoio attivo (solo con tabella): si o no; con si la parte oltre la soglia rientra al ritmo (V − soglia)/T
+15     - Serbatoio attivo (solo con tabella): si o no; con si la parte oltre la soglia rientra al ritmo (V − soglia)/T
          anche quando la tabella non chiede rientri (ramo calante), nelle sezioni di rientro
          (valori tarati sui fittizi 1-4 con le tabelle S_50m_q2: 150000, 0.5, 1, 32, si; vedi calibrazione_scambio/)
+Fino al formato con il file degli affluenti (righe 3-21 idrogrammi, 22 output, 23 Ks) le righe erano 33: le vecchie
+configurazioni qui sotto usano formati ancora precedenti.
 
 Input/dx_70/h_01/struttura_output.txt
 4

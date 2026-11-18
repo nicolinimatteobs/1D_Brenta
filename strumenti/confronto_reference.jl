@@ -11,12 +11,12 @@
 # Grafici e numeri in <cartella degli output>/grafici.
 # Uso, dalla cartella del progetto:
 #   julia --project=. strumenti/confronto_reference.jl [cartella degli output] [file di riferimento] [km iniziale] [km finale]
-# Senza argomenti usa la cartella della riga 22 di settings.txt e reference/ns_channel_piena_discharge.csv.
+# Senza argomenti usa la cartella della riga 5 di settings.txt e reference/ns_channel_piena_discharge.csv.
 using Plots, Printf
 const R   = dirname(@__DIR__)                                    # cartella del progetto
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const GEO = joinpath(R, SET[2])                                  # geometria (riga 2)
-const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[22])   # cartella degli output
+const D   = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : SET[5])   # cartella degli output
 const REF = joinpath(R, length(ARGS) >= 2 ? ARGS[2] : joinpath("reference", "ns_channel_piena_discharge.csv"))
 const TRATTO = length(ARGS) >= 4 ? (parse(Float64, ARGS[3]), parse(Float64, ARGS[4])) : (2.5, 4.0)   # tratto con i nomi [km]
 const OUT = joinpath(D, "grafici"); mkpath(OUT)

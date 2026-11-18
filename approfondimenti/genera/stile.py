@@ -76,9 +76,14 @@ class Documento:
             f'(<font face="Codice" size="9">approfondimenti/genera/genera.py</font>).', BLU_C, BLU))
 
     # --- testo ---
-    def h1(self, t): self.story += [CondPageBreak(3 * cm), Paragraph(_md(t), S["h1"])]
-    def h2(self, t): self.story += [CondPageBreak(2.2 * cm), Paragraph(_md(t), S["h2"])]
-    def p(self, t): self.story.append(Paragraph(_md(t), S["p"]))
+    def _titolo(self, t, stile):
+        par = Paragraph(_md(t), S[stile]); par._lega = True; self.story.append(par)
+    def h1(self, t): self._titolo(t, "h1")
+    def h2(self, t): self._titolo(t, "h2")
+    def p(self, t):
+        par = Paragraph(_md(t), S["p"])
+        if t.rstrip().endswith(":"): par._lega = True        # introduce la formula, il codice o l'elenco che segue
+        self.story.append(par)
     def elenco(self, voci):
         for v in voci: self.story.append(Paragraph(_md(v), S["li"], bulletText="•"))
         self.story.append(Spacer(1, 4))
@@ -123,16 +128,17 @@ class Documento:
     # --- codice ---
     def codice(self, testo, titolo=None):
         testo = testo.rstrip("\n").replace("\t", "    ")
-        L = testo.split("\n")
-        pezzi = ["\n".join(L[i:i + 40]) for i in range(0, len(L), 40)]   # righe della tabella: si spezza tra le pagine
+        L = _a_capo(_senza_commenti(testo.split("\n")))
+        pezzi = ["\n".join(L[i:i + 4]) for i in range(0, len(L), 4)]   # righe della tabella: si spezza ogni 4 righe
         righe = [[Paragraph(f'<font face="Codice" size="8" color="#5f6368">{titolo}</font>', S["cella"])]] if titolo else []
         righe += [[Preformatted(p, S["cod"])] for p in pezzi]
         t = Table(righe, colWidths=[LARGHEZZA], splitByRow=1, repeatRows=1 if titolo else 0)
         st = [("BACKGROUND", (0, 0), (-1, -1), FONDO_CODICE), ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#d0d7de")),
               ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-              ("TOPPADDING", (0, 0), (-1, -1), 1), ("BOTTOMPADDING", (0, 0), (-1, -1), 1)]
+              ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]
         if titolo: st += [("LINEBELOW", (0, 0), (-1, 0), 0.5, colors.HexColor("#d0d7de")), ("TOPPADDING", (0, 0), (-1, 0), 4),
-                          ("BOTTOMPADDING", (0, 0), (-1, 0), 4), ("TOPPADDING", (0, 1), (-1, 1), 4)]
+                          ("BOTTOMPADDING", (0, 0), (-1, 0), 4), ("TOPPADDING", (0, 1), (-1, 1), 5)]
+        else: st.append(("TOPPADDING", (0, 0), (-1, 0), 5))
         st.append(("BOTTOMPADDING", (0, -1), (-1, -1), 5))
         t.setStyle(TableStyle(st))
         self.story += [t, Spacer(1, 8)]
@@ -174,9 +180,10 @@ class Documento:
 
     def collegamenti(self, voci):
         """voci: (numero, nome_file, testo)"""
-        self.h1("Collegamenti con gli altri approfondimenti")
+        el = [Paragraph("Collegamenti con gli altri approfondimenti", S["h1"])]
         for n, f, t in voci:
-            self.story.append(Paragraph(f'<a href="{f}" color="#2a78d6"><u>{n:02d} · {t}</u></a>', S["li"], bulletText="→"))
+            el.append(Paragraph(f'<a href="{f}" color="#2a78d6"><u>{n:02d} · {t}</u></a>', S["li"], bulletText="→"))
+        self.story.append(KeepTogether(el))
 
     # --- uscita ---
     def salva(self):
@@ -195,8 +202,40 @@ class Documento:
                               subject="Approfondimento del Resoconto_modello_1D.md")
         fr = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="f")
         doc.addPageTemplates([PageTemplate(id="p", frames=[fr], onPage=piede)])
-        doc.build(self.story)
+        doc.build(_impagina(self.story))
         return percorso
+
+
+def _altezza(f):
+    if isinstance(f, KeepTogether):
+        return sum(_altezza(g) for g in f._content)
+    try:
+        h = f.wrap(LARGHEZZA, 1e6)[1]
+    except Exception:
+        return 0.0
+    return h + getattr(getattr(f, "style", None), "spaceBefore", 0) + getattr(getattr(f, "style", None), "spaceAfter", 0)
+
+
+def _impagina(story, minimo=5 * cm):
+    """Titoli e frasi che finiscono con ':' non restano soli in fondo alla pagina: prima di ciascuno si chiede
+    lo spazio per sé, per gli elementi legati che seguono e per almeno `minimo` del primo blocco di contenuto
+    (o tutto il blocco, se è più basso)."""
+    out = []; k = 0
+    while k < len(story):
+        f = story[k]
+        if getattr(f, "_lega", False) and (k == 0 or not getattr(story[k - 1], "_lega", False)):
+            serve = 0.0; j = k
+            while j < len(story) and getattr(story[j], "_lega", False):
+                serve += _altezza(story[j]); j += 1
+            while j < len(story) and isinstance(story[j], Spacer):
+                j += 1
+            if j < len(story):
+                h = _altezza(story[j])
+                spezzabile = isinstance(story[j], (Table, Paragraph))       # figure e riquadri vanno interi
+                serve += min(h, minimo) if spezzabile else min(h, 24 * cm)
+            out.append(CondPageBreak(serve))
+        out.append(f); k += 1
+    return out
 
 
 # ---------------------------------------------------------------------------------------------- formule
@@ -221,6 +260,52 @@ def _formula(righe, scala=1.0):
 
 
 # ---------------------------------------------------------------------------------------------- codice
+def _togli_commento(r):
+    """Toglie il commento `#` di una riga (Julia/Python), ignorando i `#` dentro le stringhe tra virgolette."""
+    in_str = False; k = 0
+    while k < len(r):
+        c = r[k]
+        if in_str:
+            if c == "\\": k += 1
+            elif c == '"': in_str = False
+        elif c == '"': in_str = True
+        elif c == "#": return r[:k].rstrip()
+        k += 1
+    return r.rstrip()
+
+
+def _senza_commenti(L):
+    """Toglie i commenti (righe intere, in fondo alle righe, blocchi #= =#) e le righe vuote doppie."""
+    out = []; blocco = False
+    for r in L:
+        if blocco:
+            if "=#" in r: blocco = False
+            continue
+        if r.strip().startswith("#="):
+            blocco = "=#" not in r.strip()[2:]; continue
+        if r.strip().startswith("#"): continue
+        r = _togli_commento(r)
+        if r.strip() == "" and (not out or out[-1].strip() == ""): continue
+        out.append(r)
+    while out and out[-1].strip() == "": out.pop()
+    return out
+
+
+def _a_capo(L):
+    """Manda a capo le righe più larghe del riquadro, dopo uno spazio o una virgola, con il rientro della riga più 4."""
+    st = S["cod"]; utile = LARGHEZZA - 8 - 6 - 4
+    ncar = int(utile // pdfmetrics.stringWidth("M", st.fontName, st.fontSize))
+    out = []
+    for r in L:
+        rientro = " " * (len(r) - len(r.lstrip()) + 4)
+        while len(r) > ncar:
+            taglio = max(r.rfind(" ", 0, ncar), r.rfind(",", 0, ncar - 1) + 1)
+            if taglio <= len(rientro): taglio = ncar
+            out.append(r[:taglio].rstrip()); r = rientro + r[taglio:].lstrip()
+        out.append(r)
+    return out
+
+
 def estrai(file, inizio, fine=None, n=None, togli_commenti=False):
     """Righe di `file` (relativo al progetto) dalla prima che contiene `inizio` fino alla prima successiva
     che contiene `fine` (compresa), oppure `n` righe. `inizio` può essere un numero di riga."""
@@ -348,6 +433,32 @@ def matrice(file):
     return np.loadtxt(os.path.join(PROGETTO, file), ndmin=2)
 
 
-TABELLE = "input/geometria/Test_Brenta/S_50m_q2/tabella_sezioni.csv"
-GEOMETRIA = "input/geometria/Test_Brenta/S_50m_q2/localslope_xcoord.csv"
-USCITE = "output/Volume_in_out/svuotamento_32h"
+# ---------------------------------------------------------------------------------------------- dati di esempio
+# Gli esempi numerici usano dati sintetici, non quelli di un caso di studio.
+Z_FONDO, B_FONDO, SCARPA, H_ARGINE, SCARPA_G, KS_ES, G = 100.0, 15.0, 1.5, 2.5, 8.0, 25.0, 9.81
+
+
+def tabella_sintetica():
+    """Tabella di una sezione composta di esempio, nel formato del modello (12 colonne):
+    alveo trapezio (fondo 15 m, scarpa 1,5) alto 2,5 m, poi golene in pendenza dolce (1:8); Ks = 25 costante, β = 1."""
+    import numpy as np
+    y = np.round(np.arange(0.1, 3.51, 0.1), 2); righe = []
+    for h in y:
+        hc = min(h, H_ARGINE); B_sup = B_FONDO + 2 * SCARPA * hc
+        A = (B_FONDO + SCARPA * hc) * hc; P = B_FONDO + 2 * hc * np.sqrt(1 + SCARPA ** 2); W = B_sup
+        if h > H_ARGINE:
+            hg = h - H_ARGINE; A += B_sup * hg + SCARPA_G * hg ** 2
+            P += 2 * hg * np.sqrt(1 + SCARPA_G ** 2); W = B_sup + 2 * SCARPA_G * hg
+        Rh = A / P
+        righe.append([1, Z_FONDO + h, A, 0, 1.0, 0, KS_ES ** 2 * Rh ** (4 / 3) / G, 0, W, 0, Rh, 0])
+    T = np.array(righe)
+    for c in (2, 4, 6, 8, 10):
+        s = np.diff(T[:, c]) / np.diff(T[:, 1]); T[:-1, c + 1] = s; T[-1, c + 1] = s[-1]
+    return T
+
+
+def idrogramma_sintetico():
+    """Idrogramma di esempio: base 5 m³/s, colmo 80 m³/s a 7 h, valori ogni 900 s per 24 h."""
+    import numpy as np
+    t = np.arange(0, 24 * 3600 + 1, 900.0); x = (t / 3600 - 7) / 2.2
+    return np.c_[t, 5 + 75 * np.exp(-(x + np.exp(-x)) + 1)]

@@ -7,13 +7,6 @@ SUB = "Source/subroutines.jl"
 MOD = "Source/module.jl"
 
 
-def tabella_sezione(k):
-    T = np.loadtxt(os.path.join(PROGETTO, TABELLE), delimiter=",", skiprows=1)
-    return T[T[:, 0] == k]
-
-
-def geometria():
-    return np.loadtxt(os.path.join(PROGETTO, GEOMETRIA), delimiter=",", skiprows=1)
 
 
 # =============================================================================================== 01
@@ -26,7 +19,6 @@ def p01(D):
         "del volume e della quantità di moto in un tronco di canale di lunghezza infinitesima dx.")
     D.h2("Ipotesi")
     D.elenco(["**pressione idrostatica**: le accelerazioni verticali sono trascurabili, il livello è orizzontale lungo la sezione;",
-              "**pendenza piccola** del fondo, così che la quota del pelo libero η = z_{b} + h (talweg più tirante);",
               "**velocità media di sezione** u = Q/A; la non uniformità della velocità nella sezione è riassunta dal "
               "coefficiente di quantità di moto β (Boussinesq);",
               "**attrito** come in moto uniforme (Gauckler-Strickler), con il coefficiente di scabrezza equivalente "
@@ -43,7 +35,7 @@ def p01(D):
     D.p("La variazione della portata nel tempo è dovuta al trasporto di quantità di moto, alla spinta idrostatica "
         "(gradiente del pelo libero) e all'attrito sul contorno:")
     D.eq(r"\frac{\partial Q}{\partial t}+\frac{\partial}{\partial x}\left(\beta\,\frac{Q^2}{A}\right)+g\,A\,\frac{\partial \eta}{\partial x}+g\,A\,J=0")
-    D.p("J è la pendenza d'attrito. Con la formula di Gauckler-Strickler, scabrezza K_{s} [m^{1/3}/s] e raggio idraulico R_{h}:")
+    D.p("η = z_{b} + h è la quota del pelo libero (talweg più tirante), J è la pendenza d'attrito. Con la formula di Gauckler-Strickler, scabrezza K_{s} [m^{1/3}/s] e raggio idraulico R_{h}:")
     D.eq(r"J=\frac{u\,|u|}{K_s^2\,R_h^{4/3}},\qquad u=\frac{Q}{A}")
     D.p("Il codice non usa K_{s} e R_{h} separatamente ma la loro combinazione, letta direttamente dalle tabelle:")
     D.eq(r"j_{den}=\frac{K_s^2\,R_h^{4/3}}{g}\quad\Rightarrow\quad g\,A\,J=\frac{|u|}{j_{den}}\,Q=\gamma\,Q,\qquad \gamma=\frac{|u|}{j_{den}}\;[\mathrm{s}^{-1}]")
@@ -149,44 +141,44 @@ def p02(D):
     D.p("`INITIAL_SETTINGS!` legge `settings.txt` e restituisce una struttura `Parametri` con tutto quello che serve "
         "alla simulazione: i percorsi dei file di input, la cartella degli output, i parametri numerici e le "
         "scelte di modello (affluenti, scambio con la piana). È la prima funzione chiamata dal solutore.")
-    D.p("Il file è letto **per posizione**: conta il numero di riga, non un'etichetta. Per questo le prime 33 righe "
+    D.p("Il file è letto **per posizione**: conta il numero di riga, non un'etichetta. Per questo le prime 15 righe "
         "non vanno mai spostate; dopo ci sono una legenda e vecchie configurazioni, che il modello non legge.")
-    D.h1("Il contenuto delle 33 righe")
+    D.h1("Il contenuto delle 15 righe")
     D.tabella([["Riga", "Contenuto", "Uso nel codice"],
                ["1", "Tabelle delle sezioni (`tabella_sezioni.csv`)", "`parametri_sezioni` → approf. 04"],
                ["2", "Geometria (`localslope_xcoord.csv`)", "`local_slope` → approf. 03"],
-               ["3-13", "Idrogrammi degli affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4", "`hydro_files` → approf. 05-06"],
-               ["14", "Idrogramma da monte (chiave `caldonazzo`)", "condizione di monte"],
-               ["15-21", "Affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio", "`hydro_files`"],
-               ["22", "Cartella degli output", "`output_dir` → approf. 20"],
-               ["23", "Ks (non più usato, la riga deve restare)", "`Ks`"],
-               ["24", "Tempo iniziale [s]", "`time`"],
-               ["25", "Passo temporale massimo [s]", "`dtmax` → approf. 08"],
-               ["26", "Numero massimo di passi", "`Nmax`"],
-               ["27", "Affluenti attivi (si/no)", "`con_affluenti`"],
-               ["28", "Scambio con la piana: sfioro, tabella, nessuno", "`scambio` → approf. 15-17"],
-               ["29", "Serbatoio: soglia [m³]", "`V_soglia`"],
-               ["30", "Serbatoio: tempo di svuotamento T [h]", "`T_piana` (in s)"],
-               ["31", "Serbatoio: ritardo τ [h]", "`tau_piana` (in s)"],
-               ["32", "Serbatoio: rilascio lento [h]", "`T_lento` (in s)"],
-               ["33", "Serbatoio attivo (si/no)", "`piana_attiva`"]], [0.08, 0.55, 0.37])
+               ["3", "Idrogramma da monte", "`file_monte` → approf. 05"],
+               ["4", "File degli affluenti, oppure `nessuno`", "`READ_TRIBUTARIES` → approf. 06"],
+               ["5", "Cartella degli output", "`output_dir` → approf. 20"],
+               ["6", "Tempo iniziale [s]", "`time`"],
+               ["7", "Passo temporale massimo [s]", "`dtmax` → approf. 08"],
+               ["8", "Numero massimo di passi", "`Nmax`"],
+               ["9", "Affluenti attivi (si/no)", "`con_affluenti`"],
+               ["10", "Scambio con la piana: sfioro, tabella, nessuno", "`scambio` → approf. 15-17"],
+               ["11", "Serbatoio: soglia [m³]", "`V_soglia`"],
+               ["12", "Serbatoio: tempo di svuotamento T [h]", "`T_piana` (in s)"],
+               ["13", "Serbatoio: ritardo τ [h]", "`tau_piana` (in s)"],
+               ["14", "Serbatoio: rilascio lento [h]", "`T_lento` (in s)"],
+               ["15", "Serbatoio attivo (si/no)", "`piana_attiva`"]], [0.08, 0.55, 0.37])
+    D.p("Gli affluenti non hanno righe proprie: sono elencati nel file della riga 4, uno per riga, quanti si vuole "
+        "(approfondimento 06). Così `settings.txt` ha sempre 15 righe, qualunque sia il corso d'acqua.")
     D.h1("Flowchart")
     D.flowchart(dict(dimensioni=(14, 13.5), w=5.6, h=0.9, nodi={
         "a": (5, 12.9, "INITIAL_SETTINGS!()", "inizio", 4.2, 0.75),
-        "b": (5, 11.7, "Legge le prime 33 righe e toglie gli spazi", "io"),
-        "c": (5, 10.5, "Righe 1-22: percorsi (stringhe)\nrighe 3-21 raccolte in hydro_files", "proc"),
-        "d": (5, 9.2, "Righe 23-26: parse(Float64, …)\nNmax arrotondato a intero", "proc"),
-        "e": (5, 7.9, "Riga 27 e 33: PARSE_SI_NO\nriga 28: PARSE_SCAMBIO", "funz"),
-        "f": (5, 6.6, "Righe 29-32: PARSE_NON_NEGATIVO\n(ore × 3600 → secondi)", "funz"),
-        "g": (5, 5.3, "FILE_SIZE: righe e colonne delle tabelle,\nnumero di sezioni dalla geometria", "funz"),
-        "h": (5, 3.9, "scambio = tabella e\nmeno di 14 colonne ?", "dec", 4.8, 1.2),
-        "i": (11, 3.9, "error(…)\nservono le colonne ΔQ", "fine", 3.2, 0.9),
+        "b": (5, 11.7, "Legge le prime 15 righe e toglie gli spazi", "io"),
+        "c": (5, 10.5, "Righe 1-5: percorsi (stringhe)\nrighe 6-8: parse(Float64, …)", "proc"),
+        "e": (5, 9.2, "Righe 9 e 15: PARSE_SI_NO\nriga 10: PARSE_SCAMBIO", "funz"),
+        "f": (5, 7.9, "Righe 11-14: PARSE_NON_NEGATIVO\n(ore × 3600 → secondi)", "funz"),
+        "g": (5, 6.6, "FILE_SIZE: righe e colonne delle tabelle,\nnumero di sezioni dalla geometria", "funz"),
+        "h": (5, 5.2, "scambio = tabella e\nmeno di 14 colonne ?", "dec", 4.8, 1.2),
+        "i": (11, 5.2, "error(…)\nservono le colonne ΔQ", "fine", 3.2, 0.9),
+        "m": (5, 3.7, "affluenti attivi: READ_TRIBUTARIES\n(file della riga 4)", "funz"),
         "l": (5, 2.4, "return Parametri(…)", "fine", 3.6, 0.75),
-        "n": (11, 7.3, "Un valore non valido\n(testo al posto di un numero,\nnumero negativo, si/no errato)\nferma subito il programma\ncon il numero di riga", "nota", 4.0, 2.0),
-    }, archi=[("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "f"), ("f", "g"), ("g", "h"), ("h", "i", "sì"),
-              ("h", "l", "no")]), didascalia="Flowchart di `INITIAL_SETTINGS!`.")
+        "n": (11, 9.2, "Un valore non valido\n(testo al posto di un numero,\nnumero negativo, si/no errato,\nfile che non esiste)\nferma subito il programma\ncon il numero di riga", "nota", 4.0, 2.2),
+    }, archi=[("a", "b"), ("b", "c"), ("c", "e"), ("e", "f"), ("f", "g"), ("g", "h"), ("h", "i", "sì"),
+              ("h", "m", "no"), ("m", "l")]), didascalia="Flowchart di `INITIAL_SETTINGS!`.")
     D.h1("Il codice")
-    D.estratto(MOD, "function INITIAL_SETTINGS!", "        error(\"Riga 28", titolo=MOD + " (prima parte)")
+    D.estratto(MOD, "function INITIAL_SETTINGS!", "    aff_nomi, aff_file, aff_sez =", titolo=MOD + " (prima parte)")
     D.estratto(MOD, "    return Parametri(", n=4, titolo=MOD + " (fine)")
     D.p("Tre funzioni piccole controllano i valori e danno un messaggio che dice **quale riga** è sbagliata:")
     D.estratto(MOD, "# Legge un numero non negativo", "# Conta le righe di dati", titolo=MOD)
@@ -200,11 +192,11 @@ def p02(D):
         "(pacchetto UnPack), che crea variabili locali con lo stesso nome dei campi.")
     D.estratto("Source/struct.jl", 1, titolo="Source/struct.jl")
     D.h1("Perché la conversione delle unità")
-    D.p("Nelle righe 30-32 i tempi del serbatoio della piana si scrivono in **ore**, più comodi da leggere e da "
-        "tarare; il modello lavora in secondi, quindi sono moltiplicati per 3600 alla lettura. La soglia (riga 29) "
+    D.p("Nelle righe 12-14 i tempi del serbatoio della piana si scrivono in **ore**, più comodi da leggere e da "
+        "tarare; il modello lavora in secondi, quindi sono moltiplicati per 3600 alla lettura. La soglia (riga 11) "
         "è già in m³. Tutte e quattro devono essere numeri non negativi.")
-    D.attenzione("gli strumenti di `strumenti/` leggono solo le prime 26 righe di `settings.txt`; tabelle e "
-                 "geometria vengono dalle righe 1-2, quindi devono essere quelle della simulazione che si analizza.")
+    D.attenzione("gli strumenti di `strumenti/` leggono tabelle e geometria dalle righe 1-2 di `settings.txt`, quindi "
+                 "devono essere quelle della simulazione che si analizza.")
     D.collegamenti([(1, "01_equazioni_e_schema.pdf", "Equazioni e schema"),
                     (3, "03_geometria_e_griglia.pdf", "Geometria e griglia"),
                     (17, "17_serbatoio_della_piana.pdf", "Il serbatoio della piana")])
@@ -212,23 +204,21 @@ def p02(D):
 
 # =============================================================================================== 03
 def p03(D):
-    G = geometria()
     D.h1("A cosa serve")
-    D.p("Il fiume è descritto da imax sezioni trasversali (nel Test_Brenta 120, ogni 50 m). Il file della geometria "
-        "(riga 2 di `settings.txt`) dà per ogni sezione l'ascissa, la quota del fondo (talweg), la pendenza locale "
+    D.p("Il fiume è descritto da imax sezioni trasversali. Il file della geometria "
+        "(riga 2 di `settings.txt`) dà per ogni sezione il numero della sezione, la distanza progressiva verso valle, la quota del fondo (talweg), la pendenza locale "
         "e le quote degli argini. `LOAD_GEOMETRY` lo legge e `SPATIAL_DOMAIN!` costruisce la **griglia sfalsata**: "
         "le celle attorno alle sezioni e le interfacce tra le celle.")
     D.h1("Il file della geometria")
     D.tabella([["Colonna", "Nome", "Significato", "Variabile"],
                ["1", "`section`", "numero progressivo da monte", "–"],
                ["2", "`local_slope`", "pendenza del fondo, negativa verso valle", "`bx`"],
-               ["3", "`x_coord_[m]`", "ascissa lungo l'asse", "`x_b`"],
+               ["3", "`x_coord_[m]`", "distanza progressiva verso valle", "`x_b`"],
                ["4", "`talweg_[m]`", "quota del punto più basso", "`b_min`"],
                ["5-6", "`argine_dx_[m]`, `argine_sx_[m]`", "quote delle creste arginali (facoltative)", "`argine_dx`, `argine_sx`"]],
               [0.12, 0.3, 0.38, 0.2])
-    D.p(f"Nel Test_Brenta a 50 m: x da {G[0,2]:.2f} a {G[-1,2]:.0f} m, talweg da {G[0,3]:.2f} a {G[-1,3]:.2f} m s.l.m., "
-        f"pendenza media del fondo {(G[-1,3]-G[0,3])/(G[-1,2]-G[0,2]):.5f}. Con 4 colonne gli argini valgono "
-        "`Inf` e non c'è mai sfioro.")
+    D.p("Le sezioni vanno ordinate da monte a valle e le distanze devono crescere. Il passo tra le sezioni può non "
+        "essere costante. Con 4 colonne gli argini valgono `Inf` e non c'è mai sfioro.")
     D.estratto(SUB, "function LOAD_GEOMETRY", n=8, titolo=SUB)
     D.h1("La griglia sfalsata")
     D.p("Livelli e portate non sono definiti negli stessi punti. Il **livello** η_{i} sta nella sezione i, che è il "
@@ -254,13 +244,13 @@ def p03(D):
         ax.text(3.1, -1.45, "monte  →  valle", ha="center", fontsize=8, color="#5f6368")
     D.grafico(disegno, "griglia", "Griglia sfalsata con 5 sezioni: livelli nelle sezioni (punti blu), portate nelle "
               "interfacce (trattini arancioni). Le interfacce sono a metà tra due sezioni.")
-    D.p("In formule, con x_{i} l'ascissa della sezione i:")
+    D.p("In formule, con x_{i} la distanza progressiva della sezione i:")
     D.eq([r"\Delta x_{i+1/2}=x_{i+1}-x_i \qquad (\mathtt{dx\_b[i]},\ i=1\ldots imax-1)",
           r"x_{i-1/2}=\frac{x_{i-1}+x_i}{2} \qquad (\mathtt{x\_int[i]},\ i=2\ldots imax)",
           r"\Delta x_i=\frac{\Delta x_{i-1/2}+\Delta x_{i+1/2}}{2},\qquad \Delta x_1=\Delta x_{3/2},\qquad \Delta x_{imax}=\Delta x_{imax-1/2}"])
     D.p("Le due celle di estremità hanno la lunghezza della distanza con la sezione vicina: la prima e l'ultima "
-        "interfaccia sono quindi «fuori» dal tratto, alla stessa distanza delle altre. Per le sezioni equidistanti "
-        "del Test_Brenta tutte le celle sono lunghe 50 m.")
+        "interfaccia sono quindi «fuori» dal tratto, alla stessa distanza delle altre. Con sezioni equidistanti "
+        "tutte le celle hanno la stessa lunghezza.")
     D.h2("Due lunghezze, due usi")
     D.elenco(["`dx_int[i]` (Δx_{i}) divide i flussi di volume nella **continuità** della cella i e moltiplica le aree "
               "per il volume in alveo (bilancio di massa, approfondimento 19);",
@@ -272,12 +262,11 @@ def p03(D):
     D.h1("La pendenza locale")
     D.p("`bx` (colonna 2) non serve al moto vario: le pendenze del fondo sono già dentro i livelli delle tabelle. "
         "Serve solo per il **moto uniforme**: lo stato iniziale (`UNIFORM_LEVEL`, approfondimento 07) e la portata "
-        "in uscita nell'ultima sezione (approfondimento 09). Per questo l'ultima sezione usa la pendenza media del "
-        "fondo su tutto il tratto, scelta in `calcolo_tabelle_daBM` (approfondimento 21).")
-    n_contro = int((G[:-1, 1] > 0).sum())
-    D.attenzione(f"a 50 m le pendenze locali sono molto irregolari: {n_contro} sezioni hanno il fondo in "
-                 "contropendenza. Il codice usa sempre il valore assoluto, quindi in quelle sezioni lo stato iniziale "
-                 "è solo una prima stima, che il riempimento corregge.")
+        "in uscita nell'ultima sezione (approfondimento 09). Per l'ultima sezione `calcolo_tabelle_daBM` scrive la "
+        "pendenza media del fondo su tutto il tratto (approfondimento 21).")
+    D.attenzione("con sezioni fitte le pendenze locali possono essere molto irregolari, anche in contropendenza. Il "
+                 "codice usa sempre il valore assoluto, quindi in quelle sezioni lo stato iniziale è solo una prima "
+                 "stima, che il riempimento corregge.")
     D.collegamenti([(4, "04_tabelle_delle_sezioni.pdf", "Le tabelle delle sezioni"),
                     (11, "11_sistema_dei_livelli.pdf", "Il sistema per i livelli"),
                     (15, "15_sfioro_argini.pdf", "Lo sfioro sugli argini")])
@@ -285,7 +274,7 @@ def p03(D):
 
 # =============================================================================================== 04
 def p04(D):
-    k = 20; r = tabella_sezione(k); G = geometria()
+    r = tabella_sintetica()
     D.h1("A cosa serve")
     D.p("Il modello non conosce la forma geometrica delle sezioni. Per ogni sezione ha una **tabella** che, al variare "
         "della quota del pelo libero η, dà le grandezze idrauliche: area bagnata A, coefficiente β, il termine "
@@ -303,18 +292,21 @@ def p04(D):
                ["11-12", "`RH`, `RH_s`", "raggio idraulico e pendenza", "m, –"],
                ["13-14", "`ΔQ`, `ΔQ_s`", "scambio con la piana dagli scalini 2D (facoltative)", "m³/s, m²/s"]],
               [0.1, 0.2, 0.52, 0.18])
-    D.p(f"Le tabelle di `S_50m_q2` hanno da 44 a 52 righe per sezione, una per ogni scalino di portata del 2D. "
-        f"Per esempio la sezione {k} (S1000) va da η = {r[0,1]:.2f} a {r[-1,1]:.2f} m: {len(r)} righe, area da "
-        f"{r[0,2]:.2f} a {r[-1,2]:.1f} m², j_{{den}} da {r[0,6]:.2f} a {r[-1,6]:.1f} m.")
+    D.p("Ogni sezione ha il numero di righe che vuole e il passo tra le quote può non essere costante. Con le "
+        "tabelle costruite dal 2D c'è una riga per ogni scalino di portata. Le righe di una sezione devono avere "
+        "quote crescenti.")
     def graf(fig):
         ax = fig.subplots(1, 3, sharey=True)
         for a, (c, nome, u) in zip(ax, [(2, "area A", "m²"), (8, "larghezza W", "m"), (6, "j_den", "m")]):
             a.plot(r[:, c], r[:, 1], "-o", ms=2.5, color="#2a78d6", lw=1.2)
+            a.axhline(Z_FONDO + H_ARGINE, color="#9aa0a6", lw=0.8, ls=":")
             a.set_xlabel(f"{nome} [{u}]", fontsize=8); a.grid(alpha=0.25); a.tick_params(labelsize=7)
         ax[0].set_ylabel("livello η [m s.l.m.]", fontsize=8)
-        fig.suptitle("Tabella della sezione 20 (S1000)", fontsize=9)
-    D.grafico(graf, "tabella_S1000", "Tre colonne della tabella di S1000 (`S_50m_q2`): ogni punto è uno scalino di "
-              "portata del modello 2D.")
+        fig.suptitle("Tabella di una sezione di esempio", fontsize=9)
+    D.grafico(graf, "tabella_esempio", "Tre colonne della tabella di una sezione composta di esempio (alveo trapezio "
+              "largo 15 m sul fondo e alto 2,5 m, poi golene in pendenza 1:8; K_{s} = 25). La linea punteggiata è la "
+              "quota delle sponde: sopra, la larghezza cresce più in fretta e j_{den} cala un poco, perché le golene "
+              "aggiungono contorno bagnato e abbassano il raggio idraulico.")
     D.h1("L'interpolazione")
     D.p("Tra due righe r e r+1 con η_{r} ≤ η < η_{r+1} ogni grandezza φ è interpolata linearmente. La pendenza è "
         "già scritta nella tabella (colonne pari), così l'interpolazione costa una moltiplicazione e una somma:")
@@ -324,11 +316,12 @@ def p04(D):
               "**oltre l'ultima quota** si estrapola con la pendenza dell'ultimo tratto, calcolata dai valori delle ultime "
               "due righe:"])
     D.eq(r"\varphi(\eta)=\varphi_N+\frac{\varphi_N-\varphi_{N-1}}{\eta_N-\eta_{N-1}}\,(\eta-\eta_N),\qquad \eta>\eta_N")
-    D.p("L'estrapolazione serve perché durante le piene più forti il livello può superare l'ultimo scalino 2D (al colmo, "
-        "in S2100-S2150, di qualche centimetro): fermarsi all'ultima riga renderebbe l'area costante e farebbe "
-        "crescere il livello senza limite. Prolungare la retta tiene area e larghezza continue.")
-    D.p("La larghezza W = dA/dη è anche la **derivata** che serve a Newton (approfondimento 12): la colonna 9 è la "
-        "larghezza bagnata del 2D, che coincide con la pendenza dell'area a meno degli arrotondamenti.")
+    D.p("L'estrapolazione serve perché in una piena più forte di quelle usate per costruire le tabelle il livello può "
+        "superare l'ultima riga: fermarsi all'ultima riga renderebbe l'area costante e farebbe crescere il livello "
+        "senza limite. Prolungare la retta tiene area e larghezza continue. Conviene comunque che le tabelle arrivino "
+        "oltre i livelli attesi, perché la retta non sa che forma ha la sezione più in alto.")
+    D.p("La larghezza W = dA/dη è anche la **derivata** che serve a Newton (approfondimento 12): nelle tabelle costruite "
+        "dal 2D la colonna 9 è la larghezza bagnata, che coincide con la pendenza dell'area a meno degli arrotondamenti.")
     D.h1("La ricerca della riga: FIND_ROW")
     D.p("Per sapere in quale intervallo cade η bisogna cercare la riga. Una ricerca lineare costerebbe O(N) a ogni "
         "chiamata; la ricerca binaria O(log N). `FIND_ROW` sfrutta il fatto che tra un passo e l'altro il livello "
@@ -363,9 +356,9 @@ def p04(D):
         "inizia ogni sezione (`first_row`), così la sezione k occupa le colonne da `first_row[k]` a `first_row[k+1]-1`.")
     D.estratto(SUB, "function SECTION_INDEX", n=5, titolo=SUB)
     D.h2("Un esempio numerico")
-    j = 20; eta = 0.5 * (r[j, 1] + r[j + 1, 1])
+    j = 14; eta = 0.5 * (r[j, 1] + r[j + 1, 1])
     A = r[j, 2] + r[j, 3] * (eta - r[j, 1])
-    D.p(f"In S1000, per η = {eta:.3f} m la riga trovata è la {j+1}ª (η_{{r}} = {r[j,1]:.3f} m, A_{{r}} = {r[j,2]:.3f} m², "
+    D.p(f"Nella sezione di esempio, per η = {eta:.3f} m la riga trovata è la {j+1}ª (η_{{r}} = {r[j,1]:.3f} m, A_{{r}} = {r[j,2]:.3f} m², "
         f"pendenza {r[j,3]:.3f} m): A = {r[j,2]:.3f} + {r[j,3]:.3f}·{eta-r[j,1]:.3f} = **{A:.3f} m²**; "
         f"la riga successiva ha A = {r[j+1,2]:.3f} m².")
     D.h1("Le colonne ΔQ")
@@ -380,31 +373,42 @@ def p04(D):
 
 # =============================================================================================== 05
 def p05(D):
-    with open(os.path.join(PROGETTO, "input/idrogrammi/fittizio_1/piena.csv")) as f:
-        I = np.array([[float(v) for v in l.split(",")] for l in f if l.strip()])
+    I = idrogramma_sintetico()
     D.h1("A cosa serve")
-    D.p("Gli idrogrammi danno la portata nel tempo: quello di monte (riga 14 di `settings.txt`) è la condizione al "
-        "contorno di ingresso, gli altri 18 sono gli affluenti. Sono tabelle di valori ogni Δτ (900 s negli scenari "
-        "fittizi), mentre il modello avanza con passi Δt irregolari di 20-30 s: serve un modo per conoscere la "
-        "portata a qualunque istante. `LAGRANGE_INTERPOLATION!` la calcola con un polinomio di secondo grado.")
+    D.p("Gli idrogrammi danno la portata nel tempo: uno è la condizione al contorno di ingresso da monte, gli altri "
+        "sono gli affluenti. Sono tabelle di valori a passo fisso Δτ (per esempio "
+        "15 minuti), mentre il modello avanza con passi Δt irregolari, di solito più corti: serve un modo per "
+        "conoscere la portata a qualunque istante. `LAGRANGE_INTERPOLATION!` la calcola con un polinomio di secondo grado.")
+    D.p("L'idrogramma di monte è indicato nella riga 3 di `settings.txt`. Gli affluenti sono elencati in un file "
+        "a parte, indicato nella riga 4: quanti sono e dove entrano lo decide quel file (approfondimento 06).")
     D.h1("Lettura")
     D.p("`LOAD_HYDROGRAPH!` legge due colonne, tempo [s] e portata [m³/s], separate da virgole, spazi o tabulazioni, "
-        "senza intestazione. `LOAD_ALL_HYDROGRAPHS!` le carica tutte in un dizionario con le chiavi dei nomi "
-        "(`hydro[:caldonazzo]`, `hydro[:centa]`, …). La durata simulata è il tempo finale **più breve**:")
+        "senza intestazione. `LOAD_ALL_HYDROGRAPHS!` carica l'idrogramma di monte (`hydro.monte`) e quelli degli "
+        "affluenti, se attivi (`hydro.aff`, nell'ordine del loro file). La durata simulata è il tempo finale "
+        "**più breve**:")
+    D.estratto(SUB, "function LOAD_ALL_HYDROGRAPHS!", n=5, titolo=SUB)
     D.eq(r"t_{end}=\min_j\,t^{(j)}_{N_j}")
     D.estratto(SUB, "function HYDROGRAPH_END_TIME", n=8, titolo=SUB)
-    D.p(f"L'idrogramma del `fittizio_1` ha {len(I)} valori ogni {I[1,0]-I[0,0]:.0f} s, da {I[0,1]:.2f} m³/s a "
-        f"un colmo di {I[:,1].max():.2f} m³/s a {I[I[:,1].argmax(),0]/3600:.0f} h, per {I[-1,0]/3600:.0f} h.")
+    D.p("Il primo tempo deve essere 0 e il passo costante (vedi l'avvertenza più sotto).")
     D.h1("L'interpolazione di Lagrange su tre punti")
     D.p("La portata serve al tempo t = t^{n} + Δt (fine del passo: la condizione di monte è imposta nel nuovo stato). "
-        "Si scelgono tre punti consecutivi dell'idrogramma attorno a t e si usa il polinomio di grado 2 che passa "
-        "per essi:")
+        "L'idrogramma ha N valori (t_{j}, Q_{j}), j = 1 … N, con t_{1} = 0 e passo costante Δτ, cioè "
+        "t_{j} = (j − 1)Δτ. Per prima cosa si trova l'indice m:")
+    D.eq([r"\Delta\tau=\frac{t_N-t_1}{N-1},\qquad m=\min\left(N-1,\ \max\left(2,\ \left\lceil\frac{t}{\Delta\tau}\right\rceil\right)\right)",
+          r"\left\lceil t/\Delta\tau\right\rceil=m\quad\Leftrightarrow\quad (m-1)\,\Delta\tau<t\leq m\,\Delta\tau\quad\Leftrightarrow\quad t_m<t\leq t_{m+1}"])
+    D.p("Quindi t cade nell'intervallo tra t_{m} e t_{m+1}, e la parabola usa questi due punti più quello che precede, "
+        "t_{m−1}. Il limite m ≥ 2 serve nel primo intervallo (0 ≤ t ≤ t_{2}): lì m = 2 e i punti sono i primi tre, con t "
+        "tra t_{1} e t_{2}. Il limite m ≤ N − 1 fa sì che t_{m+1} esista. Il polinomio di grado 2 che passa per i tre "
+        "punti, scritto con le basi di Lagrange, è")
     D.eq([r"Q(t)=Q_{m-1}\,L_{m-1}(t)+Q_m\,L_m(t)+Q_{m+1}\,L_{m+1}(t)",
           r"L_{m-1}=\frac{(t-t_m)(t-t_{m+1})}{(t_{m-1}-t_m)(t_{m-1}-t_{m+1})},\quad L_m=\frac{(t-t_{m-1})(t-t_{m+1})}{(t_m-t_{m-1})(t_m-t_{m+1})},\quad L_{m+1}=\frac{(t-t_{m-1})(t-t_m)}{(t_{m+1}-t_{m-1})(t_{m+1}-t_m)}"])
-    D.p("Ogni L vale 1 nel suo punto e 0 negli altri due, quindi il polinomio riproduce esattamente i valori "
-        "dell'idrogramma nei punti dati. L'indice centrale m si ricava supponendo il passo dell'idrogramma "
-        "**costante** e il primo tempo **nullo**:")
-    D.eq(r"\Delta\tau=\frac{t_N-t_1}{N-1},\qquad m=\min\left(N-1,\ \max\left(2,\ \left\lceil\frac{t^n+\Delta t}{\Delta\tau}\right\rceil\right)\right)")
+    D.p("Ogni L vale 1 nel suo punto e 0 negli altri due, e la somma delle tre L vale 1 per ogni t: il polinomio "
+        "riproduce esattamente i valori dell'idrogramma nei tre punti. È la forma scritta nel codice. Con il passo "
+        "costante, ponendo θ = (t − t_{m})/Δτ (0 < θ ≤ 1 tranne nel primo intervallo), si semplifica in")
+    D.eq(r"Q(t)=Q_{m-1}\,\frac{\theta(\theta-1)}{2}+Q_m\,\left(1-\theta^2\right)+Q_{m+1}\,\frac{\theta(\theta+1)}{2},\qquad \theta=\frac{t-t_m}{\Delta\tau}")
+    D.p("Per esempio, con Δτ = 900 s e t = 2000 s: ⌈2000/900⌉ = 3, quindi m = 3, e i punti sono t_{2} = 900 s, "
+        "t_{3} = 1800 s e t_{4} = 2700 s; θ = 200/900 ≈ 0,22. Con θ = 0 si ottiene Q_{m} e con θ = 1 si ottiene "
+        "Q_{m+1}, come deve essere.")
     D.p("Rispetto all'interpolazione lineare, la parabola segue la curvatura dell'idrogramma vicino al colmo e non "
         "lo «taglia»: con valori ogni 15 minuti la differenza al colmo è piccola ma sistematica.")
     def graf(fig):
@@ -423,8 +427,8 @@ def p05(D):
         ax.plot(tt / 3600, np.interp(tt, I[:, 0], I[:, 1]), "--", color="#eb6834", lw=1.2, label="interpolazione lineare")
         ax.set_xlabel("tempo [h]", fontsize=8); ax.set_ylabel("portata [m³/s]", fontsize=8)
         ax.grid(alpha=0.25); ax.tick_params(labelsize=7); ax.legend(fontsize=7, loc="lower center")
-    D.grafico(graf, "lagrange", "Interpolazione dell'idrogramma del `fittizio_1` attorno al colmo, con la stessa "
-              "scelta dei punti del modello.")
+    D.grafico(graf, "lagrange", "Interpolazione di un idrogramma di esempio (valori ogni 15 min, colmo di 80 m³/s) "
+              "attorno al colmo, con la stessa scelta dei punti del modello.")
     D.estratto(SUB, "function LAGRANGE_INTERPOLATION!", n=16, titolo=SUB)
     D.flowchart(dict(dimensioni=(12, 7.6), w=6.4, h=0.95, nodi={
         "a": (6, 7.0, "LAGRANGE_INTERPOLATION!(nr, tk, Qk, time, dt)", "inizio", 7.4, 0.75),
@@ -435,12 +439,12 @@ def p05(D):
         archi=[("a", "b"), ("b", "c"), ("c", "d"), ("d", "e")]),
         didascalia="Flowchart di `LAGRANGE_INTERPOLATION!`.", larghezza=0.8)
     D.attenzione("l'indice m è calcolato supponendo che l'idrogramma parta da t = 0 e abbia passo costante. Con un "
-                 "file a passo irregolare i tre punti scelti non sarebbero quelli attorno a t. Per idrogrammi diversi "
-                 "dai fittizi conviene controllarlo. Oltre l'ultimo punto la parabola estrapola: per questo la "
+                 "file a passo irregolare, o che non parte da 0, i tre punti scelti non sarebbero quelli attorno a t: "
+                 "conviene ricampionarlo prima. Oltre l'ultimo punto la parabola estrapola: per questo la "
                  "simulazione si ferma a t_{end}.")
     D.h1("Dove si usa")
     D.elenco(["nella simulazione, per la portata in ingresso `qstar[1]` (approfondimento 09);",
-              "per i 18 affluenti, se la riga 27 è `si` (approfondimento 06);",
+              "per gli affluenti, se la riga 9 è `si` (approfondimento 06);",
               "**non** durante il riempimento: lì la portata di monte resta al primo valore dell'idrogramma."])
     D.collegamenti([(6, "06_affluenti.pdf", "Gli affluenti"), (9, "09_parte_esplicita_rusanov.pdf", "Condizioni al contorno")])
 
@@ -448,18 +452,38 @@ def p05(D):
 # =============================================================================================== 06
 def p06(D):
     D.h1("A cosa serve")
-    D.p("Lungo il Brenta entrano 18 affluenti. Il modello li tratta come **sorgenti puntuali di volume**: la loro "
-        "portata entra nella continuità delle celle in cui sfociano, senza quantità di moto propria (la corrente "
-        "laterale arriva in genere quasi perpendicolare all'asse e la sua spinta lungo l'asse è trascurabile). Si "
-        "accendono e spengono con la riga 27 di `settings.txt`; negli scenari fittizi sono spenti.")
+    D.p("Gli affluenti sono corsi d'acqua laterali con un idrogramma ciascuno. Il modello li tratta come **sorgenti "
+        "puntuali di volume**: la loro portata entra nella continuità delle celle in cui "
+        "sfociano, senza quantità di moto propria (la corrente laterale arriva in genere quasi perpendicolare all'asse "
+        "e la sua spinta lungo l'asse è trascurabile). Si accendono e spengono tutti insieme con la riga 9 di "
+        "`settings.txt`.")
+    D.h1("Il file degli affluenti")
+    D.p("Gli affluenti sono elencati in un file CSV, indicato nella riga 4 di `settings.txt`, con un'intestazione e "
+        "una riga per affluente, da monte a valle. Per cambiarli si modifica solo questo file, non il codice:")
+    D.codice("nome,idrogramma,sezione\n"
+             "Rio_A,input/idrogrammi/evento/rio_a.csv,25\n"
+             "Rio_B,input/idrogrammi/evento/rio_b.csv,\n"
+             "Torrente_C,input/idrogrammi/evento/torrente_c.csv,90", titolo="esempio di file degli affluenti")
+    D.tabella([["Colonna", "Contenuto"],
+               ["`nome`", "un nome qualunque, usato nei messaggi"],
+               ["`idrogramma`", "percorso del file dell'idrogramma, come quelli di `settings.txt` (relativo alla cartella del progetto)"],
+               ["`sezione`", "numero della sezione di sbocco, da 1 a imax (la riga del file della geometria); "
+                             "se è vuota la sezione è scelta in automatico (vedi sotto)"]], [0.2, 0.8])
+    D.elenco(["il numero di affluenti è il numero di righe: da nessuno a quanti si vuole;",
+              "con `nessuno` nella riga 4, oppure con `no` nella riga 9, non entra nessun affluente; con `no` il file "
+              "non viene nemmeno letto;",
+              "il file è controllato all'avvio: un idrogramma che non esiste, una sezione fuori dal tratto o una riga "
+              "con il numero sbagliato di colonne fermano il programma con un messaggio che indica la riga."])
+    D.estratto(MOD, "function READ_TRIBUTARIES", "    return nomi, file, sez", titolo=MOD)
     D.h1("Dove entrano")
-    D.p("Non avendo ancora le posizioni reali, gli affluenti sono distribuiti uniformemente lungo il tratto:")
-    D.eq(r"i_{aff}^{(k)}=\mathrm{round}\left(\frac{k\cdot imax}{19}\right),\qquad k=1\ldots 18")
+    D.p("Ogni affluente entra nella sezione indicata nel file. Se la sezione è vuota, l'affluente k (la sua "
+        "posizione nell'elenco) è messo in una sezione distribuita uniformemente lungo il tratto, con N_{aff} il "
+        "numero di affluenti:")
+    D.eq(r"i_{aff}^{(k)}=\mathrm{round}\left(\frac{k\cdot imax}{N_{aff}+1}\right),\qquad k=1\ldots N_{aff}")
     D.p("Gli affluenti più grandi, con picco di almeno 10 m³/s, sono distribuiti su **tre** sezioni (quella di "
-        "sbocco e le due vicine), gli altri su una sola, così una portata grande non si concentra in una cella "
-        "lunga 50 m:")
+        "sbocco e le due vicine), gli altri su una sola, così una portata grande non si concentra in una sola cella:")
     D.eq(r"Q_{aff,i}=\sum_{k:\ |i-i_{aff}^{(k)}|\leq s_k}\frac{Q^{(k)}(t)}{2\,s_k+1},\qquad s_k=1\ \mathrm{se}\ \max_t Q^{(k)}\geq 10\ \mathrm{m^3/s},\ \mathrm{altrimenti}\ 0")
-    D.estratto(SEMI, "    # Sezioni di ingresso degli affluenti", n=10, titolo=SEMI)
+    D.estratto(SEMI, "    # Idrogrammi degli affluenti, nell'ordine del file", "    ncel_aff = 2", titolo=SEMI)
     D.estratto(SUB, "function TRIBUTARY_INFLOW!", n=9, titolo=SUB)
     D.h1("Come entrano nelle equazioni")
     D.p("Il termine sorgente compare solo nella continuità della cella i. Integrato sulla cella e sul passo:")
@@ -486,15 +510,16 @@ def p06(D):
         "volume entrato dagli affluenti è sommato passo per passo e compare in `bilancio.txt` "
         "(approfondimento 19); il riempimento si ferma solo quando l'uscita è uguale a monte + affluenti "
         "(approfondimento 18).")
-    D.attenzione("le posizioni uniformi sono provvisorie. Affluenti e scambio con la piana insieme non sono ancora "
-                 "stati provati.")
+    D.attenzione("le posizioni automatiche sono solo un ripiego: per un caso reale conviene indicare nel file la sezione "
+                 "di sbocco di ogni affluente. Affluenti attivi e scambio `tabella` insieme non sono ancora affidabili: "
+                 "in una prova il calcolo è divergito, quindi la combinazione va verificata prima di usarla.")
     D.collegamenti([(5, "05_idrogrammi.pdf", "Gli idrogrammi"), (7, "07_stato_iniziale.pdf", "Lo stato iniziale"),
                     (11, "11_sistema_dei_livelli.pdf", "Il sistema per i livelli")])
 
 
 # =============================================================================================== 07
 def p07(D):
-    G = geometria(); k = 20; r = tabella_sezione(k)
+    r = tabella_sintetica()
     D.h1("A cosa serve")
     D.p("Prima della piena il fiume deve trovarsi in uno stato di equilibrio con la portata iniziale. Il modello "
         "lo costruisce in due tempi: prima una **stima** sezione per sezione con il moto uniforme (questo "
@@ -540,28 +565,28 @@ def p07(D):
     D.estratto(SUB, "function UNIFORM_LEVEL", n=11, titolo=SUB)
     def graf(fig):
         ax = fig.add_subplot(111)
-        S = abs(G[k - 1, 1])
+        S = 0.002
         Q = r[:, 2] * np.sqrt(9.81 * r[:, 6] * S)
         ax.plot(Q, r[:, 1], "-o", ms=2.5, color="#2a78d6", lw=1.3, label="Q_u(η) dalla tabella")
-        Qt = 5.07; e = np.interp(Qt, Q, r[:, 1])
+        Qt = 10.0; e = np.interp(Qt, Q, r[:, 1])
         ax.axvline(Qt, color="#eb6834", lw=1, ls="--"); ax.axhline(e, color="#eb6834", lw=1, ls="--")
-        ax.plot(Qt, e, "o", color="#eb6834", label=f"Q = {Qt} m³/s → η ≈ {e:.2f} m")
+        ax.plot(Qt, e, "o", color="#eb6834", label=f"Q = {Qt:.0f} m³/s → η ≈ {e:.2f} m".replace(".", ","))
         ax.set_xlabel("portata di moto uniforme [m³/s]", fontsize=8); ax.set_ylabel("livello η [m s.l.m.]", fontsize=8)
-        ax.set_title(f"S1000, pendenza locale |S| = {S:.5f}", fontsize=9); ax.grid(alpha=0.25); ax.tick_params(labelsize=7)
+        ax.set_title(f"Sezione di esempio, pendenza |S| = {S}".replace(".", ","), fontsize=9); ax.grid(alpha=0.25); ax.tick_params(labelsize=7)
         ax.legend(fontsize=7, loc="lower right")
-    D.grafico(graf, "moto_uniforme", "Scala di deflusso di moto uniforme in S1000 costruita con la tabella: lo stato "
-              "iniziale con la portata di base del `fittizio_1` (5,07 m³/s) è il punto arancione.")
-    D.attenzione("la bisezione funziona se Q_{u}(η) cresce con il livello. Con il K_{s} equivalente variabile delle "
-                 "tabelle non è garantito in ogni sezione, ma sul Test_Brenta non ha dato problemi. Nelle sezioni in "
+    D.grafico(graf, "moto_uniforme", "Scala di deflusso di moto uniforme costruita con la tabella della sezione di "
+              "esempio dell'approfondimento 04: con una portata iniziale di 10 m³/s lo stato iniziale è il punto arancione.")
+    D.attenzione("la bisezione funziona se Q_{u}(η) cresce con il livello. Con un K_{s} equivalente che cambia molto "
+                 "con il livello non è garantito in ogni sezione: conviene controllare le tabelle. Nelle sezioni in "
                  "contropendenza si usa |S|, quindi la stima può essere lontana dall'equilibrio: il riempimento la corregge.")
     D.h1("Il codice nel solutore")
     D.estratto(SEMI, "    Q_aff = zeros(imax)  # Vettore portate affluenti", n=10, titolo=SEMI)
     D.p("Poi `BARYCENTERS!` legge dalle tabelle area, β, j_{den} e R_{h} ai livelli iniziali, e il ciclo temporale parte "
         "in modalità riempimento.")
     D.h2("Perché non il velo costante e non la rampa")
-    D.p("In passato si partiva da un velo d'acqua costante e si faceva crescere la portata con una rampa di 6 ore. "
-        "Partire dalle portate cumulate con il moto uniforme porta all'equilibrio in circa 1,7 h invece di 7,4 h "
-        "nel Test_Brenta, con lo stesso stato finale. La storia delle prove è in `CLAUDE.md`.")
+    D.p("Un'alternativa sarebbe partire da un velo d'acqua costante e far crescere la portata con una rampa. Lo stato "
+        "finale è lo stesso, ma partire dalle portate cumulate con il moto uniforme è già vicino all'equilibrio e "
+        "rende il riempimento molto più breve. La vecchia partenza è ancora nel codice, commentata.")
     D.collegamenti([(4, "04_tabelle_delle_sezioni.pdf", "Le tabelle"), (9, "09_parte_esplicita_rusanov.pdf", "La condizione di valle"),
                     (18, "18_fine_riempimento.pdf", "La fine del riempimento")])
 

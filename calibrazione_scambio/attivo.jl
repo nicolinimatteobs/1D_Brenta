@@ -7,7 +7,7 @@ function discesa(t, q, t0, tf)       # primo istante dopo il colmo dell'onda con
     jj = findall(j -> t0 <= t[j]/3600 < tf, eachindex(t)); p = jj[argmax(q[jj])]
     j = findfirst(j -> j > p && t[j]/3600 < tf && q[j] < 50, eachindex(t)); j === nothing ? NaN : t[j]/3600
 end
-# Prova del serbatoio attivo (riga 33 di settings.txt): per ogni combinazione di T e soglia lancia i fittizi 1-4 e
+# Prova del serbatoio attivo (riga 15 di settings.txt): per ogni combinazione di T e soglia lancia i fittizi 1-4 e
 # aggiunge a risultati/attivo.csv indici, volumi e anticipo del rientro (S4200 oltre 67 m³/s) e della discesa (S6000
 # sotto 50 m³/s dopo il colmo), per onda. Le uscite in out/ sono cancellate, salvo le combinazioni "T:V" indicate.
 # Uso, dalla cartella del progetto:

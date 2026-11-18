@@ -9,28 +9,18 @@ WRI = "Source/writing.jl"
 CT = "calcolo_tabelle_daBM/src/main.jl"
 
 
-def tabella_sezione(k):
-    T = np.loadtxt(os.path.join(PROGETTO, TABELLE), delimiter=",", skiprows=1)
-    return T[T[:, 0] == k]
-
-
-def uscita(scen, nome, ic=False):
-    return np.loadtxt(os.path.join(PROGETTO, USCITE, scen, ("IC_" if ic else "") + nome), ndmin=1)
-
-
 # =============================================================================================== 15
 def p15(D):
-    G = np.loadtxt(os.path.join(PROGETTO, GEOMETRIA), delimiter=",", skiprows=1)
     D.h1("A cosa serve")
     D.p("Quando il livello supera la cresta di un argine, l'acqua esce dal canale verso la piana. Con lo scambio "
-        "`sfioro` (riga 28 di `settings.txt`) il modello lo rappresenta come uno **stramazzo a parete grossa** lungo "
+        "`sfioro` (riga 10 di `settings.txt`) il modello lo rappresenta come uno **stramazzo a parete grossa** lungo "
         "ciascun argine della cella. L'acqua uscita non rientra: è persa per il fiume.")
     D.h1("1. La formula dello sfioro")
     D.p("Su una soglia larga, con carico Y_{0} sopra la cresta, la corrente passa per lo stato critico: tirante "
         "critico 2/3 del carico, velocità √(g·2Y_{0}/3). La portata per unità di lunghezza di argine è quindi")
     D.eq([r"q_l=\frac{2}{3}Y_0\,\sqrt{g\,\frac{2}{3}Y_0}=\left(\frac{2}{3}\right)^{3/2}\sqrt{g}\;Y_0^{3/2}\approx 0.385\,\sqrt{2g\,Y_0^3}",
           r"Y_0=\max\left(\eta-z_{argine},\ 0\right),\qquad C_d=0.385"])
-    D.p("È la formula 16 di Siviglia, Stocchino e Colombini (ASCE 2009), in `reference/`. Il coefficiente 0,385 è "
+    D.p("È la formula 16 di Siviglia, Stocchino e Colombini (ASCE 2009). Il coefficiente 0,385 è "
         "proprio (2/3)^{3/2}/√2: sfioro libero, senza rigurgito da valle.")
     def graf(fig):
         ax = fig.add_subplot(111); Y = np.linspace(0, 0.6, 200)
@@ -48,9 +38,9 @@ def p15(D):
         "pareggiare monte + affluenti − sfioro).")
     D.estratto(SUB, "@inline function FREE_OVERFLOW", n=4, titolo=SUB)
     D.estratto(SEMI, "        if scambio == :sfioro", n=5, titolo=SEMI)
-    D.p(f"Le quote degli argini vengono da `bankpoints.csv` (un punto del DTM per argine e per sezione). Nel "
-        f"Test_Brenta vanno da {min(G[:,4].min(), G[:,5].min()):.2f} a {max(G[:,4].max(), G[:,5].max()):.2f} m s.l.m.; "
-        "una geometria a 4 colonne ha argini a `Inf` e non sfiora mai.")
+    D.p("Le quote degli argini sono le colonne 5-6 della geometria (approfondimento 03); `calcolo_tabelle_daBM` le "
+        "prende da `bankpoints.csv`, un punto del DTM per argine e per sezione. Una geometria a 4 colonne ha argini a "
+        "`Inf` e non sfiora mai.")
     D.flowchart(dict(dimensioni=(12, 7.8), w=6.2, h=0.95, nodi={
         "a": (6, 7.2, "scambio = sfioro: per ogni cella i", "inizio", 5.6, 0.75),
         "b": (6, 6.0, "Y0_dx = max(η_i − z_dx, 0),  Y0_sx = max(η_i − z_sx, 0)", "proc"),
@@ -61,20 +51,18 @@ def p15(D):
         archi=[("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "f")]),
         didascalia="Flowchart dello sfioro sugli argini.", larghezza=0.8)
     D.h1("3. Limiti")
-    D.elenco(["**solo uscita**: l'acqua che nel 2D rientra più a valle nel 1D è persa. Nei fittizi a 50 m il colmo in "
-              "uscita si fermava a circa 60 m³/s contro 64-82 del 2D;",
-              "**un punto per argine**: la quota della cresta è un solo punto del DTM applicato a 50 m di argine;",
+    D.elenco(["**solo uscita**: l'acqua che nella realtà rientra più a valle nel 1D è persa, quindi a valle delle "
+              "esondazioni la portata è sottostimata;",
+              "**un punto per argine**: la quota della cresta è un solo punto applicato a tutta la lunghezza della cella;",
               "**sfioro libero**: non sa che cosa c'è dall'altra parte. Dove la piana è già allagata, un punto basso "
-              "dell'argine è un punto di rientro, non di uscita (S3550 nei fittizi);",
-              "per questo è stato introdotto lo scambio dalla tabella con il serbatoio della piana (approfondimenti 16-17), "
-              "che è la configurazione attuale."])
+              "dell'argine può essere un punto di rientro, non di uscita;",
+              "per questo c'è anche lo scambio dalla tabella con il serbatoio della piana (approfondimenti 16-17)."])
     D.collegamenti([(16, "16_scambio_tabella.pdf", "Lo scambio dalla tabella ΔQ"), (17, "17_serbatoio_della_piana.pdf", "Il serbatoio della piana"),
                     (19, "19_bilancio_di_massa.pdf", "Il bilancio di massa")])
 
 
 # =============================================================================================== 16
 def p16(D):
-    s10, s83 = tabella_sezione(10), tabella_sezione(83)
     D.h1("A cosa serve")
     D.p("Lo scambio `tabella` sostituisce la formula dello sfioro con un'informazione presa direttamente dal modello 2D. "
         "Negli scalini 2D a moto permanente la portata cambia lungo il tratto **solo** per lo scambio con la piana: se "
@@ -82,18 +70,20 @@ def p16(D):
     D.h1("1. La colonna ΔQ")
     D.eq(r"\Delta Q_k(\eta)=Q^{2D}_k-Q^{2D}_{k-1}\qquad \mathrm{allo\ stesso\ scalino\ di\ portata}")
     D.p("ΔQ < 0 dove l'acqua esce, ΔQ > 0 dove rientra, 0 nella prima sezione e dove una delle due è asciutta. È "
-        "calcolata da `calcolo_tabelle_daBM` (approfondimento 21) e scritta nelle colonne 13-14 delle tabelle "
-        "`S_50m_q2`, con la sua pendenza rispetto al livello, così si interpola come le altre grandezze. Non servono "
-        "né la formula dello sfioro né le quote degli argini.")
+        "calcolata da `calcolo_tabelle_daBM` (approfondimento 21) e scritta nelle colonne 13-14 delle tabelle, con la "
+        "sua pendenza rispetto al livello, così si interpola come le altre grandezze. Non servono né la formula dello "
+        "sfioro né le quote degli argini. Serve invece che le tabelle abbiano 14 colonne.")
     def graf(fig):
-        ax = fig.subplots(1, 2)
-        for a, s, nome, col in ((ax[0], s10, "S0500 (uscita)", "#eb6834"), (ax[1], s83, "S4150 (rientro)", "#1baf7a")):
-            a.plot(s[:, 12], s[:, 1], "-o", ms=2.5, color=col, lw=1.3)
+        ax = fig.subplots(1, 2); e = np.linspace(100, 103.5, 36)
+        uscita = -4.0 * np.maximum(e - 102.5, 0.0) ** 1.5
+        rientro = np.where(e > 102.0, 5.0 * np.minimum(e - 102.0, 1.2), 0.0)
+        for a, dq, nome, col in ((ax[0], uscita, "sezione di uscita", "#eb6834"), (ax[1], rientro, "sezione di rientro", "#1baf7a")):
+            a.plot(dq, e, "-o", ms=2.5, color=col, lw=1.3)
             a.axvline(0, color="#9aa0a6", lw=0.8); a.set_title(nome, fontsize=9)
             a.set_xlabel("ΔQ [m³/s]", fontsize=8); a.grid(alpha=0.25); a.tick_params(labelsize=7)
         ax[0].set_ylabel("livello η [m s.l.m.]", fontsize=8)
-    D.grafico(graf, "deltaQ", f"ΔQ(η) nelle tabelle di due sezioni: in S0500 l'acqua esce fino a {s10[:,12].min():.1f} m³/s, "
-              f"in S4150 rientra fino a {s83[:,12].max():.1f} m³/s.")
+    D.grafico(graf, "deltaQ", "Forma tipica di ΔQ(η) (esempio schematico): sotto la quota delle sponde è zero; sopra, "
+              "nelle sezioni di uscita diventa negativo, in quelle di rientro positivo e crescente con il livello.")
     D.h1("2. READ_EXCHANGE")
     D.p("Legge ΔQ al livello della sezione con la stessa ricerca di riga di `READ_VALUES` (approfondimento 04), ma con "
         "una differenza importante agli estremi: **oltre l'ultima quota usa l'ultimo valore, senza estrapolare**. ΔQ può "
@@ -101,13 +91,13 @@ def p16(D):
     D.eq(r"\Delta Q(\eta)=\Delta Q_1\ (\eta\leq\eta_1),\qquad \Delta Q_r+\Delta Q'_r\,(\eta-\eta_r)\ (\eta_r\leq\eta<\eta_{r+1}),\qquad \Delta Q_N\ (\eta\geq\eta_N)")
     D.estratto(SUB, "@inline function READ_EXCHANGE", n=11, titolo=SUB)
     D.h1("3. Da solo è instabile")
-    D.p("La prima prova usava ΔQ così com'è, con Q_{lat,i} = ΔQ_{i}(η_{i}). Nel `fittizio_1` la portata a 4-5 km è arrivata a "
-        "93-95 m³/s con 81 in ingresso e a 6,4 h il calcolo è divergito: nessun NaN, ma il passo temporale è andato a "
-        "zero. Il motivo è un **anello di retroazione positivo** nelle sezioni di rientro.")
+    D.p("Usando ΔQ così com'è, con Q_{lat,i} = ΔQ_{i}(η_{i}), il calcolo diverge: a valle dei rientri la portata "
+        "supera quella in ingresso e il passo temporale va a zero, anche senza NaN. Il motivo è un **anello di "
+        "retroazione positivo** nelle sezioni di rientro.")
     D.p("Si consideri una sola cella di rientro, con larghezza W e lunghezza Δx, e una piccola perturbazione del "
         "livello η' attorno all'equilibrio. Dalla continuità:")
     D.eq([r"W\,\Delta x\,\frac{d\eta'}{dt}=\frac{d\Delta Q}{d\eta}\,\eta'+\ldots\quad\Rightarrow\quad \eta'(t)\propto e^{\lambda t},\qquad \lambda=\frac{1}{W\,\Delta x}\,\frac{d\Delta Q}{d\eta}"])
-    D.p("Dove l'acqua rientra ΔQ **cresce** con il livello (dΔQ/dη > 0, come in S4150): λ > 0 e la perturbazione cresce "
+    D.p("Dove l'acqua rientra ΔQ **cresce** con il livello (dΔQ/dη > 0, figura 1 a destra): λ > 0 e la perturbazione cresce "
         "esponenzialmente. Più acqua rientra, più il livello sale, più acqua rientra: il modello **crea acqua**, perché "
         "nulla lega il rientro all'acqua uscita davvero. Nel 2D invece può rientrare solo l'acqua che prima è uscita e "
         "che ha riempito la piana. Il termine di gravità del sistema dei livelli smorza in parte, ma con rientri di "
@@ -139,14 +129,16 @@ def p17(D):
     D.p("Il serbatoio è il pezzo che rende stabile e fisicamente sensato lo scambio dalla tabella. Rappresenta **tutta "
         "la piana** del tratto come un unico volume virtuale V: le uscite della tabella lo riempiono, i rientri lo "
         "svuotano e non possono restituire più acqua di quella che contiene. Non ha geometria: solo un volume e "
-        "quattro parametri più un interruttore (righe 29-33 di `settings.txt`).")
-    D.tabella([["Riga", "Parametro", "Simb.", "Significato fisico", "Valore tarato"],
-               ["29", "soglia", "V_{s}", "la piana deve riempirsi prima di restituire acqua (avvallamenti, ristagni)", "150 000 m³"],
-               ["30", "tempo di svuotamento", "T", "con quale velocità la piana piena restituisce", "0,5 h"],
-               ["31", "ritardo", "τ", "tempo per attraversare la piana dall'uscita al rientro", "1 h"],
-               ["32", "rilascio lento", "T_{l}", "la parte sotto la soglia torna lentamente (drenaggio)", "32 h"],
-               ["33", "serbatoio attivo", "–", "l'acqua oltre la soglia rientra anche quando la tabella non lo chiede", "si"]],
-              [0.07, 0.17, 0.09, 0.5, 0.17])
+        "quattro parametri più un interruttore (righe 11-15 di `settings.txt`).")
+    D.tabella([["Riga", "Parametro", "Simb.", "Significato fisico", "Unità"],
+               ["11", "soglia", "V_{s}", "la piana deve riempirsi prima di restituire acqua (avvallamenti, ristagni)", "m³"],
+               ["12", "tempo di svuotamento", "T", "con quale velocità la piana piena restituisce (0 = subito)", "h"],
+               ["13", "ritardo", "τ", "tempo per attraversare la piana dall'uscita al rientro", "h"],
+               ["14", "rilascio lento", "T_{l}", "la parte sotto la soglia torna lentamente (0 = resta nella piana)", "h"],
+               ["15", "serbatoio attivo", "–", "l'acqua oltre la soglia rientra anche quando la tabella non lo chiede", "si/no"]],
+              [0.07, 0.19, 0.09, 0.53, 0.12])
+    D.p("I valori dipendono dal tratto e dalla sua piana: vanno tarati per ogni caso, confrontando il 1D con un "
+        "modello 2D o con misure (portate a valle, istanti dei rientri, volume rimasto nella piana).")
     D.h1("1. Il volume arrivato e il ritardo")
     D.p("L'acqua uscita impiega un tempo τ per raggiungere il serbatoio. Il codice tiene la **storia** del volume uscito "
         "cumulato V_{u}(t) e guarda il valore di τ secondi prima. t conta anche il riempimento (`t_tot`):")
@@ -205,53 +197,24 @@ def p17(D):
                ("g", "h"), ("h", "i"), ("i", "l", "sì"), ("i", "m", "no (Q_extra = 0)"), ("l.s", "m.e", None, [(12.0, 5.1)]),
                ("m", "n"), ("n", "o"), ("o", "p")]),
         didascalia="Flowchart dello scambio `tabella` con il serbatoio della piana.")
-    t = uscita("fittizio_4", "time.csv"); L = uscita("fittizio_4", "Q_lat.csv"); Qin = uscita("fittizio_4", "Q.csv")[:, 0]
-    Li = uscita("fittizio_4", "Q_lat.csv", True); ti = uscita("fittizio_4", "time.csv", True)
-    dt = np.diff(np.r_[0, t]); dti = np.diff(np.r_[0, ti])
-    V = -(np.sum(dti * Li.sum(1))) - np.cumsum(dt * L.sum(1))
-    def graf(fig):
-        ax = fig.subplots(2, 1, sharex=True)
-        ax[0].plot(t / 3600, -np.minimum(L, 0).sum(1) * -1, color="#eb6834", lw=1.2, label="uscita verso la piana (−)")
-        ax[0].plot(t / 3600, np.maximum(L, 0).sum(1), color="#1baf7a", lw=1.2, label="rientro (+)")
-        ax[0].axhline(0, color="#9aa0a6", lw=0.7); ax[0].set_ylabel("portata [m³/s]", fontsize=8)
-        ax[0].legend(fontsize=7, loc="upper right", ncol=2); ax[0].grid(alpha=0.25); ax[0].tick_params(labelsize=7)
-        ax[1].plot(t / 3600, V / 1000, color="#2a78d6", lw=1.4, label="volume nel serbatoio")
-        ax[1].axhline(150, color="#b4371f", lw=1, ls="--", label="soglia 150 000 m³")
-        ax[1].set_ylabel("volume [migliaia di m³]", fontsize=8); ax[1].set_xlabel("tempo [h]", fontsize=8)
-        ax[1].legend(fontsize=7, loc="upper right"); ax[1].grid(alpha=0.25); ax[1].tick_params(labelsize=7)
-        fig.set_size_inches(7.6, 5.0)
-    D.grafico(graf, "serbatoio", f"`fittizio_4` (due onde) con i valori tarati, ricostruito da `Q_lat.csv`: il "
-              f"serbatoio arriva a {V.max()/1000:.0f} mila m³ e a fine evento ne contiene {V[-1]/1000:.0f} mila. "
-              "Nella seconda onda la piana è già in parte piena e il rientro arriva prima.")
-    D.h1("6. Taratura e risultati")
-    D.p("I parametri sono stati tarati sui quattro scenari fittizi confrontando con il 2D (115 combinazioni, circa 480 "
-        "simulazioni, tutte stabili e con il bilancio chiuso). Codici, risultati e grafici sono in "
-        "`calibrazione_scambio/` con il suo `leggimi.md`. Medie sui quattro scenari:")
-    D.tabella([["Scambio", "NSE in S6000", "Errore del colmo lungo il tratto", "Errore del livello"],
-               ["sfioro (tabelle q2)", "0,937", "–", "–"],
-               ["tabella, serbatoio con T = 0", "0,926", "4,18 m³/s", "5,9 cm"],
-               ["tabella, solo T = 4 h", "0,986", "1,86 m³/s", "3,6 cm"],
-               ["soglia 150 000 m³, T = 1 h", "0,989", "1,11 m³/s", "3,3 cm"],
-               ["soglia, T = 0,5 h, τ = 1 h", "0,991", "1,02 m³/s", "3,1 cm"],
-               ["+ rilascio lento 32 h", "0,994", "1,05 m³/s", "3,2 cm"],
-               ["**+ serbatoio attivo**", "**0,998**", "**1,08 m³/s**", "**2,7 cm**"]], [0.36, 0.18, 0.28, 0.18])
-    D.elenco(["**senza soglia** tutta l'acqua uscita rientra subito: il colmo in uscita resta quello in ingresso. Nel 2D "
-              "il volume che resta fuori è simile nei quattro scenari (154-215 mila m³): da qui la soglia;",
-              "**il ritardo** porta il rientro al momento giusto: in S4200 la portata supera 67 m³/s 44-50 min prima del 2D "
-              "senza ritardo, 1-7 min dopo con τ = 1 h;",
-              "**il rilascio lento** svuota la parte sotto la soglia tra due onde: senza, nella seconda onda del "
-              "`fittizio_4` il rientro arrivava 112 min prima del 2D;",
-              "**il serbatoio attivo** fa rientrare l'acqua oltre la soglia anche nel ramo calante: l'anticipo della "
-              "discesa in S6000 scende da 32 a 14 min in media."])
-    D.attenzione("un solo serbatoio per tutto il tratto (l'acqua uscita a 0,5 km può rientrare a 4 km), cinque "
-                 "parametri tarati e verificati sugli stessi quattro scenari, nessuna piena di verifica indipendente.")
+    D.h1("6. Che cosa fa ciascun parametro")
+    D.elenco(["**senza soglia** (V_{s} = 0) e con T = 0 tutta l'acqua uscita rientra subito: le uscite e i rientri della "
+              "tabella si compensano e la piana non lamina. La soglia trattiene il volume che nella realtà resta fuori;",
+              "**T** distribuisce nel tempo la restituzione dell'acqua oltre la soglia: con T grande la piana restituisce "
+              "lentamente e i colmi a valle calano;",
+              "**il ritardo τ** sposta il rientro più tardi, dando il tempo all'acqua di attraversare la piana;",
+              "**il rilascio lento** svuota la parte sotto la soglia, per esempio tra due onde di piena: senza, quella "
+              "parte resta nella piana per sempre e la seconda onda trova la piana già piena;",
+              "**il serbatoio attivo** fa rientrare l'acqua oltre la soglia anche quando la tabella non chiede rientri "
+              "(nel ramo calante, quando i livelli scendono). Con `no` quell'acqua resta ferma nel serbatoio."])
+    D.attenzione("un solo serbatoio per tutto il tratto: l'acqua uscita in un punto può rientrare in qualunque sezione "
+                 "di rientro, anche lontana. Per tratti lunghi, con piane separate, lo schema andrebbe esteso a più serbatoi.")
     D.collegamenti([(16, "16_scambio_tabella.pdf", "Lo scambio dalla tabella ΔQ"), (19, "19_bilancio_di_massa.pdf", "Il bilancio di massa"),
-                    (2, "02_lettura_settings.pdf", "Le righe 29-33 di settings.txt")])
+                    (2, "02_lettura_settings.pdf", "Le righe 11-15 di settings.txt")])
 
 
 # =============================================================================================== 18
 def p18(D):
-    Q = uscita("fittizio_1", "Q.csv", True); E = uscita("fittizio_1", "eta.csv", True); t = uscita("fittizio_1", "time.csv", True)
     D.h1("A cosa serve")
     D.p("Lo stato iniziale (approfondimento 07) è solo una stima: in un tratto non prismatico il moto uniforme sezione "
         "per sezione non è l'equilibrio, e a valle degli affluenti nemmeno le portate cumulate lo sono. Il modello "
@@ -262,8 +225,8 @@ def p18(D):
           r"(2)\quad |Q^{n+1}_{i}-Q^n_{i}|<0.01\ \mathrm{m^3/s}\quad \mathrm{in\ tutte\ le\ celle}",
           r"(3)\quad |\eta_i(t)-\eta_i(t-T_{f})|<1\ \mathrm{mm}\quad \mathrm{in\ tutte\ le\ sezioni},\qquad T_f=1800\ \mathrm{s}",
           r"(4)\quad \left|Q_{monte}+\sum Q_{aff}+\sum Q_{lat}-Q_{valle}\right|<10^{-3}\left(Q_{monte}+\sum Q_{aff}+\sum Q_{lat}\right)"], numerata=False)
-    D.elenco(["(1) una **durata minima**: il solo criterio sulla portata scattava troppo presto (nel canale rettangolare "
-              "a 2,76 h con il livello ancora 6 mm lontano dall'equilibrio);",
+    D.elenco(["(1) una **durata minima**: il solo criterio sulla portata può scattare troppo presto, con il livello "
+              "ancora qualche millimetro lontano dall'equilibrio;",
               "(2) la **portata è ferma** da un passo all'altro;",
               "(3) il **livello è fermo**: ogni 1800 s si confronta con quello di inizio finestra; serve perché il "
               "livello si assesta più lentamente della portata;",
@@ -272,18 +235,6 @@ def p18(D):
     D.p("Quando le condizioni sono soddisfatte si salva il volume in alveo per il bilancio (`B_iniziale`), si passa a "
         "`IC = 0` e tempo e contatori ripartono da zero: inizia la simulazione con l'idrogramma. `t_tot` invece non "
         "riparte, perché il ritardo del serbatoio della piana deve vedere anche l'acqua uscita nel riempimento.")
-    dq = np.abs(np.diff(Q, axis=0)).max(1)
-    def graf(fig):
-        ax = fig.subplots(1, 2)
-        ax[0].semilogy(t[1:] / 3600, dq, color="#2a78d6", lw=1.2); ax[0].axhline(0.01, color="#b4371f", ls="--", lw=1)
-        ax[0].set_title("max |Q(n+1) − Q(n)| [m³/s]", fontsize=9); ax[0].set_xlabel("tempo [h]", fontsize=8)
-        k = int(round(1800 / (t[1] - t[0]))); w = np.arange(k, len(t), k)
-        de = [np.abs(E[j] - E[j - k]).max() * 1000 for j in w]
-        ax[1].semilogy(t[w] / 3600, de, "o-", color="#1baf7a", lw=1.2, ms=4); ax[1].axhline(1, color="#b4371f", ls="--", lw=1)
-        ax[1].set_title("max variazione del livello in 30 min [mm]", fontsize=9); ax[1].set_xlabel("tempo [h]", fontsize=8)
-        for a in ax: a.grid(alpha=0.25, which="both"); a.tick_params(labelsize=7); a.axvline(1, color="#9aa0a6", lw=0.8, ls=":")
-    D.grafico(graf, "riempimento", f"Riempimento del `fittizio_1`: {len(t)} passi da 5 s, fine a {t[-1]/3600:.1f} h. "
-              "Linee rosse: soglie dei criteri; linea punteggiata: durata minima di 1 h.")
     D.flowchart(dict(dimensioni=(14, 11.2), w=5.4, h=0.95, nodi={
         "a": (6, 10.6, "fine del passo, IC = 1", "inizio", 4.0, 0.75),
         "b": (6, 9.4, "conta le celle con |q − qn| < 0,01", "proc"),
@@ -296,19 +247,16 @@ def p18(D):
         archi=[("a", "b"), ("b", "c"), ("c", "d", "sì"), ("c", "e", "no"), ("d.s", "e.n", None, [(11.6, 7.15), (6, 7.15)]),
                ("e", "f", "sì"), ("e", "h", "no"), ("f", "g")]),
         didascalia="Flowchart dei criteri di fine del riempimento.", larghezza=0.9)
-    D.h1("Perché non la rampa")
-    D.p("Prima il riempimento faceva crescere gli affluenti con una rampa di 6 h, inserendoli uno alla volta. Con le "
-        "portate cumulate lo stato finale è identico ma il livello è entro 1 mm dall'equilibrio in 1,7 h invece di "
-        "7,4 h nel Test_Brenta e in 4,7 h invece di 10,4 h nel canale rettangolare. Nei fittizi a 50 m il "
-        "riempimento finisce a 2,5 h.")
+    D.p("Nel riempimento il passo è al massimo di 5 s e il CFL è 0,6 (approfondimento 08): conta arrivare a un "
+        "equilibrio pulito, non la velocità. La durata dipende dal tratto e dalla portata iniziale: più il tratto è "
+        "lungo e lontano dal moto uniforme, più dura.")
     D.attenzione("la tolleranza assoluta di 0,01 m³/s è poco adatta a portate molto basse; T_{ass}, T_{f} e la tolleranza "
-                 "di 1 mm sono provati solo sul Test_Brenta (6 km) e sul canale rettangolare (30 km).")
+                 "di 1 mm sono costanti nel codice: per tratti molto lunghi o portate molto basse vanno verificati.")
     D.collegamenti([(7, "07_stato_iniziale.pdf", "Lo stato iniziale"), (19, "19_bilancio_di_massa.pdf", "Il bilancio di massa")])
 
 
 # =============================================================================================== 19
 def p19(D):
-    testo = open(os.path.join(PROGETTO, USCITE, "fittizio_1", "bilancio.txt"), encoding="utf-8").read()
     D.h1("A cosa serve")
     D.p("Un modello idraulico deve conservare il volume d'acqua: quello che entra, meno quello che esce, è quello che "
         "resta. `BILANCIO_DI_MASSA` lo verifica a fine simulazione e scrive `bilancio.txt` nella cartella degli output. "
@@ -330,16 +278,12 @@ def p19(D):
     D.h1("3. Il codice")
     D.estratto(WRI, "function BILANCIO_DI_MASSA", "    return err", titolo=WRI)
     D.estratto(SEMI, "    # --- CONTROLLO DEL BILANCIO DI MASSA ---", n=8, titolo=SEMI)
-    D.h1("4. Un esempio reale")
-    D.codice(testo, titolo=USCITE + "/fittizio_1/bilancio.txt")
-    import re as _re
-    v = {k: float(x) for k, x in _re.findall(r"^(.+?)\s{2,}(-?\d+\.\d)", testo, _re.M)}
-    ini = v["volume in alveo all'inizio"]; fin = v["volume in alveo alla fine"]
-    mon = v["entrato da monte"]; val = v["uscito a valle"]; lat = v["scambio con la piana (+ entra, − esce)"]
-    D.p(f"Variazione in alveo: {fin:.1f} − {ini:.1f} = {fin-ini:.1f} m³. Entrato − uscito: {mon:.1f} − {val:.1f} "
-        f"{'+' if lat >= 0 else '−'} {abs(lat):.1f} = {mon-val+lat:.1f} m³. La differenza è sotto il decimo di m³ su 2,7 milioni. Il serbatoio "
-        "contiene a fine evento circa 1 000 m³ in più dello scambio della sola simulazione: è l'acqua uscita durante "
-        "il riempimento, compresa nel controllo del serbatoio.")
+    D.h1("4. Che cosa contiene bilancio.txt")
+    D.elenco(["volume in alveo all'inizio e alla fine della simulazione e la sua variazione;",
+              "volumi entrato da monte, uscito a valle, entrato dagli affluenti e scambiato con la piana (+ entra, − esce);",
+              "errore ε in m³ e in percentuale del volume da monte, con l'avviso se supera lo 0,1%;",
+              "con lo scambio `tabella`, il volume nel serbatoio della piana e il suo controllo. Il serbatoio contiene "
+              "anche l'acqua uscita durante il riempimento, che non compare nei volumi della sola simulazione."])
     D.flowchart(dict(dimensioni=(12, 8.8), w=6.4, h=0.95, nodi={
         "a": (6, 8.2, "fine del ciclo temporale", "inizio", 4.2, 0.75),
         "b": (6, 6.9, "il riempimento è finito ?", "dec", 4.2, 1.0),
@@ -358,15 +302,13 @@ def p19(D):
 
 # =============================================================================================== 20
 def p20(D):
-    d = os.path.join(PROGETTO, USCITE, "fittizio_1")
-    dim = {f: os.path.getsize(os.path.join(d, f)) for f in os.listdir(d) if os.path.isfile(os.path.join(d, f))}
     D.h1("A cosa serve")
-    D.p("I risultati sono scritti in file di testo semplici, uno per grandezza, nella cartella della riga 22 di "
+    D.p("I risultati sono scritti in file di testo semplici, uno per grandezza, nella cartella della riga 5 di "
         "`settings.txt`. `INIT_OUTPUT` crea la cartella e svuota i file di una simulazione precedente; le funzioni "
         "`save_*` aggiungono una riga a ogni passo.")
     D.estratto(WRI, "function INIT_OUTPUT", n=9, titolo=WRI)
     D.h1("I file")
-    righe = [["File", "Contenuto", "Valori per riga", "Dimensione (`fittizio_1`)"]]
+    righe = [["File", "Contenuto", "Valori per riga"]]
     for f, c, n in [("Q.csv", "portate alle interfacce [m³/s]; l'ultima è l'uscita", "imax + 1"),
                     ("eta.csv", "quota del pelo libero nelle sezioni [m s.l.m.]", "imax"),
                     ("h.csv", "tirante = η − talweg [m]", "imax"),
@@ -374,11 +316,11 @@ def p20(D):
                     ("Q_lat.csv", "scambio con la piana [m³/s], + entra, − esce", "imax"),
                     ("IC_*.csv", "gli stessi file per il riempimento", "come sopra"),
                     ("bilancio.txt", "controllo del bilancio di massa (approfondimento 19)", "–")]:
-        dd = dim.get(f); righe.append([f"`{f}`", c, n, f"{dd/1e6:.1f} MB" if dd else ("~1/3" if f.startswith("IC") else "1 kB")])
-    D.tabella(righe, [0.17, 0.5, 0.15, 0.18])
+        righe.append([f"`{f}`", c, n])
+    D.tabella(righe, [0.2, 0.6, 0.2])
     D.p("I valori sono separati da spazi, con 6 decimali e larghezza fissa 12; una riga per passo temporale. Il tempo è "
-        "in un file separato, così ogni riga di `Q.csv` corrisponde alla stessa riga di `time.csv`. Con 120 sezioni e "
-        "3 600 passi ogni file di sezione occupa una decina di MB.")
+        "in un file separato, così ogni riga di `Q.csv` corrisponde alla stessa riga di `time.csv`. Ogni valore occupa "
+        "12 caratteri: un file di sezione pesa circa 12·imax byte per passo (con 100 sezioni e 4 000 passi, circa 5 MB).")
     D.estratto(WRI, "function save_Q!", n=8, titolo=WRI)
     D.h2("Come leggerli")
     D.codice('# Julia\nusing DelimitedFiles\nQ = readdlm("output/.../Q.csv")        # matrice passi × (imax+1)\nt = vec(readdlm("output/.../time.csv"))\n\n'
@@ -386,15 +328,11 @@ def p20(D):
     D.p("La portata nelle sezioni, quando serve, si ottiene come media delle due interfacce vicine (così fanno gli "
         "strumenti di confronto).")
     D.h1("Chi li usa")
-    D.tabella([["Strumento", "File letti", "Grafici"],
-               ["`grafici_simulazione.jl`", "IC_*, Q, eta, h, time", "1-6"],
-               ["`confronto_reference.jl`", "Q, eta, Q_lat, time", "7-8"],
-               ["`animazioni_2D.jl`", "eta, Q, time", "9"],
-               ["`grafici_spinup.jl`", "IC_*", "10-11"],
-               ["`confronto_valle.jl`", "Q, h, time", "12-13"],
-               ["`errore_tirante_sezioni.jl`", "Q, h, time", "14"],
-               ["`grafico_volumi.jl`", "Q, eta, IC_eta, Q_lat, time", "15"],
-               ["`confronto_simulazioni_2D.jl`", "Q, h, Q_lat, time", "confronti tra simulazioni"]], [0.38, 0.38, 0.24])
+    D.p("Gli script di `strumenti/` leggono questi file per i grafici: per esempio `grafici_simulazione.jl` (condizioni "
+        "iniziali, idrogrammi, tiranti, profili), `grafici_spinup.jl` (il riempimento, dai file `IC_*`) e "
+        "`grafico_volumi.jl` (il bilancio dei volumi nel tempo). Gli strumenti di confronto con un modello 2D "
+        "richiedono in più i file di riferimento del 2D. Tabelle e geometria vengono dalle righe 1-2 di "
+        "`settings.txt`: devono essere quelle della simulazione che si analizza.")
     D.flowchart(dict(dimensioni=(13, 9.0), w=5.4, h=0.95, nodi={
         "a": (6.5, 8.4, "INIT_OUTPUT(output_dir)", "funz", 4.8),
         "b": (6.5, 7.1, "mkpath + 10 file vuoti", "io", 4.6),
@@ -409,11 +347,10 @@ def p20(D):
 
 # =============================================================================================== 21
 def p21(D):
-    T = np.loadtxt(os.path.join(PROGETTO, TABELLE), delimiter=",", skiprows=1)
     D.h1("A cosa serve")
     D.p("Le tabelle del modello (approfondimento 04) non si scrivono a mano: le costruisce `calcolo_tabelle_daBM` dai "
         "risultati del modello 2D BASEMENT a **scalini di portata**. Nel 2D si impone una sequenza di portate costanti "
-        "(1, 2, 4 … 100 m³/s), ciascuna mantenuta fino al moto permanente; per ogni sezione (nodestring) BASEMENT "
+        "che copre l'intervallo di interesse, dalla magra alla piena, ciascuna mantenuta fino al moto permanente; per ogni sezione (nodestring) BASEMENT "
         "scrive livello medio, area, larghezza e portata. Ogni scalino diventa una riga della tabella.")
     D.p("`julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Le costanti in testa scelgono "
         "gli scalini (`InputFolder`) e dove scrivere: le tabelle vanno sia nell'output dello script sia negli input "
@@ -434,19 +371,14 @@ def p21(D):
         "esondazioni. In questo modo la scabrezza del 1D contiene, livello per livello, tutto ciò che nel 2D rallenta "
         "la corrente: vegetazione, forma irregolare, perdite localizzate.")
     D.estratto(CT, "function Ks_equivalent", n=4, titolo=CT)
-    def graf(fig):
-        ax = fig.add_subplot(111)
-        for k, col in ((20, "#2a78d6"), (60, "#eb6834"), (100, "#1baf7a"), (120, "#1f2328")):
-            s = T[T[:, 0] == k]; Rh = s[:, 10]; Ks = np.sqrt(9.81 * s[:, 6] / np.maximum(Rh, 1e-9) ** (4 / 3))
-            ax.plot(Ks, s[:, 1] - s[0, 1], "-o", ms=2, lw=1.2, color=col, label=f"sezione {k} (S{50*k:04d})")
-        ax.set_xlim(0, 70); ax.set_xlabel("Ks equivalente [m^(1/3)/s]", fontsize=8); ax.set_ylabel("livello − prima quota [m]", fontsize=8)
-        ax.grid(alpha=0.25); ax.tick_params(labelsize=7); ax.legend(fontsize=7)
-    D.grafico(graf, "ks", "K_{s} equivalente ricavato dalle tabelle di quattro sezioni (K_{s} = √(g·jden/R_{h}^{4/3})). La sezione "
-              "120 è l'uscita, con la pendenza media del fondo: il suo K_{s} è circa 39,5.")
+    D.p("Il K_{s} equivalente non è un parametro fisico costante: cambia con il livello e da una sezione all'altra, "
+        "perché raccoglie tutto quello che il 1D non descrive. Valori molto lontani da quelli tipici dei corsi d'acqua "
+        "(per esempio sotto 10 o sopra 60 m^{1/3}/s) segnalano di solito un profilo 2D irregolare in quella sezione.")
     D.h1("3. L'ultima sezione")
     D.p("Nell'ultima sezione K_{s} e j_{den} sono ricavati con la pendenza che il modello usa per la condizione di uscita "
-        "(la `local_slope` dell'ultima sezione, pari alla pendenza media del fondo, 0,00213) invece che con la pendenza "
-        "del pelo libero, che nel 2D vicino all'uscita è molto ripida (fino a 0,0075). Così la formula di uscita "
+        "(la `local_slope` dell'ultima sezione, pari alla pendenza media del fondo) invece che con la pendenza del pelo "
+        "libero, che nel 2D vicino all'uscita del dominio è spesso molto ripida (richiamo della condizione al contorno "
+        "del 2D). Così la formula di uscita "
         "Q = A√(g j_{den} S) restituisce, a ogni livello, proprio la portata dello scalino 2D: la condizione di valle "
         "del 1D è la scala di deflusso del 2D (approfondimento 09).")
     D.h1("4. Lo scambio con la piana: ΔQ")
@@ -457,7 +389,7 @@ def p21(D):
               "portata 0,1 m³/s e K_{s} = 20 (l'area viene da Manning), le altre fino al primo livello bagnato interpolate "
               "(`rebuild_dry!`). Il modello non scende mai a queste portate, ma i valori devono essere ragionevoli;",
               "il modello vuole quote crescenti: una riga con livello non superiore ai precedenti viene scartata "
-              "(in S0050 gli ultimi scalini, dove il livello scende);",
+              "(succede negli scalini più alti di qualche sezione, dove il livello medio sulla nodestring può scendere);",
               "le colonne delle pendenze (`_s`) sono calcolate con `slope!`: differenza in avanti, l'ultima uguale alla "
               "penultima. È ciò che rende coerente l'estrapolazione di `READ_VALUES`."])
     D.estratto(CT, "function slope!", n=4, titolo=CT)
@@ -485,10 +417,11 @@ def p21(D):
         "monte di ogni nodestring, come nel metodo di Engelund:")
     D.eq(r"\beta=\frac{\Omega}{Q^2}\int u^2\,Y\,dy\ \approx\ \frac{\Omega\,\sum_e\left(q_{n,e}^2/Y_e\right)\Delta L_e}{\left(\sum_e q_{n,e}\,\Delta L_e\right)^2},\qquad \Omega=\sum_eY_e\,\Delta L_e")
     D.p("con Y_{e} il tirante dell'elemento, q_{n,e} la portata unitaria normale alla sezione e ΔL_{e} la lunghezza del lato. "
-        "Vale 1 con velocità uniforme e in mediana 1,14 nel Test_Brenta, ma l'effetto sul modello è trascurabile: le "
-        "tabelle in uso hanno β = 1.")
-    D.attenzione("il K_{s} equivalente trascura la variazione dell'altezza cinetica u²/2g tra sezioni vicine (fino a 8,5 cm "
-                 "a 50 m): dove il profilo 2D non è monotono il 1D sbaglia di 5-10 cm, altrove 1-2 cm in media.")
+        "Vale 1 con velocità uniforme e cresce quanto più la velocità è disuniforme nella sezione. Con `β_dal_2D = false` "
+        "le tabelle hanno β = 1.")
+    D.attenzione("il K_{s} equivalente trascura la variazione dell'altezza cinetica u²/2g tra sezioni vicine. Dove il profilo "
+                 "2D non è monotono (il pelo libero risale tra due sezioni) il 1D, che con il solo attrito non può far "
+                 "risalire il livello, non riproduce esattamente i livelli del 2D.")
     D.collegamenti([(4, "04_tabelle_delle_sezioni.pdf", "Le tabelle nel modello"), (9, "09_parte_esplicita_rusanov.pdf", "La condizione di valle"),
                     (16, "16_scambio_tabella.pdf", "Lo scambio dalla tabella ΔQ")])
 

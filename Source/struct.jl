@@ -1,11 +1,14 @@
 # Parametri della simulazione letti da settings.txt; n_row, n_col e imax sono ricavati dai file di input.
-# hydro_files contiene i percorsi degli idrogrammi, es. params.hydro_files.centa
+# Gli affluenti vengono dal file della riga 4 di settings.txt: nomi, idrogrammi e sezioni di ingresso, da monte a valle
+# (vettori vuoti se gli affluenti sono spenti o se il file è "nessuno")
 struct Parametri
     parametri_sezioni  ::String
     local_slope        ::String
-    hydro_files        ::NamedTuple
+    file_monte         ::String          # idrogramma di monte
+    aff_nomi           ::Vector{String}  # affluenti: nomi
+    aff_file           ::Vector{String}  # affluenti: idrogrammi
+    aff_sez            ::Vector{Int}     # affluenti: sezione di ingresso (0 = scelta in automatico, distribuzione uniforme)
     output_dir         ::String
-    Ks                 ::Float64
     time               ::Float64
     dtmax              ::Float64
     Nmax               ::Int

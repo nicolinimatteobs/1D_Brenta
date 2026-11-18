@@ -38,7 +38,7 @@ La taratura dello scambio laterale con la piana (soglia, T, ritardo) ha i suoi s
 
 Tutti i comandi vanno lanciati dalla cartella del progetto: i percorsi in `settings.txt` sono relativi.
 Gli script dei grafici accettano argomenti facoltativi, per lavorare su una cartella diversa da quella
-della riga 22 di `settings.txt` senza modificarlo:
+della riga 5 di `settings.txt` senza modificarlo:
 
 ```bash
 julia --project=. strumenti/grafici_simulazione.jl output/S_50m/fittizio_1 input/idrogrammi/fittizio_1/piena.csv
@@ -78,7 +78,7 @@ volume in alveo (aree delle tabelle della riga 1): volumi cumulati, entrato = us
 aumento in alveo, errore nel tempo (sotto 0,02 m³, solo arrotondamenti dei file) e portate scambiate.
 In `output/Volume_in_out/svuotamento_32h/fittizio_1` … `fittizio_4` (tabelle `S_50m_q2`, scambio `tabella` con i valori
 tarati, rilascio lento in 32 h e serbatoio attivo) e in `output/Volume_in_out/svuotamento_24h/` (uguale, con il rilascio
-lento in 24 h, riga 32) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
+lento in 24 h, riga 14) ci sono tutti i grafici 1-15, ciascuno nella sua cartella `grafici/` (il 14, comune ai quattro
 scenari, è copiato in ognuna). Il confronto tra le due è in `output/Volume_in_out/confronto/`, fatto con
 `strumenti/confronto_simulazioni_2D.jl` (`<cartella di uscita> <cartella 1> <etichetta 1> <cartella 2> <etichetta 2> ...`,
 ogni cartella con `fittizio_1` … `fittizio_4`): portata e tirante nel tempo in S1000, S3500, S4200 e S6000 (grafici 1-2
@@ -144,7 +144,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 |---|---|
 | `main.jl` | Avvia `RUN_SIMULATION.SEMI_IMPLICIT_BRENTA_2D_1D!()` |
 | `Resoconto_modello_1D.md` | Spiegazione di tutto il codice come flusso di lavoro, con i pezzi di codice (per chi lo vede la prima volta) |
-| `approfondimenti/` | 21 PDF di approfondimento collegati dal resoconto (teoria, equazioni, flowchart, codice, esempi con i numeri del Test_Brenta), uno per passo o funzione; si rigenerano con `python approfondimenti/genera/genera.py [numeri]` (Python con `reportlab` e `matplotlib`; gli estratti di codice sono presi dai sorgenti, quindi vanno rigenerati quando il codice cambia) |
+| `approfondimenti/` | 21 PDF di approfondimento collegati dal resoconto (teoria, equazioni, flowchart, codice senza commenti, esempi con dati sintetici), uno per passo o funzione, **generali**: niente risultati delle prove sul Test_Brenta, per chi prende il codice dal repository; si rigenerano con `python approfondimenti/genera/genera.py [numeri]` (Python con `reportlab` e `matplotlib`; gli estratti di codice sono presi dai sorgenti, quindi vanno rigenerati quando il codice cambia) |
 | `Source/Run_Simulation.jl` | Modulo che include gli altri file |
 | `Source/Semi_Implicit_Brenta_2D_1D.jl` | Il solutore: riempimento (condizioni iniziali) e simulazione |
 | `Source/subroutines.jl` | Lettura tabelle e geometria, `READ_VALUES`, `UNIFORM_LEVEL`, idrogrammi, Thomas, `CHECK_NAN` |
@@ -164,42 +164,43 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 
 ## settings.txt
 
-Letto **per posizione** (33 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
+Letto **per posizione** (15 righe, non spostarle; dopo ci sono la legenda e vecchie configurazioni):
 
 | Riga | Contenuto |
 |---|---|
 | 1 | Tabelle delle sezioni (es. `input/geometria/Test_Brenta/S_50m/tabella_sezioni.csv`) |
 | 2 | Geometria (es. `input/geometria/Test_Brenta/S_50m/localslope_xcoord.csv`) |
-| 3-13 | Idrogrammi affluenti Brenta1-6, BrentaNuovo, BrentaVecchio1-4 |
-| 14 | Idrogramma in ingresso da monte (chiave interna `caldonazzo`) |
-| 15-21 | Idrogrammi affluenti Ceggio, Levico, Centa, Chieppena, Grigno, Maso, Moggio |
-| 22 | Cartella degli output (creata se non esiste) |
-| 23 | Ks: **non più usato** (l'uscita usa la tabella dell'ultima sezione), ma la riga deve restare e contenere un numero |
-| 24 | Tempo iniziale |
-| 25 | Passo temporale massimo [s] |
-| 26 | Numero massimo di passi |
-| 27 | Affluenti attivi: `si` o `no` (accetta anche `sì`, `true`/`false`, `1`/`0`) |
-| 28 | Scambio laterale con la piana: `sfioro` (sfioro libero sugli argini), `tabella` (colonna ΔQ delle tabelle e serbatoio della piana; servono tabelle a 14 colonne, es. `S_50m_q2`) o `nessuno` |
-| 29 | Serbatoio della piana (solo con `tabella`): soglia [m³] |
-| 30 | Serbatoio della piana: tempo di svuotamento T [h] (0 = tutto subito) |
-| 31 | Serbatoio della piana: ritardo τ [h] |
-| 32 | Serbatoio della piana: rilascio lento della parte sotto la soglia [h] (0 = resta nella piana) |
-| 33 | Serbatoio attivo: `si` o `no` (la parte oltre la soglia rientra anche quando la tabella non chiede rientri) |
+| 3 | Idrogramma in ingresso da monte |
+| 4 | File degli affluenti (es. `input/idrogrammi/vaia/affluenti.csv`) o `nessuno`; letto solo se la riga 9 è `si` (vedi "Affluenti") |
+| 5 | Cartella degli output (creata se non esiste) |
+| 6 | Tempo iniziale |
+| 7 | Passo temporale massimo [s] |
+| 8 | Numero massimo di passi |
+| 9 | Affluenti attivi: `si` o `no` (accetta anche `sì`, `true`/`false`, `1`/`0`) |
+| 10 | Scambio laterale con la piana: `sfioro` (sfioro libero sugli argini), `tabella` (colonna ΔQ delle tabelle e serbatoio della piana; servono tabelle a 14 colonne, es. `S_50m_q2`) o `nessuno` |
+| 11 | Serbatoio della piana (solo con `tabella`): soglia [m³] |
+| 12 | Serbatoio della piana: tempo di svuotamento T [h] (0 = tutto subito) |
+| 13 | Serbatoio della piana: ritardo τ [h] |
+| 14 | Serbatoio della piana: rilascio lento della parte sotto la soglia [h] (0 = resta nella piana) |
+| 15 | Serbatoio attivo: `si` o `no` (la parte oltre la soglia rientra anche quando la tabella non chiede rientri) |
 
-- Numero di righe e colonne delle tabelle e numero di sezioni **sono ricavati dai file**
-  (`FILE_SIZE`): non serve più il vecchio `struttura_output.txt`.
-- Tutti gli idrogrammi indicati devono esistere, anche con gli affluenti spenti. `Brenta7.csv`, non
-  ancora usato, non è più in `settings.txt`.
+- Fino a `d8966ad` le righe erano 33: 3-13 e 15-21 gli idrogrammi dei 18 affluenti con nomi fissi nel codice, 14 il
+  monte, 22 l'output, 23 il Ks (non più usato, tolto), 24-33 come le attuali 6-15. Le simulazioni e le descrizioni più
+  sotto che citano quei numeri di riga si riferiscono al formato vecchio.
+- Numero di righe e colonne delle tabelle, numero di sezioni e numero di affluenti **sono ricavati dai file**
+  (`FILE_SIZE`, `READ_TRIBUTARIES`): non serve più il vecchio `struttura_output.txt`.
+- L'idrogramma di monte deve esistere; quelli degli affluenti solo se gli affluenti sono attivi.
 - La durata simulata è il tempo finale **più breve** tra gli idrogrammi letti.
 - Il `settings.txt` committato è la configurazione di lavoro: geometria `input/geometria/Test_Brenta/S_50m_q2/`,
-  dt massimo 60 s, affluenti spenti, scambio `tabella` (righe 29-33: 150000, 0.5, 1, 24, `si`), con l'ultima prova:
-  idrogramma `fittizio_4`, output in `output/Volume_in_out/svuotamento_24h/fittizio_4`, rilascio lento 24 h. Il valore
-  tarato del rilascio lento resta 32 h (`svuotamento_32h`, di poco migliore: vedi "Scambio laterale con la piana"). I
-  risultati in `output/Volume_in_out/svuotamento_32h/` e `svuotamento_24h/` sono fatti con questo `settings.txt`
-  (righe 14, 22 e 32 a parte).
+  dt massimo 60 s, affluenti spenti (riga 4 su `input/idrogrammi/vaia/affluenti.csv`), scambio `tabella` (righe 11-15:
+  150000, 0.5, 1, 24, `si`), con l'ultima prova: idrogramma `fittizio_4`, output in
+  `output/Volume_in_out/svuotamento_24h/fittizio_4`, rilascio lento 24 h. Il valore tarato del rilascio lento resta
+  32 h (`svuotamento_32h`, di poco migliore: vedi "Scambio laterale con la piana"). I risultati in
+  `output/Volume_in_out/svuotamento_32h/` e `svuotamento_24h/` sono fatti con questa configurazione (righe 3, 5 e 14 a
+  parte; nel formato a 33 righe, che dà gli stessi risultati byte per byte).
   I risultati in `output/S_50m/fittizio_N` sono invece con la geometria `S_50m` e lo scambio `sfioro`
-  (righe 1-2 su `S_50m`, riga 28 `sfioro`), fatti in una copia temporanea. Per gli
-  altri fittizi cambiare righe 14 e 22. Prima di lanciare controllare sempre righe 1-2, 14, 22 e 27:
+  (righe 1-2 su `S_50m`, riga 10 `sfioro`), fatti in una copia temporanea. Per gli
+  altri fittizi cambiare righe 3 e 5. Prima di lanciare controllare sempre righe 1-5 e 9:
   gli strumenti leggono tabelle e geometria dalle righe 1-2.
 
 ## Formato degli input
@@ -267,7 +268,7 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
   `jden` dell'ultima sezione al passo precedente e S = `local_slope` dell'ultima sezione.
 - Siccome `calcolo_tabelle_daBM` ricava il `jden` dell'ultima sezione proprio con quella pendenza, la
   portata in uscita segue la **scala di deflusso degli scalini 2D** in S6000, senza tarature a mano.
-- **Prima** si usava Manning con il Ks della riga 23 di `settings.txt` (33):
+- **Prima** si usava Manning con il Ks 33 di `settings.txt` (riga 23 del formato vecchio, poi tolta):
   `Q = A·Ks·√S·Rh^(2/3)` (la riga è rimasta, commentata). A 50 m dava in S6000 tiranti 10-13 cm più alti
   del 2D.
 - **Attenzione:** le tabelle delle altre geometrie (`S_200m`, rettangolare, `vaia`) hanno ancora il
@@ -278,7 +279,7 @@ locale è negativa verso valle (nel codice si usa `abs`). Dopo queste possono es
 ## Condizioni iniziali (riempimento)
 
 1. **Partenza dalle portate cumulate.** La portata alle interfacce è la prima portata dell'idrogramma
-   di monte più gli affluenti entrati più a monte (solo se la riga 27 è `si`). In ogni sezione il
+   di monte più gli affluenti entrati più a monte (solo se la riga 9 è `si`). In ogni sezione il
    tirante è quello di **moto uniforme** per la portata media della cella, con la pendenza locale e
    l'attrito delle tabelle (`UNIFORM_LEVEL`, bisezione con `UNIFORM_DISCHARGE`), e non sotto
    `y_ini = 0.0` m (quindi nessun tirante minimo). La vecchia partenza (velo costante) è commentata.
@@ -320,17 +321,31 @@ la partenza cumulata non è l'equilibrio. Per partire ancora più vicini servire
 
 ## Affluenti
 
-- 18 affluenti distribuiti uniformemente: `sez_aff = round(k*imax/19)`.
+- Elencati nel **file degli affluenti** (riga 4 di `settings.txt`): CSV con l'intestazione `nome,idrogramma,sezione`
+  e una riga per affluente, da monte a valle, letto da `READ_TRIBUTARIES` (`module.jl`). Quanti sono e dove entrano lo
+  decide il file: per cambiarli non si tocca il codice. Con `nessuno` nessun affluente.
+- `sezione` è il numero della sezione di sbocco (1 … imax); se è vuota l'affluente k dell'elenco va in
+  `round(k*imax/(n_aff+1))`, cioè distribuito uniformemente come prima. `input/idrogrammi/vaia/affluenti.csv` ha i 18
+  affluenti dell'evento Vaia nell'ordine di prima, tutti senza sezione.
+- Il file è controllato all'avvio: file mancante, idrogramma mancante, sezione fuori dal tratto o non numerica, numero
+  di colonne sbagliato fermano il programma con il numero di riga.
 - Quelli con picco ≥ 10 m³/s entrano su 3 sezioni (`semi_aff`, `ncel_aff`), gli altri su una.
 - Entrano solo come sorgente nella continuità (`rhs += dt/dx * Q_aff`), senza quantità di moto.
-  `TRIBUTARY_INFLOW!` (`subroutines.jl`) distribuisce le portate dei 18 affluenti sulle celle; in
+  `TRIBUTARY_INFLOW!` (`subroutines.jl`) distribuisce le portate degli affluenti sulle celle; in
   simulazione si interpolano con `LAGRANGE_INTERPOLATION!` al tempo `time + dt`.
-- Si accendono e spengono con la **riga 27 di `settings.txt`** (`con_affluenti` in `Parametri`), che
-  vale per stato iniziale, riempimento e simulazione. Non serve toccare il codice.
+- Si accendono e spengono con la **riga 9 di `settings.txt`** (`con_affluenti` in `Parametri`), che
+  vale per stato iniziale, riempimento e simulazione. Con `no` il file degli affluenti non viene letto.
+- **Verifica del passaggio al file** (copie temporanee, codice prima e dopo): con i 18 affluenti senza sezione i
+  risultati sono identici byte per byte con gli affluenti spenti (`fittizio_4`, `tabella`) e accesi (`fittizio_1`,
+  `tabella` e `sfioro`, 3000 passi); `calibrazione_scambio/esegui.jl` riproduce byte per byte
+  `output/Volume_in_out/svuotamento_32h/fittizio_1`. Con sezioni scelte gli affluenti entrano dove indicato.
+- **Affluenti e scambio `tabella` insieme divergono** (già con il codice precedente): nel `fittizio_1` con i 18
+  affluenti Vaia il passo va quasi a zero (circa 230 000 passi) e l'errore del bilancio esplode. Con `sfioro` la prova
+  limitata a 3000 passi è regolare. Da capire.
 
 ## Scambio laterale con la piana (esondazione e rientro)
 
-Scelto con la riga 28 di `settings.txt`: `sfioro`, `tabella` o `nessuno`. In tutti i casi è un termine
+Scelto con la riga 10 di `settings.txt`: `sfioro`, `tabella` o `nessuno`. In tutti i casi è un termine
 sorgente nella sola continuità, esplicito (`eta` del passo precedente), salvato in `Q_lat.csv` (positivo se
 l'acqua entra) e compreso nel bilancio del riempimento. Con `sfioro` i risultati sono identici byte per byte a
 quelli del codice precedente (controllato sul `fittizio_1` e sul `fittizio_3`).
@@ -360,7 +375,7 @@ servono la formula dello sfioro né le quote degli argini.
   NaN ma con il passo che va a zero).
 - Per questo c'è un **serbatoio virtuale unico per tutto il tratto** (la piana): le uscite (ΔQ < 0) sono quelle
   della tabella e vanno nel serbatoio; i rientri (ΔQ > 0, solo dove la tabella li prevede) sono ridotti tutti
-  della stessa frazione in modo da non superare quanto il serbatoio può restituire. Parametri (righe 29-33):
+  della stessa frazione in modo da non superare quanto il serbatoio può restituire. Parametri (righe 11-15):
   - **soglia** [m³]: la piana trattiene i primi m³ usciti, rientra solo il volume oltre la soglia;
   - **T** [h]: rientro al massimo (V − soglia)/T (0 = subito tutto ciò che è disponibile);
   - **τ** [h]: ritardo di percorrenza, l'acqua uscita arriva al serbatoio dopo τ (storia del volume uscito,
@@ -425,7 +440,7 @@ riferimenti vecchi (mesh 2D precedente a `23c5d31`).
 - Ks 33 all'uscita, dt massimo 60 s, upwind, nessun affluente;
 - output in `output/tratto_brenta_sfioro/`, con lo sfioro sugli argini (configurazione corrente);
 - `output/tratto_brenta/` conserva i risultati **senza sfioro**: non va sovrascritta. Per rifarli
-  serve una geometria a 4 colonne e un'altra cartella alla riga 22 di `settings.txt`.
+  serve una geometria a 4 colonne e un'altra cartella alla riga 5 di `settings.txt`.
 
 **Con lo sfioro sugli argini** (`output/tratto_brenta_sfioro/`; i risultati nell'elenco più sotto
 sono invece **senza sfioro**):
@@ -575,8 +590,8 @@ risultati salvati. Gli strumenti leggono la geometria dalle righe 1-2 di `settin
 
 Risultati in `output/S_50m/fittizio_1` … `fittizio_4`, con grafici 1-13, 13_1, 13_2, animazioni e
 confronti. Codice attuale: partenza dalle portate cumulate, nuovo arresto del riempimento, **condizione
-di valle dalla tabella dell'ultima sezione**, β = 1, affluenti spenti (riga 27 `no`), sfioro attivo, dt
-massimo 60 s. È la configurazione del `settings.txt` committato (con le righe 14 e 22 sullo scenario).
+di valle dalla tabella dell'ultima sezione**, β = 1, affluenti spenti, sfioro attivo, dt
+massimo 60 s (con le righe 1-2 su `S_50m` e lo scenario nelle righe del monte e dell'output).
 Tabelle e geometria sono quelle rifatte dagli scalini 2D con la mesh nuova, con l'argine destro di S2950
 corretto (vedi "Costruzione delle tabelle"); il confronto usa i riferimenti 2D nuovi.
 
@@ -775,7 +790,7 @@ viene dalla tabella.
   scende da 2,0-2,3 a 1,8-1,9 cm.
 - **Corretta:** ora la portata in uscita usa il `jden` dell'ultima tabella, ricavato con la pendenza
   d'uscita (Ks circa 39,5): vedi "Condizione al contorno di valle". In S6000 il 1D sta sulla scala di
-  deflusso degli scalini 2D (+0,1 / +0,2 cm nei fittizi) e il Ks della riga 23 non serve più.
+  deflusso degli scalini 2D (+0,1 / +0,2 cm nei fittizi) e il Ks di `settings.txt` non serve più (la riga è stata tolta).
 
 **Causa 2: il Ks equivalente delle tabelle (lo scarto che resta nel tratto, 1-2 cm in media).**
 - `calcolo_tabelle_daBM` ricava il Ks dalla pendenza del pelo libero calcolata tra le due sezioni
@@ -1087,7 +1102,8 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
   portata. Il punto d'argine di S2950 è stato corretto; per il resto serve uno scambio laterale che
   conosca la piana (tabella dagli scalini 2D, sfioro nei due versi con serbatoio virtuale, o entrambi),
   senza alzare gli argini a mano. Vedi "Sfioro del 1D a valle di 2,5 km: esce dove nel 2D rientra".
-- **Affluenti e sfioro** insieme: non ancora provati.
+- **Affluenti e scambio con la piana** insieme: con `tabella` divergono (vedi "Affluenti"); con `sfioro` provati solo
+  per 3000 passi.
 - **Ks equivalente delle tabelle** ricavato dalla pendenza del pelo libero senza l'altezza cinetica:
   lascia scarti di 1-2 cm in media e fino a 10 cm dove il profilo 2D è irregolare. Per ora accettato.
 - **Geometrie non aggiornate alla condizione di valle attuale:** `S_200m`, rettangolare e `vaia` hanno
@@ -1100,18 +1116,25 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
   - `strumenti/controllo_input.jl` calcola il tirante iniziale con la sola portata di monte e un
-    minimo di 10 cm, non con la partenza cumulata, e stampa ancora il Ks della riga 23 come se fosse usato;
-  - `exp_dt` e il campo `Ks` di `Parametri` restano nel codice ma non sono più usati;
-  - gli strumenti leggono solo le prime 26 righe di `settings.txt` e non sanno dello scambio `tabella`.
+    minimo di 10 cm, non con la partenza cumulata (stampa gli affluenti letti dal file);
+  - `exp_dt` resta nel codice ma non è più usato;
+  - gli strumenti leggono solo le prime 15 righe di `settings.txt` e non sanno dello scambio `tabella`.
 
 ## Ultimo commit descritto
 
-`ad0c802` ("prova con diverso tempo di svuotameno della piana"), più le modifiche successive non ancora committate
-quando questo file è stato scritto (17/11/2026), da committare insieme a esso:
-- `Resoconto_modello_1D.md`: elenco dei PDF di approfondimento in testa e un link alla fine di ogni sezione;
-- `approfondimenti/`: nuovi, 21 PDF e il generatore in `approfondimenti/genera/` (la cache delle immagini non va nel
-  repository, `.gitignore`);
-- `CLAUDE.md`: `approfondimenti/` nella struttura, `settings.txt` committato con la prova a 24 h.
+`d8966ad` ("aggiunta resoconto.md e approfondimenti in pdf"), più le modifiche successive non ancora committate
+quando questo file è stato scritto (18/11/2026), da committare insieme a esso:
+- affluenti da un file (`nome,idrogramma,sezione`) indicato in `settings.txt`, che passa da 33 a 15 righe e perde la
+  riga del Ks: `Source/` (`struct.jl`, `module.jl` con `READ_TRIBUTARIES`, `subroutines.jl`, solutore),
+  `settings.txt`, nuovo `input/idrogrammi/vaia/affluenti.csv`, `strumenti/` (righe lette), `controllo_input.jl`,
+  `calibrazione_scambio/esegui.jl` e commenti, `Resoconto_modello_1D.md`, PDF 02, 05, 06 e numeri di riga negli altri;
+- `approfondimenti/`: PDF resi generali (tolti risultati e riferimenti alle prove sul Test_Brenta, esempi con dati
+  sintetici di `tabella_sintetica` e `idrogramma_sintetico` in `genera/stile.py`), codice senza commenti e a capo dentro
+  il riquadro, titoli che non restano soli in fondo alla pagina, correzioni al testo dei PDF 1 e 3.
+
+Commit `d8966ad` (già descritto qui sopra): `Resoconto_modello_1D.md` con l'elenco dei PDF in testa e un link alla fine
+di ogni sezione, `approfondimenti/` con i 21 PDF e il generatore (la cache delle immagini non va nel repository,
+`.gitignore`), `CLAUDE.md` con `settings.txt` committato sulla prova a 24 h.
 
 Commit `f3340ce` e `ad0c802` (già descritti qui sopra): serbatoio attivo (riga 33, `piana_attiva`, `Q_extra`),
 `esegui.jl`, `simula_fittizi.jl`, `attivo.jl`, `riepilogo_attivo.jl` e risultati e grafici 12-13 in `calibrazione_scambio/`,

@@ -11,7 +11,7 @@
 # (predefiniti: output/S_50m e 0.01, cioè portate uguali entro l'1%).
 using Plots, Printf
 const R    = dirname(@__DIR__)                                   # cartella del progetto
-const SET  = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET  = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const GEO  = joinpath(R, SET[2])                                 # geometria (riga 2)
 const BASE = joinpath(R, length(ARGS) >= 1 ? ARGS[1] : "output/S_50m")
 const SOGLIA = length(ARGS) >= 2 ? parse(Float64, ARGS[2]) : 0.01

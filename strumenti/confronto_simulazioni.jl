@@ -4,7 +4,7 @@
 # Le differenze sono calcolate rispetto alla prima cartella. La geometria è quella della riga 2 di settings.txt.
 using Plots, Printf
 const R   = dirname(@__DIR__)
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const GEO = joinpath(R, SET[2])
 length(ARGS) >= 3 || error("servono la cartella dei grafici e almeno due cartelle da confrontare")
 const OUT  = joinpath(R, ARGS[1]); mkpath(OUT)

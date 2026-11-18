@@ -8,7 +8,7 @@
 #         output/Volume_in_out/svuotamento_24h "1D, rilascio lento 24 h" output/Volume_in_out/svuotamento_32h "1D, rilascio lento 32 h"
 using Plots, Printf, Statistics
 const R   = dirname(@__DIR__)
-const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:26]]
+const SET = [strip(l) for l in readlines(joinpath(R, "settings.txt"))[1:15]]
 const OUT = joinpath(R, ARGS[1]); mkpath(OUT)
 const SIM = [(joinpath(R, ARGS[j]), ARGS[j+1]) for j in 2:2:length(ARGS)-1]
 const COL = ["#eb6834", "#2a78d6", "#1baf7a", "#d55181"]
