@@ -98,17 +98,20 @@ end
 # oltre lo 0,1% compare un avviso. Con lo scambio 'tabella' controlla anche il serbatoio della piana: il volume
 # che contiene deve essere uguale all'acqua uscita e non ancora rientrata dall'inizio, riempimento compreso.
 function BILANCIO_DI_MASSA(filename, scambio, V_ini, V_fin, V_monte, V_valle, V_aff, V_lat, V_piana, V_lat_tutto)
-    err  = (V_fin - V_ini) - (V_monte - V_valle + V_aff + V_lat)
-    rel  = V_monte > 0.0 ? err / V_monte : NaN
+    err   = (V_fin - V_ini) - (V_monte - V_valle + V_aff + V_lat)
+    somma = -err   # somma di tutti i termini con il loro segno: deve essere zero
+    rel   = V_monte > 0.0 ? somma / V_monte : NaN
     io = IOBuffer()
-    println(io, "Bilancio di massa della simulazione (dopo il riempimento), volumi in m3")
-    @printf(io, "%-42s %16.1f\n", "volume in alveo all'inizio", V_ini)
-    @printf(io, "%-42s %16.1f\n", "volume in alveo alla fine", V_fin)
-    @printf(io, "%-42s %16.1f\n", "entrato da monte", V_monte)
-    @printf(io, "%-42s %16.1f\n", "uscito a valle", V_valle)
-    @printf(io, "%-42s %16.1f\n", "entrato dagli affluenti", V_aff)
-    @printf(io, "%-42s %16.1f\n", "scambio con la piana (+ entra, − esce)", V_lat)
-    @printf(io, "%-42s %16.1f  (%.4f%% del volume da monte)\n", "errore", err, 100rel)
+    println(io, "Bilancio di massa della simulazione (dal termine del riempimento alla fine), volumi in m3")
+    println(io, "Somma di tutti i termini con il loro segno (deve essere zero):")
+    @printf(io, "  %+18.1f   volume in alveo a fine riempimento\n", V_ini)
+    @printf(io, "  %+18.1f   entrato da monte\n", V_monte)
+    @printf(io, "  %+18.1f   uscito a valle\n", -V_valle)
+    @printf(io, "  %+18.1f   entrato dagli affluenti\n", V_aff)
+    @printf(io, "  %+18.1f   scambio con la piana (+ entra, − esce)\n", V_lat)
+    @printf(io, "  %+18.1f   volume in alveo alla fine\n", -V_fin)
+    @printf(io, "  %18s\n", "------------------")
+    @printf(io, "  %+20.3f somma = errore del bilancio (%.2e del volume da monte)\n", somma, rel)
     abs(rel) > 1e-3 && println(io, "ATTENZIONE: errore del bilancio oltre lo 0,1%")
     if scambio == :tabella
         err_p = V_piana + V_lat_tutto

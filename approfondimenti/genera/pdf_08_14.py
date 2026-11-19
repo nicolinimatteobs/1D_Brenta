@@ -47,7 +47,7 @@ def p08(D):
         "di gravità √(g·h) non limita il passo. Resta il limite del **trasporto esplicito** (approfondimento 09): "
         "in un passo l'informazione non deve attraversare più di una cella. È la condizione di Courant-Friedrichs-"
         "Lewy (CFL) sulla sola velocità della corrente:")
-    D.eq(r"\Delta t=\min\left(\Delta t_{lim},\ \mathrm{CFL}\,\frac{\Delta x_{min}}{\max_{i}\,s_{i-1/2}+\epsilon}\right),\qquad \Delta x_{min}=\min\left(\min_i\Delta x_{i+1/2},\ \min_i\Delta x_i\right)")
+    D.eq(r"\Delta t=\min\left(\Delta t_{lim},\ \mathrm{CFL}\,\frac{\Delta x_{min}}{\max_{i}\,s_{i-1/2}+\epsilon}\right),\qquad \Delta x_{min}=\min\left(\min_i\Delta x_i,\ \min_i\Delta x_{i-1/2}\right)")
     D.tabella([["", "Riempimento (IC = 1)", "Simulazione (IC = 0)"],
                ["CFL", "0,6", "0,95"],
                ["Δt_{lim}", "`dt_riempimento` = 5 s", "`dtmax` (riga 7 di `settings.txt`)"],
@@ -83,11 +83,16 @@ def p09(D):
         "valle. Gravità e attrito si aggiungono dopo, in modo implicito.")
     D.h1("1. Il trasporto con il flusso di Rusanov")
     D.p("L'equazione della quantità di moto si integra su una «cella duale» centrata sull'interfaccia i+1/2, "
-        "lunga Δx_{i+1/2} e delimitata dalle sezioni i e i+1. Il flusso di quantità di moto F = βuQ si valuta nelle "
+        "lunga Δx_{i} e delimitata dalle sezioni i e i+1. Il flusso di quantità di moto F = βuQ si valuta nelle "
         "sezioni, a partire dalle due interfacce vicine:")
-    D.eq([r"Q^{*}_{i+1/2}=Q^{n}_{i+1/2}-\frac{\Delta t}{\Delta x_{i+1/2}}\left(F_{i+1}-F_{i}\right)",
+    D.eq([r"Q^{*}_{i+1/2}=Q^{n}_{i+1/2}-\frac{\Delta t}{\Delta x_i}\left(F_{i+1}-F_{i}\right)",
           r"F_{i}=\frac{(\beta u Q)_{i-1/2}+(\beta u Q)_{i+1/2}}{2}-\frac{\lambda_i}{2}\left(Q_{i+1/2}-Q_{i-1/2}\right)",
           r"\lambda_i=2\,\max\left(|\beta u|_{i-1/2},\ |\beta u|_{i+1/2}\right)"])
+    D.nota("Δx_{i} = x_{i+1} − x_{i} è la **distanza tra le due sezioni**, cioè la lunghezza della cella duale "
+           "su cui si scrive la quantità di moto: è la formula (2.22) del report del progetto Adige. Nel codice è "
+           "`dx_b`: `qstar[i] = q[i] - dt/dx_b[i-1]*(fp - fm)`, con `qstar[i]` sull'interfaccia tra le sezioni i−1 e i. "
+           "Non è la lunghezza Δx_{i−1/2} della cella di volume (`dx_int`), che compare invece nella continuità "
+           "(approfondimenti 03 e 11). Con sezioni equidistanti le due lunghezze coincidono.")
     D.p("Il primo termine di F è la media dei flussi (centrata, del secondo ordine ma instabile da sola); il secondo è "
         "una **diffusione numerica** proporzionale alla massima velocità di propagazione λ, che stabilizza lo schema. "
         "È il flusso di **Rusanov** (o Lax-Friedrichs locale). Per il flusso βQ²/A la velocità di propagazione è "
@@ -172,8 +177,8 @@ def p10(D):
         "quello implicito riduce solo la portata.")
     D.h1("3. Nello schema completo")
     D.p("Nella quantità di moto discreta l'attrito si somma al gradiente del pelo libero, anch'esso implicito:")
-    D.eq([r"Q^{n+1}_{i+1/2}=Q^{*}_{i+1/2}-g\,A_{i+1/2}\frac{\Delta t}{\Delta x_{i+1/2}}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_i\right)-\Delta t\,\gamma_{i+1/2}\,Q^{n+1}_{i+1/2}",
-          r"\Rightarrow\quad Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{g\,\tilde{A}_{i+1/2}\,\Delta t}{\Delta x_{i+1/2}}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_i\right),\qquad \tilde{A}=\frac{A}{1+\Delta t\,\gamma}"])
+    D.eq([r"Q^{n+1}_{i+1/2}=Q^{*}_{i+1/2}-g\,A_{i+1/2}\frac{\Delta t}{\Delta x_i}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_i\right)-\Delta t\,\gamma_{i+1/2}\,Q^{n+1}_{i+1/2}",
+          r"\Rightarrow\quad Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{g\,\tilde{A}_{i+1/2}\,\Delta t}{\Delta x_i}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_i\right),\qquad \tilde{A}=\frac{A}{1+\Delta t\,\gamma}"])
     D.p("Compaiono quindi due grandezze, calcolate nel ciclo di Q* (approfondimento 09): il fattore 1/(1 + Δtγ) che "
         "riduce Q*, e l'area ridotta Ã (`A_int_g`), che pesa quanto la differenza di livello riesce a spingere "
         "l'acqua. In una cella molto scabra Ã è piccola: il livello deve salire di più per far passare la stessa portata.")
@@ -195,13 +200,13 @@ def p11(D):
         "n+1. Il codice prepara i coefficienti `aa`, `bb`, `cc` e il termine noto `rhs`.")
     D.h1("1. La sostituzione")
     D.p("Dall'approfondimento 10 la portata sull'interfaccia è")
-    D.eq(r"Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{g\,\tilde{A}_{i+1/2}\,\Delta t}{\Delta x_{i+1/2}}\left(\eta_{i+1}-\eta_i\right)")
+    D.eq(r"Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{g\,\tilde{A}_{i+1/2}\,\Delta t}{\Delta x_i}\left(\eta_{i+1}-\eta_i\right)")
     D.p("e la continuità della cella i (approfondimento 01) è")
-    D.eq(r"A_i(\eta_i)=A^n_i-\frac{\Delta t}{\Delta x_i}\left(Q^{n+1}_{i+1/2}-Q^{n+1}_{i-1/2}\right)+\frac{\Delta t}{\Delta x_i}\left(Q_{aff,i}+Q_{lat,i}\right)")
+    D.eq(r"A_i(\eta_i)=A^n_i-\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q^{n+1}_{i+1/2}-Q^{n+1}_{i-1/2}\right)+\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q_{aff,i}+Q_{lat,i}\right)")
     D.p("Sostituendo e portando a sinistra i termini con i livelli nuovi:")
     D.eq([r"A_i(\eta_i)+a_i\,\eta_{i-1}+b_i\,\eta_i+c_i\,\eta_{i+1}=r_i",
-          r"a_i=-\frac{g\,\Delta t^2}{\Delta x_i\,\Delta x_{i-1/2}}\,\tilde{A}_{i-1/2},\qquad c_i=-\frac{g\,\Delta t^2}{\Delta x_i\,\Delta x_{i+1/2}}\,\tilde{A}_{i+1/2},\qquad b_i=-a_i-c_i",
-          r"r_i=A^n_i-\frac{\Delta t}{\Delta x_i}\left(\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{Q^{*}_{i-1/2}}{1+\Delta t\,\gamma_{i-1/2}}\right)+\frac{\Delta t}{\Delta x_i}\left(Q_{aff,i}+Q_{lat,i}\right)"])
+          r"a_i=-\frac{g\,\Delta t^2}{\Delta x_{i-1/2}\,\Delta x_{i-1}}\,\tilde{A}_{i-1/2},\qquad c_i=-\frac{g\,\Delta t^2}{\Delta x_{i-1/2}\,\Delta x_i}\,\tilde{A}_{i+1/2},\qquad b_i=-a_i-c_i",
+          r"r_i=A^n_i-\frac{\Delta t}{\Delta x_{i-1/2}}\left(\frac{Q^{*}_{i+1/2}}{1+\Delta t\,\gamma_{i+1/2}}-\frac{Q^{*}_{i-1/2}}{1+\Delta t\,\gamma_{i-1/2}}\right)+\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q_{aff,i}+Q_{lat,i}\right)"])
     D.p("La parte a_{i}η_{i−1} + b_{i}η_{i} + c_{i}η_{i+1} è il **laplaciano discreto** del livello, pesato dalle aree "
         "ridotte: è il termine di gravità, che tende a livellare il pelo libero tra celle vicine. r_{i} contiene "
         "tutto ciò che è noto: il volume del passo precedente, il trasporto esplicito, gli apporti laterali.")
@@ -241,9 +246,9 @@ def p11(D):
               "più Δt è grande, più pesa il laplaciano rispetto a W: il passo lungo «accoppia» di più le celle, ma la "
               "dominanza resta."])
     D.h1("3. Conservazione del volume")
-    D.p("Moltiplicando la continuità per Δx_{i} e sommando su tutte le celle, i flussi interni si eliminano a coppie "
+    D.p("Moltiplicando la continuità per Δx_{i−1/2} e sommando su tutte le celle, i flussi interni si eliminano a coppie "
         "(quello che esce dalla cella i entra nella i+1):")
-    D.eq(r"\sum_i\Delta x_i\left(A^{n+1}_i-A^{n}_i\right)=\Delta t\left(Q_{1/2}-Q_{imax+1/2}\right)+\Delta t\sum_i\left(Q_{aff,i}+Q_{lat,i}\right)")
+    D.eq(r"\sum_i\Delta x_{i-1/2}\left(A^{n+1}_i-A^{n}_i\right)=\Delta t\left(Q_{1/2}-Q_{imax+1/2}\right)+\Delta t\sum_i\left(Q_{aff,i}+Q_{lat,i}\right)")
     D.p("Se Newton converge, la variazione del volume in alveo è esattamente uguale a quanto entra meno quanto esce: "
         "è ciò che controlla `BILANCIO_DI_MASSA` (approfondimento 19), che trova errori dell'ordine degli arrotondamenti.")
     D.collegamenti([(10, "10_attrito_implicito.pdf", "L'attrito implicito"), (12, "12_newton_thomas.pdf", "Newton + Thomas"),
@@ -328,7 +333,7 @@ def p13(D):
     D.h1("1. Le nuove portate")
     D.p("Noti i livelli η^{n+1}, la quantità di moto implicita (approfondimento 10) dà direttamente la portata su ogni "
         "interfaccia interna:")
-    D.eq(r"Q^{n+1}_{i-1/2}=\frac{Q^{*}_{i-1/2}-g\,A_{i-1/2}\,\frac{\Delta t}{\Delta x_{i-1/2}}\left(\eta^{n+1}_i-\eta^{n+1}_{i-1}\right)}{1+\Delta t\,\gamma_{i-1/2}},\qquad i=2\ldots imax")
+    D.eq(r"Q^{n+1}_{i-1/2}=\frac{Q^{*}_{i-1/2}-g\,A_{i-1/2}\,\frac{\Delta t}{\Delta x_{i-1}}\left(\eta^{n+1}_i-\eta^{n+1}_{i-1}\right)}{1+\Delta t\,\gamma_{i-1/2}},\qquad i=2\ldots imax")
     D.p("Sulle due interfacce di estremità resta il valore imposto: Q_{1/2} = Q*_{1/2} (idrogramma) e Q_{imax+1/2} = Q*_{imax+1/2} "
         "(moto uniforme). È la stessa formula usata per costruire il sistema, quindi le portate sono coerenti con i "
         "livelli: il volume si conserva.")

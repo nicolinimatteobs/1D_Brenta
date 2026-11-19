@@ -32,7 +32,7 @@ def p15(D):
               "perde circa 7,6 m³/s da quel lato.")
     D.h1("2. Dalla formula alla cella")
     D.p("Ogni argine superato contribuisce per tutta la lunghezza della cella, con lo stesso carico:")
-    D.eq(r"Q_{lat,i}=-\left[q_l(\eta_i,\,z_{dx,i})+q_l(\eta_i,\,z_{sx,i})\right]\Delta x_i\qquad (<0:\ \mathrm{esce})")
+    D.eq(r"Q_{lat,i}=-\left[q_l(\eta_i,\,z_{dx,i})+q_l(\eta_i,\,z_{sx,i})\right]\Delta x_{i-1/2}\qquad (<0:\ \mathrm{esce})")
     D.p("Il termine entra solo nella continuità, come gli affluenti ma con segno opposto, ed è **esplicito**: si usa "
         "il livello del passo precedente. È attivo anche nel riempimento e compare nel suo bilancio (l'uscita deve "
         "pareggiare monte + affluenti − sfioro).")
@@ -45,8 +45,8 @@ def p15(D):
         "a": (6, 7.2, "scambio = sfioro: per ogni cella i", "inizio", 5.6, 0.75),
         "b": (6, 6.0, "Y0_dx = max(η_i − z_dx, 0),  Y0_sx = max(η_i − z_sx, 0)", "proc"),
         "c": (6, 4.8, "q = Cd·√(2g·Y0³) per i due argini (FREE_OVERFLOW)", "funz"),
-        "d": (6, 3.6, "Q_lat[i] = −(q_dx + q_sx)·Δx_i", "proc"),
-        "e": (6, 2.4, "rhs[i] += Δt/Δx_i · Q_lat[i]", "proc"),
+        "d": (6, 3.6, "Q_lat[i] = −(q_dx + q_sx)·Δx_(i−1/2)", "proc"),
+        "e": (6, 2.4, "rhs[i] += Δt/Δx_(i−1/2) · Q_lat[i]", "proc"),
         "f": (6, 1.2, "Q_lat salvato in Q_lat.csv (negativo)", "io", 5.4)},
         archi=[("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "f")]),
         didascalia="Flowchart dello sfioro sugli argini.", larghezza=0.8)
@@ -94,14 +94,47 @@ def p16(D):
     D.p("Usando ΔQ così com'è, con Q_{lat,i} = ΔQ_{i}(η_{i}), il calcolo diverge: a valle dei rientri la portata "
         "supera quella in ingresso e il passo temporale va a zero, anche senza NaN. Il motivo è un **anello di "
         "retroazione positivo** nelle sezioni di rientro.")
-    D.p("Si consideri una sola cella di rientro, con larghezza W e lunghezza Δx, e una piccola perturbazione del "
-        "livello η' attorno all'equilibrio. Dalla continuità:")
-    D.eq([r"W\,\Delta x\,\frac{d\eta'}{dt}=\frac{d\Delta Q}{d\eta}\,\eta'+\ldots\quad\Rightarrow\quad \eta'(t)\propto e^{\lambda t},\qquad \lambda=\frac{1}{W\,\Delta x}\,\frac{d\Delta Q}{d\eta}"])
-    D.p("Dove l'acqua rientra ΔQ **cresce** con il livello (dΔQ/dη > 0, figura 1 a destra): λ > 0 e la perturbazione cresce "
-        "esponenzialmente. Più acqua rientra, più il livello sale, più acqua rientra: il modello **crea acqua**, perché "
-        "nulla lega il rientro all'acqua uscita davvero. Nel 2D invece può rientrare solo l'acqua che prima è uscita e "
-        "che ha riempito la piana. Il termine di gravità del sistema dei livelli smorza in parte, ma con rientri di "
-        "alcuni m³/s non basta.")
+    D.p("Il meccanismo si vede con la continuità di una sola cella i, lunga Δx_{i−1/2}, in cui la tabella prevede un "
+        "rientro. Con lo scambio dalla tabella come termine laterale, il volume della cella cambia per le portate sulle "
+        "due interfacce e per ΔQ:")
+    D.eq(r"\Delta x_{i-1/2}\,\frac{dA_i}{dt}=Q_{i-1/2}-Q_{i+1/2}+\Delta Q_i(\eta_i)")
+    D.p("Poiché A dipende dal livello, dA/dt = W·dη/dt, con W = dA/dη la larghezza in superficie. Si parte da uno "
+        "stato di equilibrio η̄, in cui il secondo membro è nullo, e si aggiunge una piccola perturbazione del "
+        "livello, η = η̄ + η'. Sviluppando ΔQ al primo ordine:")
+    D.eq(r"\Delta Q_i(\bar\eta+\eta')\approx\Delta Q_i(\bar\eta)+\frac{d\Delta Q_i}{d\eta}\,\eta'")
+    D.p("Anche le portate sulle interfacce cambiano con η' (i livelli delle celle vicine restano fermi). Se il "
+        "livello della cella sale, la gravità spinge più acqua verso valle attraverso Q_{i+1/2} e ne fa arrivare meno da "
+        "monte attraverso Q_{i−1/2}: il flusso netto in entrata diminuisce. Al primo ordine:")
+    D.eq([r"Q_{i-1/2}-Q_{i+1/2}\approx\left(\bar Q_{i-1/2}-\bar Q_{i+1/2}\right)-K\,\eta'",
+          r"K=\frac{\partial Q_{i+1/2}}{\partial\eta_i}-\frac{\partial Q_{i-1/2}}{\partial\eta_i}\geq 0\quad[\mathrm{m^2/s}]"])
+    D.p("K è quanta portata in più la cella cede alle vicine per ogni metro di η'. Ora si scrive la continuità due "
+        "volte. Nello stato perturbato, sostituendo i due sviluppi (W si valuta in η̄: il suo cambiamento moltiplica "
+        "dη'/dt e darebbe un termine del secondo ordine):")
+    D.eq(r"W\,\Delta x_{i-1/2}\,\frac{d(\bar\eta+\eta')}{dt}=\left(\bar Q_{i-1/2}-\bar Q_{i+1/2}\right)-K\,\eta'+\Delta Q_i(\bar\eta)+\frac{d\Delta Q_i}{d\eta}\,\eta'")
+    D.p("All'equilibrio, invece, il livello è fermo e il secondo membro è nullo:")
+    D.eq(r"W\,\Delta x_{i-1/2}\,\frac{d\bar\eta}{dt}=0=\left(\bar Q_{i-1/2}-\bar Q_{i+1/2}\right)+\Delta Q_i(\bar\eta)")
+    D.p("Sottraendo la seconda dalla prima, i termini dell'equilibrio (portate Q̄ e ΔQ(η̄)) si cancellano e restano "
+        "solo quelli proporzionali a η':")
+    D.eq([r"W\,\Delta x_{i-1/2}\,\frac{d\eta'}{dt}=\left(\frac{d\Delta Q_i}{d\eta}-K\right)\eta'",
+          r"\Rightarrow\quad \eta'(t)=\eta'(0)\,e^{\lambda t},\qquad \lambda=\frac{1}{W\,\Delta x_{i-1/2}}\left(\frac{d\Delta Q_i}{d\eta}-K\right)"])
+    D.p("È un'equazione del tipo dy/dt = λ·y, con λ costante perché tutti i coefficienti sono valutati all'equilibrio: "
+        "la soluzione è l'esponenziale.")
+    D.p("Il segno di λ dice se la perturbazione si smorza (λ < 0) o cresce (λ > 0):")
+    D.elenco(["dove l'acqua **esce**, ΔQ è negativo e diventa più negativo quando il livello sale: dΔQ/dη < 0, quindi "
+              "λ < 0 sempre. Le uscite stabilizzano: più il livello sale, più acqua esce;",
+              "dove l'acqua **rientra**, ΔQ cresce con il livello (dΔQ/dη > 0, figura 1 a destra), e se questa crescita "
+              "supera K risulta λ > 0. Più il livello sale, più acqua rientra, e più il livello sale."])
+    D.p("Il termine K non toglie acqua, la sposta soltanto nelle celle vicine. Il volume in più che il rientro "
+        "crea resta nel tratto e lo lasciano solo le uscite e la portata a valle. Per questo l'equazione di una cella "
+        "da sola sottostima il problema: sommandola su tutte le celle, i flussi interni si eliminano (come nel "
+        "bilancio dell'approfondimento 11) e resta")
+    D.eq(r"\frac{dV'}{dt}=\sum_i\frac{d\Delta Q_i}{d\eta}\,\eta'_i-\frac{dQ_{valle}}{d\eta}\,\eta'_{imax}")
+    D.p("con V' il volume in più nel tratto. Se i rientri rispondono al livello più di quanto risponde l'uscita a valle, "
+        "il volume cresce senza limite: il modello **crea acqua**, perché nulla lega il rientro all'acqua uscita davvero. "
+        "Nel 2D invece può rientrare solo l'acqua che prima è uscita e che ha riempito la piana.")
+    D.nota("è un'analisi linearizzata e qualitativa: dice perché il rientro preso dalla tabella può alimentare se stesso, "
+           "non calcola quando lo fa. Nel modello lo scambio è anche esplicito (si usa il livello del passo precedente), "
+           "il che aggiunge un ritardo e rende l'anello ancora meno smorzato.")
     D.idea("le uscite della tabella sono affidabili, i rientri no: devono essere **limitati dal volume disponibile**. "
            "Da qui il serbatoio della piana (approfondimento 17).")
     D.h1("4. Il primo passo del blocco tabella")
@@ -123,13 +156,57 @@ def p16(D):
                     (21, "21_costruzione_tabelle.pdf", "Come si calcola ΔQ")])
 
 
+def simula_serbatoio(t, Qe, Qr, Vs, T, tau, Tl, attivo):
+    """Serbatoio della piana 0-D, con la stessa logica del solutore (blocco `scambio == :tabella`).
+    Q_esce e Q_rientro richiesto sono dati: non c'è il canale, quindi i rientri non cambiano i livelli."""
+    dt = t[1] - t[0]
+    Vp = Vr = Vu = 0.0; ts = [0.0]; vs = [0.0]
+    out = {k: np.zeros(len(t)) for k in ("Vp", "ret", "fQr", "Ql", "Qx", "Qd", "Varr", "Vr", "f", "Vo", "Vso")}
+    for n in range(len(t)):
+        qe, qr = Qe[n], Qr[n]
+        if tau > 0:
+            Vu += dt * qe; ts.append(t[n] + dt); vs.append(Vu)
+            Varr = float(np.interp(t[n] + dt - tau, ts, vs))
+            Vo = max(Varr - Vr - Vs, 0.0)
+            Qd = min(Vo / T, Vo / dt) if T > 0 else Vo / dt
+            Vso = min(max(Varr - Vr, 0.0), Vs)
+        else:
+            Varr = Vp + Vr
+            Vo = max(Vp - Vs, 0.0)
+            Qd = min(Vo / T, Vo / dt + qe) if T > 0 else Vo / dt + qe
+            Vso = min(max(Vp, 0.0), Vs)
+        f = min(1.0, Qd / qr) if qr > 0 else 0.0
+        Ql = min(Vso / Tl, Vso / dt) if Tl > 0 else 0.0
+        Qx = max(Qd - f * qr, 0.0) if attivo else 0.0
+        ret = f * qr + Ql + Qx
+        for k, v in (("Varr", Varr), ("Vr", Vr), ("Vo", Vo), ("Vso", Vso), ("f", f)): out[k][n] = v
+        Vp += dt * (qe - ret); Vr += dt * ret
+        for k, v in (("Vp", Vp), ("ret", ret), ("fQr", f * qr), ("Ql", Ql), ("Qx", Qx), ("Qd", Qd)): out[k][n] = v
+    return out
+
+
+def ingressi_sintetici():
+    h = 3600.0
+    t = np.arange(0, 40 * h, 30.0)
+    g = lambda tc, s, a: a * np.exp(-0.5 * ((t - tc) / s) ** 2)
+    Qe = g(7 * h, 1.5 * h, 8.0) + g(22 * h, 1.5 * h, 8.0)
+    Qr = g(8 * h, 1.0 * h, 5.0) + g(23 * h, 1.0 * h, 5.0); Qr[Qr < 0.2] = 0.0
+    return t, Qe, Qr
+
+
+BASE = dict(Vs=60000.0, T=0.5 * 3600, tau=1 * 3600, Tl=8 * 3600, attivo=True)
+
+
 # =============================================================================================== 17
 def p17(D):
+    h = 3600.0
+    t, Qe, Qr = ingressi_sintetici()
     D.h1("A cosa serve")
-    D.p("Il serbatoio è il pezzo che rende stabile e fisicamente sensato lo scambio dalla tabella. Rappresenta **tutta "
-        "la piana** del tratto come un unico volume virtuale V: le uscite della tabella lo riempiono, i rientri lo "
-        "svuotano e non possono restituire più acqua di quella che contiene. Non ha geometria: solo un volume e "
-        "quattro parametri più un interruttore (righe 11-15 di `settings.txt`).")
+    D.p("Lo scambio dalla tabella (approfondimento 16) dà uscite affidabili ma rientri che, da soli, crescono con il "
+        "livello e creano acqua. Il serbatoio della piana è il pezzo che lega i rientri all'acqua **uscita davvero**: "
+        "rappresenta **tutta la piana** del tratto come un unico volume virtuale V, senza geometria. Le uscite della "
+        "tabella lo riempiono; i rientri lo svuotano e non possono restituire più acqua di quella che contiene. Il suo "
+        "comportamento è regolato da quattro parametri e un interruttore (righe 11-15 di `settings.txt`).")
     D.tabella([["Riga", "Parametro", "Simb.", "Significato fisico", "Unità"],
                ["11", "soglia", "V_{s}", "la piana deve riempirsi prima di restituire acqua (avvallamenti, ristagni)", "m³"],
                ["12", "tempo di svuotamento", "T", "con quale velocità la piana piena restituisce (0 = subito)", "h"],
@@ -138,44 +215,198 @@ def p17(D):
                ["15", "serbatoio attivo", "–", "l'acqua oltre la soglia rientra anche quando la tabella non lo chiede", "si/no"]],
               [0.07, 0.19, 0.09, 0.53, 0.12])
     D.p("I valori dipendono dal tratto e dalla sua piana: vanno tarati per ogni caso, confrontando il 1D con un "
-        "modello 2D o con misure (portate a valle, istanti dei rientri, volume rimasto nella piana).")
-    D.h1("1. Il volume arrivato e il ritardo")
-    D.p("L'acqua uscita impiega un tempo τ per raggiungere il serbatoio. Il codice tiene la **storia** del volume uscito "
-        "cumulato V_{u}(t) e guarda il valore di τ secondi prima. t conta anche il riempimento (`t_tot`):")
+        "modello 2D o con misure (sezione 9).")
+
+    D.h1("1. Lo schema")
+    def schema(fig):
+        ax = fig.add_subplot(111); ax.set_xlim(0, 10); ax.set_ylim(0, 5.2); ax.axis("off")
+        def box(x, y, w, hh, testo, fc, ec):
+            ax.add_patch(FancyBboxPatch((x, y), w, hh, boxstyle="round,pad=0.02,rounding_size=0.12", fc=fc, ec=ec, lw=1.4))
+            ax.text(x + w / 2, y + hh / 2, testo, ha="center", va="center", fontsize=8.5, color="#1f2328")
+        def freccia(x0, y0, x1, y1, testo=None, dx=0, dy=0.15, col="#3c4043"):
+            ax.annotate("", xy=(x1, y1), xytext=(x0, y0), arrowprops=dict(arrowstyle="-|>", color=col, lw=1.4))
+            if testo: ax.text((x0 + x1) / 2 + dx, (y0 + y1) / 2 + dy, testo, ha="center", fontsize=8, color=col)
+        box(0.2, 3.9, 9.6, 0.9, "CANALE: celle con ΔQ < 0 (uscite) e celle con ΔQ > 0 (rientri richiesti)", "#e8f0fb", "#2a78d6")
+        box(0.4, 1.9, 1.9, 0.9, "ritardo τ\n(storia di V_u)", "#f1e9f8", "#8e5bb5")
+        ax.add_patch(plt.Rectangle((3.4, 0.6), 2.6, 2.6, fc="#e6f6ef", ec="#1baf7a", lw=1.4))
+        ax.add_patch(plt.Rectangle((3.4, 0.6), 2.6, 1.3, fc="#cdeedf", ec="none"))
+        ax.plot([3.4, 6.0], [1.9, 1.9], color="#b4371f", lw=1.2, ls="--")
+        ax.text(4.7, 2.55, "V_oltre (oltre la soglia)", ha="center", fontsize=8)
+        ax.text(4.7, 1.25, "V_sotto (fino a V_s)", ha="center", fontsize=8)
+        ax.text(6.05, 1.9, "V_s", va="center", fontsize=8, color="#b4371f")
+        ax.text(4.7, 0.3, "serbatoio della piana", ha="center", fontsize=8.5, color="#1baf7a")
+        freccia(1.35, 3.9, 1.35, 2.8, "Q_esce", dx=0.55, dy=0)
+        freccia(2.3, 2.35, 3.4, 2.35, "V_arr", dy=0.12)
+        freccia(6.0, 2.55, 7.6, 3.9, "Q_disp = V_oltre/T", dx=-0.1, dy=0.25, col="#2a78d6")
+        freccia(6.0, 1.25, 8.9, 3.9, "Q_lento = V_sotto/T_l", dx=1.25, dy=-0.55, col="#eb6834")
+        ax.text(8.0, 0.75, "rientri effettivi:\nf·Q_rientro + Q_extra (da Q_disp)\n+ Q_lento", ha="center", fontsize=8, color="#3c4043")
+    D.grafico(schema, "schema_serbatoio", "Schema del serbatoio: le uscite arrivano con il ritardo τ; il volume si "
+              "divide in una parte oltre la soglia, che torna con il tempo T, e una sotto la soglia, che torna con T_{l}.")
+    D.p("Il codice tiene quattro variabili di stato, che durano per tutta la corsa (riempimento compreso):")
+    D.tabella([["Variabile", "Simbolo", "Significato"],
+               ["`V_piana`", "V_{p}", "volume uscito e non ancora rientrato: è il contenuto del serbatoio"],
+               ["`V_rientrato`", "V_{r}", "volume rientrato dall'inizio"],
+               ["`Vu_tot`, `t_storia`, `Vu_storia`", "V_{u}(t)", "volume uscito dall'inizio e la sua storia nel tempo (solo con τ > 0)"],
+               ["`t_tot`", "t", "tempo dall'inizio, riempimento compreso (non riparte da zero come `time`)"]],
+              [0.32, 0.13, 0.55])
+    D.p("Le due prime sono legate da V_{p} = V_{u} − V_{r}: ciò che è nel serbatoio è ciò che è uscito meno ciò che "
+        "è rientrato.")
+
+    D.h1("2. Il volume arrivato e il ritardo")
+    D.p("L'acqua uscita impiega un tempo τ per attraversare la piana. Invece di spostare in avanti le portate, il codice "
+        "tiene la **storia** del volume uscito cumulato V_{u}(t) e, alla fine di ogni passo, guarda quanto era uscito "
+        "τ secondi prima: è il volume **arrivato** al serbatoio. Il disponibile è l'arrivato meno quanto è già rientrato:")
     D.eq([r"V_u(t)=\int_0^t Q_{esce}\,dt,\qquad V_{arr}(t)=V_u(t-\tau)",
           r"V_{disp}=V_{arr}-V_r\qquad (V_r:\ \mathrm{volume\ gi\grave{a}\ rientrato})"])
-    D.p("`VOLUME_AT` interpola linearmente la storia (un punto per passo):")
+    D.p("`VOLUME_AT` interpola linearmente la storia, che ha un punto per passo; prima del primo punto dà 0. Il tempo "
+        "è `t_tot`, che conta anche il riempimento: l'acqua uscita durante il riempimento arriva comunque dopo τ.")
     D.estratto(SUB, "function VOLUME_AT", n=6, titolo=SUB)
-    D.h1("2. Quanto può rientrare")
+
+    D.h1("3. Quanto può rientrare")
     D.p("Il volume disponibile si divide in due parti, sopra e sotto la soglia:")
     D.eq([r"V_{oltre}=\max\left(V_{disp}-V_s,\ 0\right),\qquad V_{sotto}=\min\left(\max\left(V_{disp},\,0\right),\ V_s\right)",
           r"Q_{disp}=\min\left(\frac{V_{oltre}}{T},\ \frac{V_{oltre}}{\Delta t}\right),\qquad Q_{lento}=\min\left(\frac{V_{sotto}}{T_l},\ \frac{V_{sotto}}{\Delta t}\right)"])
-    D.p("Il secondo termine di ogni min impedisce di restituire in un passo più di quanto c'è. Senza ritardo (τ = 0) "
-        "si usa V_{piana} al posto di V_{disp} e la portata uscente del passo può rientrare subito "
-        "(Q_{disp} ≤ V_{oltre}/Δt + Q_{esce}).")
-    D.h1("3. Come si distribuisce")
-    D.p("I **rientri richiesti** dalla tabella (le celle con ΔQ > 0) sono ridotti tutti della stessa frazione:")
+    D.p("Il secondo termine di ogni min impedisce di restituire in un passo più di quanto c'è: se T < Δt la parte "
+        "oltre la soglia si svuota in un solo passo. Con T = 0 si usa direttamente V_{oltre}/Δt.")
+    D.h2("Perché V/T: il serbatoio lineare")
+    D.p("Una portata proporzionale al volume è il modello del **serbatoio lineare**, lo stesso dell'idrologia per "
+        "lo svuotamento di un bacino. Se non arriva altra acqua e la tabella chiede di più di quanto il serbatoio dà "
+        "(f = 1, sezione 4), la parte oltre la soglia segue")
+    D.eq([r"\frac{dV_{oltre}}{dt}=-\frac{V_{oltre}}{T}\quad\Rightarrow\quad V_{oltre}(t)=V_{oltre}(0)\,e^{-t/T}",
+          r"t_{1/2}=T\,\ln 2\approx 0.69\,T,\qquad V_{oltre}^{n+1}=\left(1-\frac{\Delta t}{T}\right)V_{oltre}^{n}\quad (\mathrm{nel\ codice},\ \Delta t<T)"])
+    D.p("T è quindi il **tempo caratteristico** del rientro: dopo T resta circa il 37% del volume oltre la soglia, dopo "
+        "3T circa il 5%. Lo stesso vale per la parte sotto la soglia con T_{l}, che però comincia a scendere solo quando "
+        "la parte oltre la soglia è finita. Con T_{l} di molte ore la piana si svuota lentamente, come per drenaggio.")
+    D.h2("Senza ritardo (τ = 0)")
+    D.p("Il codice non usa la storia: il disponibile è direttamente il contenuto del serbatoio, V_{p}, e alla portata "
+        "disponibile si aggiunge l'uscita del passo, che può rientrare subito:")
+    D.eq(r"V_{oltre}=\max(V_p-V_s,\,0),\qquad Q_{disp}=\min\left(\frac{V_{oltre}}{T},\ \frac{V_{oltre}}{\Delta t}+Q_{esce}\right)")
+    D.p("Con τ = 0, V_{s} = 0 e T = 0 tutta l'acqua uscita in un passo può rientrare nello stesso passo: è il caso "
+        "limite in cui la piana non trattiene niente.")
+
+    D.h1("4. Come si distribuisce")
+    D.p("I **rientri richiesti** dalla tabella (le celle con ΔQ > 0) sono ridotti tutti della stessa frazione f, in "
+        "modo che la loro somma non superi Q_{disp}:")
     D.eq(r"f=\min\left(1,\ \frac{Q_{disp}}{Q_{rientro}}\right)\qquad (f=0\ \mathrm{se}\ Q_{rientro}=0)")
     D.p("Il **rilascio lento** e, con il serbatoio attivo, la parte di Q_{disp} che la tabella non chiede (tipicamente "
-        "nel ramo calante, quando i livelli scendono e ΔQ torna negativo) vanno nelle sezioni di rientro con pesi "
-        "fissi, proporzionali al massimo ΔQ positivo della tabella di ogni sezione:")
+        "nel ramo calante, quando i livelli scendono e ΔQ torna negativo o nullo) vanno nelle sezioni di rientro con "
+        "pesi fissi, proporzionali al massimo ΔQ positivo della tabella di ogni sezione:")
     D.eq([r"Q_{extra}=\max\left(Q_{disp}-f\,Q_{rientro},\ 0\right)\quad (\mathrm{solo\ con\ serbatoio\ attivo})",
           r"w_i=\frac{\max\left(0,\ \max_\eta\Delta Q_i\right)}{\sum_k\max\left(0,\ \max_\eta\Delta Q_k\right)},\qquad \sum_iw_i=1"])
     D.p("Lo scambio finale della cella i, che entra nel termine noto come gli affluenti, è")
     D.eq(r"Q_{lat,i}=\Delta Q_i\ (\Delta Q_i<0)\ \mathrm{oppure}\ f\,\Delta Q_i\ (\Delta Q_i>0),\quad +\ \left(Q_{lento}+Q_{extra}\right)w_i")
-    D.h1("4. Il serbatoio conserva il volume")
-    D.eq([r"V_{piana}^{n+1}=V_{piana}^{n}+\Delta t\left(Q_{esce}-f\,Q_{rientro}-Q_{lento}-Q_{extra}\right)",
-          r"V_r^{n+1}=V_r^{n}+\Delta t\left(f\,Q_{rientro}+Q_{lento}+Q_{extra}\right)"])
-    D.p("Sommando Q_{lat,i} su tutte le celle si ottiene −Q_{esce} + fQ_{rientro} + Q_{lento} + Q_{extra} (perché Σw_{i} = 1): "
-        "esattamente l'opposto della variazione del serbatoio. **Tutto ciò che esce dal canale entra nel serbatoio e "
-        "viceversa**: il volume totale canale + piana si conserva, e il rientro non può mai superare l'acqua uscita. "
-        "`BILANCIO_DI_MASSA` lo verifica a fine simulazione (approfondimento 19).")
-    D.p("Non può rientrare più acqua di quella uscita: V_{r} ≤ V_{arr} ≤ V_{u}, perché Q_{disp} e Q_{lento} sono "
-        "limitati da V_{oltre} e V_{sotto}, che insieme valgono al massimo V_{disp}. È questo vincolo che toglie "
-        "l'instabilità dell'approfondimento 16.")
-    D.h1("5. Il codice")
+    D.p("Sommando su tutte le celle, il rientro totale del passo è")
+    D.eq([r"Q_{rit}=f\,Q_{rientro}+Q_{extra}+Q_{lento}",
+          r"\mathrm{serbatoio\ attivo:}\ f\,Q_{rientro}+\max(Q_{disp}-f\,Q_{rientro},0)=Q_{disp}\ \Rightarrow\ Q_{rit}=Q_{disp}+Q_{lento}",
+          r"\mathrm{non\ attivo:}\ Q_{rit}=f\,Q_{rientro}+Q_{lento}\leq Q_{disp}+Q_{lento}"])
+    D.p("(nel primo caso si usa f·Q_{rientro} ≤ Q_{disp}, che vale per come è definito f). Con il serbatoio attivo il "
+        "rientro è quindi **sempre** quello che il serbatoio può dare, indipendentemente da quanto chiede la tabella: la "
+        "tabella decide solo **dove** rientra. Senza, rientra al massimo quanto la tabella chiede, e nel ramo calante, "
+        "quando la tabella non chiede più niente, l'acqua oltre la soglia resta ferma.")
+
+    D.h1("5. Conservazione del volume e limiti garantiti")
+    D.eq([r"V_p^{n+1}=V_p^{n}+\Delta t\left(Q_{esce}-Q_{rit}\right)",
+          r"V_r^{n+1}=V_r^{n}+\Delta t\,Q_{rit}"])
+    D.p("Sommando Q_{lat,i} su tutte le celle si ottiene −Q_{esce} + Q_{rit} (perché Σw_{i} = 1): esattamente l'opposto "
+        "della variazione del serbatoio. **Tutto ciò che esce dal canale entra nel serbatoio e viceversa**: il volume "
+        "canale + piana si conserva. `BILANCIO_DI_MASSA` lo verifica a fine simulazione (approfondimento 19).")
+    D.h2("Il rientro non supera mai l'acqua arrivata (τ > 0)")
+    D.p("Dalla sezione 4, Q_{rit} ≤ Q_{disp} + Q_{lento}, e dalla sezione 3 Q_{disp}·Δt ≤ V_{oltre} e "
+        "Q_{lento}·Δt ≤ V_{sotto}. Quindi, se V_{disp} ≥ 0:")
+    D.eq(r"\Delta t\,Q_{rit}\leq V_{oltre}+V_{sotto}=V_{disp}=V_{arr}-V_r\quad\Rightarrow\quad V_r^{n+1}\leq V_{arr}")
+    D.p("Il volume rientrato non supera mai quello arrivato, che a sua volta non supera quello uscito (V_{arr} ≤ V_{u}). "
+        "È questo vincolo che toglie l'instabilità dell'approfondimento 16: un rientro che cresce con il livello è "
+        "ancora possibile, ma solo finché c'è acqua uscita da restituire.")
+    D.h2("Il serbatoio non diventa negativo (τ = 0)")
+    D.p("Qui Q_{disp}·Δt ≤ V_{oltre} + Δt·Q_{esce} e Q_{lento}·Δt ≤ V_{sotto}, con V_{oltre} + V_{sotto} = V_{p} se V_{p} ≥ 0:")
+    D.eq(r"V_p^{n+1}=V_p^n+\Delta t\,Q_{esce}-\Delta t\,Q_{rit}\geq V_p^n+\Delta t\,Q_{esce}-\left(V_{oltre}+\Delta t\,Q_{esce}\right)-V_{sotto}=0")
+
+    D.h1("6. Un passo con i numeri")
+    base = simula_serbatoio(t, Qe, Qr, **BASE)
+    n = int(np.searchsorted(t, 9.0 * h)); dt = t[1] - t[0]
+    D.p(f"Dalla simulazione sintetica della sezione 7, con V_{{s}} = 60 000 m³, T = 0,5 h, τ = 1 h, T_{{l}} = 8 h, "
+        f"serbatoio attivo, passo Δt = {dt:.0f} s, all'istante t = 9 h:")
+    v = {k: base[k][n] for k in base}
+    righe = [["Grandezza", "Valore", "Come si ottiene"],
+             ["Q_{esce}, Q_{rientro}", f"{Qe[n]:.2f}, {Qr[n]:.2f} m³/s", "dalla tabella, in tutte le celle"],
+             ["V_{arr}", f"{v['Varr']:.0f} m³", "storia di V_{u}, letta a t + Δt − τ"],
+             ["V_{r}", f"{v['Vr']:.0f} m³", "rientrato fino al passo precedente"],
+             ["V_{disp}", f"{v['Varr'] - v['Vr']:.0f} m³", "V_{arr} − V_{r}"],
+             ["V_{oltre}, V_{sotto}", f"{v['Vo']:.0f}, {v['Vso']:.0f} m³", "oltre e fino alla soglia di 60 000 m³"],
+             ["Q_{disp}", f"{v['Qd']:.2f} m³/s", f"V_{{oltre}}/T = {v['Vo']:.0f}/1800"],
+             ["f", f"{v['f']:.3f}", "min(1, Q_{disp}/Q_{rientro})"],
+             ["Q_{extra}", f"{v['Qx']:.2f} m³/s", "max(Q_{disp} − f·Q_{rientro}, 0)"],
+             ["Q_{lento}", f"{v['Ql']:.2f} m³/s", f"V_{{sotto}}/T_{{l}} = {v['Vso']:.0f}/28 800"],
+             ["Q_{rit}", f"{v['ret']:.2f} m³/s", "f·Q_{rientro} + Q_{extra} + Q_{lento}"]]
+    D.tabella(righe, [0.25, 0.25, 0.5])
+
+    D.h1("7. Una simulazione 0-D: che cosa fa ciascun parametro")
+    D.p("Per vedere il serbatoio da solo, la sua logica è stata riscritta in Python, riga per riga come nel solutore, e "
+        "fatta girare con ingressi **sintetici**: due onde di piena a 7 h e a 22 h, ciascuna con un'uscita verso la piana "
+        "Q_{esce} (picco 8 m³/s, circa 108 000 m³) e una richiesta di rientro della tabella Q_{rientro} (picco 5 m³/s, "
+        "un'ora dopo, nulla sotto 0,2 m³/s come quando il livello scende sotto le sponde). Il canale non c'è: i rientri "
+        "non cambiano i livelli e quindi non cambiano Q_{esce} e Q_{rientro}. Serve solo a capire il serbatoio, non a "
+        "prevedere un caso reale.")
+    def graf_base(fig):
+        ax = fig.subplots(2, 1, sharex=True)
+        th = t / h
+        ax[0].plot(th, Qe, color="#eb6834", lw=1.3, label="Q_esce (uscita verso la piana)")
+        ax[0].plot(th, Qr, color="#9aa0a6", lw=1.1, ls="--", label="Q_rientro richiesto dalla tabella")
+        ax[0].stackplot(th, base["fQr"], base["Qx"], base["Ql"], colors=["#2a78d6", "#8e5bb5", "#1baf7a"], alpha=0.75,
+                        labels=["f·Q_rientro", "Q_extra (serbatoio attivo)", "Q_lento (rilascio lento)"])
+        ax[0].set_ylabel("portata [m³/s]", fontsize=8); ax[0].set_ylim(0, 11.5); ax[0].legend(fontsize=6.5, loc="upper center", ncol=3)
+        ax[1].plot(th, base["Vp"] / 1000, color="#1f2328", lw=1.4, label="V_piana")
+        ax[1].axhline(60, color="#b4371f", lw=1, ls="--", label="soglia V_s")
+        ax[1].set_ylabel("volume [migliaia di m³]", fontsize=8); ax[1].set_xlabel("tempo [h]", fontsize=8)
+        ax[1].legend(fontsize=7, loc="upper left")
+        for a in ax: a.grid(alpha=0.25); a.tick_params(labelsize=7)
+        fig.set_size_inches(7.6, 5.0)
+    D.grafico(graf_base, "serbatoio_base", "Caso base: in alto uscite, richiesta della tabella e composizione dei "
+              "rientri effettivi; in basso il contenuto del serbatoio.")
+    D.p("Si leggono le fasi del serbatoio:")
+    D.numerato(["l'uscita riempie il serbatoio; per la prima ora (τ) non è ancora arrivato niente e non rientra niente;",
+                "finché il volume arrivato non supera la soglia rientra solo il rilascio lento, piccolo;",
+                "oltre la soglia Q_{disp} cresce; dove la tabella chiede più di Q_{disp} i rientri sono ridotti (f < 1);",
+                "quando la tabella chiede meno di Q_{disp}, e anche dopo che la richiesta è finita, con il serbatoio attivo "
+                "la differenza rientra come Q_{extra}, finché il serbatoio non scende alla soglia;",
+                "tra le due onde il rilascio lento svuota la parte sotto la soglia: la seconda onda trova la piana "
+                "parzialmente vuota."])
+    varianti = [("V_s = 0 e T = 0", dict(Vs=0.0, T=0.0)), ("τ = 0", dict(tau=0.0)),
+                ("T_l = 0 (nessun rilascio lento)", dict(Tl=0.0)), ("serbatoio non attivo", dict(attivo=False))]
+    ris = {nome: simula_serbatoio(t, Qe, Qr, **{**BASE, **mod}) for nome, mod in varianti}
+    def graf_var(fig):
+        ax = fig.subplots(2, 2, sharex=True, sharey=True).ravel()
+        th = t / h
+        for a, (nome, _) in zip(ax, varianti):
+            a.plot(th, Qe, color="#eb6834", lw=0.9, ls=":", label="Q_esce")
+            a.plot(th, base["ret"], color="#9aa0a6", lw=1.4, label="rientro, caso base")
+            a.plot(th, ris[nome]["ret"], color="#2a78d6", lw=1.2, label="rientro, variante")
+            a.set_title(nome, fontsize=8.5); a.grid(alpha=0.25); a.tick_params(labelsize=7)
+        ax[0].legend(fontsize=6.5, loc="upper right")
+        for a in ax[2:]: a.set_xlabel("tempo [h]", fontsize=8)
+        for a in (ax[0], ax[2]): a.set_ylabel("portata [m³/s]", fontsize=8)
+        fig.set_size_inches(7.6, 5.0)
+    D.grafico(graf_var, "serbatoio_varianti", "Rientro totale con un parametro cambiato alla volta, rispetto al caso base.")
+    dtt = t[1] - t[0]; i1 = t < 14.5 * h
+    tab = [["Caso", "Rientrato [m³]", "Massimo nel serbatoio [m³]", "Rimasto a 14,5 h [m³]", "Rimasto a fine [m³]"]]
+    for nome, o in [("caso base", base)] + list(ris.items()):
+        tab.append([nome, f"{np.sum(o['ret'])*dtt:,.0f}".replace(",", " "), f"{o['Vp'].max():,.0f}".replace(",", " "),
+                    f"{o['Vp'][i1][-1]:,.0f}".replace(",", " "), f"{o['Vp'][-1]:,.0f}".replace(",", " ")])
+    D.tabella(tab, [0.3, 0.16, 0.2, 0.17, 0.17], didascalia=f"Volumi della simulazione 0-D (uscito in tutto "
+              f"{np.sum(Qe)*dtt:,.0f} m³; il volume si chiude a meno di 10⁻⁶ m³ in tutti i casi).".replace(",", " "))
+    D.elenco(["**V_{s} = 0 e T = 0**: tutto rientra appena arrivato, il serbatoio non trattiene niente e il rientro "
+              "ricopia l'uscita spostata di τ. La piana non lamina;",
+              "**τ = 0**: il rientro comincia prima, mentre l'acqua sta ancora uscendo;",
+              "**T_{l} = 0**: i primi V_{s} m³ restano nella piana per sempre; la seconda onda trova il serbatoio già alla "
+              "soglia e restituisce acqua prima e di più;",
+              "**serbatoio non attivo**: quando la richiesta della tabella finisce, l'acqua oltre la soglia non rientra "
+              "più per quella via e scende solo con il rilascio lento: ne resta di più nella piana. Il tratto piatto a "
+              "2,08 m³/s è il rilascio lento al suo massimo, V_{s}/T_{l} = 60 000/28 800, finché il serbatoio resta sopra la "
+              "soglia. In questa prova la differenza è piccola perché la richiesta dura quasi quanto l'acqua disponibile."])
+
+    D.h1("8. Il codice")
     D.estratto(SEMI, "            # Portata che il serbatoio può restituire", "            V_rientrato += dt*f_rientro*Q_rientro", titolo=SEMI)
-    D.p("I pesi si calcolano una volta all'inizio:")
+    D.p("I pesi si calcolano una volta all'inizio, dalla colonna 13 delle tabelle (ΔQ):")
     D.estratto(SEMI, "    w_rientro = [max(0.0,", n=2, titolo=SEMI)
     D.flowchart(dict(dimensioni=(15, 17.0), w=6.4, h=0.95, nodi={
         "a": (6.5, 16.4, "scambio = tabella (ogni passo)", "inizio", 5.4, 0.75),
@@ -189,7 +420,7 @@ def p17(D):
         "i": (6.5, 6.6, "serbatoio attivo ?", "dec", 3.6, 1.0),
         "l": (12.0, 6.6, "Q_extra = max(Q_disp − f·Q_rientro, 0)", "proc", 5.0),
         "m": (6.5, 5.1, "Q_lat,i = ΔQ_i (uscite),  f·ΔQ_i (rientri)\n+ (Q_lento + Q_extra)·w_i", "proc", 6.8, 1.1),
-        "n": (6.5, 3.7, "rhs[i] += Δt/Δx_i · Q_lat,i", "proc"),
+        "n": (6.5, 3.7, "rhs[i] += Δt/Δx_(i−1/2) · Q_lat,i", "proc"),
         "o": (6.5, 2.4, "V_piana += Δt·(Q_esce − f·Q_rientro − Q_lento − Q_extra)\nV_r += Δt·(f·Q_rientro + Q_lento + Q_extra)", "proc", 8.4, 1.1),
         "p": (6.5, 1.1, "fine dello scambio", "fine", 3.6, 0.7)},
         archi=[("a", "b"), ("b", "c"), ("c", "d"), ("d.w", "e.n", "sì", [(2.6, 12.6)]), ("d.e", "f.n", "no", [(10.6, 12.6)]),
@@ -197,18 +428,23 @@ def p17(D):
                ("g", "h"), ("h", "i"), ("i", "l", "sì"), ("i", "m", "no (Q_extra = 0)"), ("l.s", "m.e", None, [(12.0, 5.1)]),
                ("m", "n"), ("n", "o"), ("o", "p")]),
         didascalia="Flowchart dello scambio `tabella` con il serbatoio della piana.")
-    D.h1("6. Che cosa fa ciascun parametro")
-    D.elenco(["**senza soglia** (V_{s} = 0) e con T = 0 tutta l'acqua uscita rientra subito: le uscite e i rientri della "
-              "tabella si compensano e la piana non lamina. La soglia trattiene il volume che nella realtà resta fuori;",
-              "**T** distribuisce nel tempo la restituzione dell'acqua oltre la soglia: con T grande la piana restituisce "
-              "lentamente e i colmi a valle calano;",
-              "**il ritardo τ** sposta il rientro più tardi, dando il tempo all'acqua di attraversare la piana;",
-              "**il rilascio lento** svuota la parte sotto la soglia, per esempio tra due onde di piena: senza, quella "
-              "parte resta nella piana per sempre e la seconda onda trova la piana già piena;",
-              "**il serbatoio attivo** fa rientrare l'acqua oltre la soglia anche quando la tabella non chiede rientri "
-              "(nel ramo calante, quando i livelli scendono). Con `no` quell'acqua resta ferma nel serbatoio."])
+
+    D.h1("9. Come stimare i parametri")
+    D.p("Il riferimento ideale è un modello 2D dello stesso tratto, con una o più piene, da cui si ricavano le portate "
+        "sezione per sezione. Alcune indicazioni per partire, da rifinire con la taratura:")
+    D.elenco(["**V_{s}**: il volume che nel 2D resta fuori dal canale a fine evento (volume entrato meno volume uscito "
+              "a valle, a piena finita). Se è simile in piene diverse, la soglia è una buona descrizione;",
+              "**τ**: lo sfasamento tra l'istante in cui l'acqua esce (picco delle perdite nelle sezioni di uscita) e "
+              "quello in cui rientra (aumento di portata nelle sezioni di rientro, approfondimento 16);",
+              "**T**: quanto dura nel 2D il rientro una volta cominciato; T piccolo dà un rientro brusco, T grande lo "
+              "distribuisce e abbassa i colmi a valle;",
+              "**T_{l}**: il tempo con cui la piana si svuota dopo la piena; conta soprattutto con più onde ravvicinate;",
+              "**serbatoio attivo**: `si` quando nel 2D l'acqua continua a rientrare anche nel ramo calante;",
+              "conviene cambiare un parametro alla volta e guardare insieme la portata a valle, gli istanti dei rientri e "
+              "il volume rimasto nella piana; il bilancio (approfondimento 19) deve chiudersi in ogni prova."])
     D.attenzione("un solo serbatoio per tutto il tratto: l'acqua uscita in un punto può rientrare in qualunque sezione "
-                 "di rientro, anche lontana. Per tratti lunghi, con piane separate, lo schema andrebbe esteso a più serbatoi.")
+                 "di rientro, anche lontana, e con lo stesso ritardo. Per tratti lunghi, con piane separate, lo schema "
+                 "andrebbe esteso a più serbatoi. I parametri tarati su alcune piene vanno verificati su piene diverse.")
     D.collegamenti([(16, "16_scambio_tabella.pdf", "Lo scambio dalla tabella ΔQ"), (19, "19_bilancio_di_massa.pdf", "Il bilancio di massa"),
                     (2, "02_lettura_settings.pdf", "Le righe 11-15 di settings.txt")])
 
@@ -264,8 +500,10 @@ def p19(D):
     D.h1("1. L'equazione del bilancio")
     D.p("Il volume in alveo è la somma delle aree delle tabelle per la lunghezza delle celle. Tra l'inizio della "
         "simulazione (fine del riempimento) e la fine deve valere:")
-    D.eq([r"V_{alveo}=\sum_iA_i(\eta_i)\,\Delta x_i",
+    D.eq([r"V_{alveo}=\sum_iA_i(\eta_i)\,\Delta x_{i-1/2}",
           r"\varepsilon=\left(V_{alveo}^{fine}-V_{alveo}^{inizio}\right)-\left(V_{monte}-V_{valle}+V_{aff}+V_{lat}\right)"])
+    D.p("Scritto come somma di tutti i termini con il loro segno, che è la forma stampata in `bilancio.txt`:")
+    D.eq(r"V_{alveo}^{inizio}+V_{monte}-V_{valle}+V_{aff}+V_{lat}-V_{alveo}^{fine}=-\varepsilon=0")
     D.p("dove V_{monte}, V_{valle}, V_{aff} e V_{lat} sono le somme passo per passo di Δt·Q (approfondimento 13). Lo schema "
         "scrive la continuità in forma di bilancio di cella (approfondimento 11), quindi ε è zero a meno degli "
         "arrotondamenti e della tolleranza di Newton. Oltre lo 0,1% del volume da monte compare un avviso.")
@@ -279,9 +517,11 @@ def p19(D):
     D.estratto(WRI, "function BILANCIO_DI_MASSA", "    return err", titolo=WRI)
     D.estratto(SEMI, "    # --- CONTROLLO DEL BILANCIO DI MASSA ---", n=8, titolo=SEMI)
     D.h1("4. Che cosa contiene bilancio.txt")
-    D.elenco(["volume in alveo all'inizio e alla fine della simulazione e la sua variazione;",
-              "volumi entrato da monte, uscito a valle, entrato dagli affluenti e scambiato con la piana (+ entra, − esce);",
-              "errore ε in m³ e in percentuale del volume da monte, con l'avviso se supera lo 0,1%;",
+    D.elenco(["una colonna con tutti i termini del bilancio **con il loro segno**: volume in alveo a fine riempimento (+), "
+              "entrato da monte (+), uscito a valle (−), entrato dagli affluenti (+), scambio con la piana (+ entra, − esce) "
+              "e volume in alveo alla fine (−);",
+              "sotto la riga, la loro **somma**, che deve essere zero: è −ε, scritta con tre decimali e come frazione del "
+              "volume da monte, con l'avviso se supera lo 0,1%;",
               "con lo scambio `tabella`, il volume nel serbatoio della piana e il suo controllo. Il serbatoio contiene "
               "anche l'acqua uscita durante il riempimento, che non compare nei volumi della sola simulazione."])
     D.flowchart(dict(dimensioni=(12, 8.8), w=6.4, h=0.95, nodi={

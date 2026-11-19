@@ -67,10 +67,11 @@ def p01(D):
         "Nel codice l'interfaccia i+1/2 ha indice `i+1`: `q[1]` è l'ingresso, `q[imax+1]` l'uscita. Il dettaglio "
         "è nell'approfondimento 03.")
     D.h2("Le equazioni discrete in sintesi")
-    D.p("Con n il passo corrente, n+1 il nuovo, Δx_{i} la lunghezza della cella e Δx_{i+1/2} la distanza tra le sezioni:")
-    D.eq([r"Q^{*}_{i+1/2}=Q^n_{i+1/2}-\frac{\Delta t}{\Delta x_{i+1/2}}\left(F_{i+1}-F_i\right)",
-          r"Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}-g\,A_{i+1/2}\,\frac{\Delta t}{\Delta x_{i+1/2}}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_{i}\right)}{1+\Delta t\,\gamma_{i+1/2}}",
-          r"A_i(\eta_i^{n+1})=A_i^n-\frac{\Delta t}{\Delta x_i}\left(Q^{n+1}_{i+1/2}-Q^{n+1}_{i-1/2}\right)+\frac{\Delta t}{\Delta x_i}\left(Q_{aff,i}+Q_{lat,i}\right)"])
+    D.p("Con n il passo corrente, n+1 il nuovo, Δx_{i} la distanza tra le sezioni i e i+1 e Δx_{i−1/2} la lunghezza "
+        "della cella i (la notazione del report del progetto Adige, approfondimento 03):")
+    D.eq([r"Q^{*}_{i+1/2}=Q^n_{i+1/2}-\frac{\Delta t}{\Delta x_i}\left(F_{i+1}-F_i\right)",
+          r"Q^{n+1}_{i+1/2}=\frac{Q^{*}_{i+1/2}-g\,A_{i+1/2}\,\frac{\Delta t}{\Delta x_i}\left(\eta^{n+1}_{i+1}-\eta^{n+1}_{i}\right)}{1+\Delta t\,\gamma_{i+1/2}}",
+          r"A_i(\eta_i^{n+1})=A_i^n-\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q^{n+1}_{i+1/2}-Q^{n+1}_{i-1/2}\right)+\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q_{aff,i}+Q_{lat,i}\right)"])
     D.p("F è il flusso convettivo di Rusanov (approfondimento 09), Q* la portata «provvisoria» che contiene solo il "
         "trasporto, Q_{aff} e Q_{lat} le portate degli affluenti e dello scambio con la piana nella cella [m³/s]. "
         "La terza equazione, con la seconda sostituita dentro, è il sistema per i livelli (approfondimento 11).")
@@ -238,23 +239,26 @@ def p03(D):
             ax.plot(x, 0, "o", color="#2a78d6", ms=7)
             ax.text(x, -0.28, f"η[{k+1}]", ha="center", va="top", fontsize=8.5, color="#1f2328")
         ax.annotate("", xy=(xs[1], -0.95), xytext=(xs[2], -0.95), arrowprops=dict(arrowstyle="<->", color="#2a78d6"))
-        ax.text(0.5 * (xs[1] + xs[2]), -1.05, "dx_b[2]: distanza tra le sezioni", ha="center", va="top", fontsize=8, color="#2a78d6")
+        ax.text(0.5 * (xs[1] + xs[2]), -1.05, r"$\Delta x_2$ = dx_b[2]: distanza tra le sezioni 2 e 3", ha="center", va="top", fontsize=8, color="#2a78d6")
         ax.annotate("", xy=(xi[2], 1.32), xytext=(xi[3], 1.32), arrowprops=dict(arrowstyle="<->", color="#b4371f"))
-        ax.text(0.5 * (xi[2] + xi[3]), 1.4, "dx_int[3]: lunghezza della cella 3", ha="center", va="bottom", fontsize=8, color="#b4371f")
+        ax.text(0.5 * (xi[2] + xi[3]), 1.4, r"$\Delta x_{5/2}$ = dx_int[3]: lunghezza della cella 3", ha="center", va="bottom", fontsize=8, color="#b4371f")
         ax.text(3.1, -1.45, "monte  →  valle", ha="center", fontsize=8, color="#5f6368")
     D.grafico(disegno, "griglia", "Griglia sfalsata con 5 sezioni: livelli nelle sezioni (punti blu), portate nelle "
               "interfacce (trattini arancioni). Le interfacce sono a metà tra due sezioni.")
-    D.p("In formule, con x_{i} la distanza progressiva della sezione i:")
-    D.eq([r"\Delta x_{i+1/2}=x_{i+1}-x_i \qquad (\mathtt{dx\_b[i]},\ i=1\ldots imax-1)",
+    D.p("La notazione è quella del report del progetto Adige (figura 2.1) e segue i nomi delle variabili del codice: "
+        "Δx_{i} (`dx_b[i]`, *b* come baricentri) è la **distanza tra le sezioni** i e i+1; Δx_{i−1/2} (`dx_int[i]`) è "
+        "la **lunghezza della cella** i, cioè la distanza tra le sue due interfacce i−1/2 e i+1/2. Le portate restano "
+        "sulle interfacce, Q_{i+1/2}. In formule, con x_{i} la distanza progressiva della sezione i:")
+    D.eq([r"\Delta x_i=x_{i+1}-x_i \qquad (\mathtt{dx\_b[i]},\ i=1\ldots imax-1)",
           r"x_{i-1/2}=\frac{x_{i-1}+x_i}{2} \qquad (\mathtt{x\_int[i]},\ i=2\ldots imax)",
-          r"\Delta x_i=\frac{\Delta x_{i-1/2}+\Delta x_{i+1/2}}{2},\qquad \Delta x_1=\Delta x_{3/2},\qquad \Delta x_{imax}=\Delta x_{imax-1/2}"])
+          r"\Delta x_{i-1/2}=\frac{\Delta x_{i-1}+\Delta x_i}{2},\qquad \Delta x_{1/2}=\Delta x_1,\qquad \Delta x_{imax-1/2}=\Delta x_{imax-1}"])
     D.p("Le due celle di estremità hanno la lunghezza della distanza con la sezione vicina: la prima e l'ultima "
         "interfaccia sono quindi «fuori» dal tratto, alla stessa distanza delle altre. Con sezioni equidistanti "
         "tutte le celle hanno la stessa lunghezza.")
     D.h2("Due lunghezze, due usi")
-    D.elenco(["`dx_int[i]` (Δx_{i}) divide i flussi di volume nella **continuità** della cella i e moltiplica le aree "
+    D.elenco(["`dx_int[i]` (Δx_{i−1/2}) divide i flussi di volume nella **continuità** della cella i e moltiplica le aree "
               "per il volume in alveo (bilancio di massa, approfondimento 19);",
-              "`dx_b[i]` (Δx_{i+1/2}) divide le differenze di livello e di flusso nella **quantità di moto** "
+              "`dx_b[i]` (Δx_{i}) divide le differenze di livello e di flusso nella **quantità di moto** "
               "dell'interfaccia i+1/2, cioè nel calcolo di Q* e di Q^{n+1} (approfondimenti 09-11);",
               "la più piccola delle due, `dx`, entra nella condizione di Courant (approfondimento 08)."])
     D.h1("Il codice")
@@ -487,7 +491,7 @@ def p06(D):
     D.estratto(SUB, "function TRIBUTARY_INFLOW!", n=9, titolo=SUB)
     D.h1("Come entrano nelle equazioni")
     D.p("Il termine sorgente compare solo nella continuità della cella i. Integrato sulla cella e sul passo:")
-    D.eq(r"A_i^{n+1}=A_i^n-\frac{\Delta t}{\Delta x_i}\left(Q_{i+1/2}^{n+1}-Q_{i-1/2}^{n+1}\right)+\frac{\Delta t}{\Delta x_i}\,Q_{aff,i}")
+    D.eq(r"A_i^{n+1}=A_i^n-\frac{\Delta t}{\Delta x_{i-1/2}}\left(Q_{i+1/2}^{n+1}-Q_{i-1/2}^{n+1}\right)+\frac{\Delta t}{\Delta x_{i-1/2}}\,Q_{aff,i}")
     D.p("Nel codice si somma al termine noto `rhs` del sistema per i livelli (approfondimento 11), dopo averne "
         "calcolato la parte idrodinamica. Durante il riempimento la portata è il primo valore di ogni idrogramma, "
         "in simulazione quella interpolata a t + Δt con Lagrange (approfondimento 05):")
@@ -499,7 +503,7 @@ def p06(D):
         "d": (2.4, 4.6, "Q^{(k)} = primo valore\ndell'idrogramma", "proc", 3.9),
         "e": (8.6, 4.6, "Q^{(k)} = LAGRANGE_\nINTERPOLATION!(t + Δt)", "funz", 3.9),
         "f": (5.5, 3.1, "TRIBUTARY_INFLOW!: Q_aff in ogni cella", "funz"),
-        "g": (5.5, 1.8, "rhs[i] += Δt/Δx_i · Q_aff[i]", "proc"),
+        "g": (5.5, 1.8, "rhs[i] += Δt/Δx_(i−1/2) · Q_aff[i]", "proc"),
         "h": (11.3, 7.7, "nessun affluente", "fine", 2.6, 0.75)},
         archi=[("a", "b"), ("b", "c", "sì"), ("b", "h", "no"), ("c.w", "d.n", "sì", [(2.4, 6.2)]), ("c.e", "e.n", "no", [(8.6, 6.2)]),
                ("d.s", "f.w", None, [(2.4, 3.1)]), ("e.s", "f.e", None, [(8.6, 3.1)]), ("f", "g")]),

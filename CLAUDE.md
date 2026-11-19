@@ -299,9 +299,10 @@ Le cartelle di oggi seguono la regola solo in parte:
   (imax valori; con lo sfioro è l'uscita cambiata di segno);
 - `IC_*`: gli stessi file per la fase di riempimento;
 - `bilancio.txt`: **controllo del bilancio di massa** della simulazione (dopo il riempimento), scritto e stampato
-  a fine run da `BILANCIO_DI_MASSA` (`writing.jl`): volume in alveo all'inizio e alla fine (aree delle tabelle per
-  la lunghezza delle celle), entrato da monte, uscito a valle, affluenti, scambio con la piana, errore rispetto
-  al volume da monte (avviso oltre lo 0,1%). Con lo scambio `tabella` controlla anche che il serbatoio della
+  a fine run da `BILANCIO_DI_MASSA` (`writing.jl`) come colonna di termini con il loro segno: volume in alveo a fine
+  riempimento (+), entrato da monte (+), uscito a valle (−), affluenti (+), scambio con la piana (±), volume in alveo
+  alla fine (−) (aree delle tabelle per la lunghezza delle celle); sotto, la somma, che deve essere zero (tre
+  decimali e frazione del volume da monte, avviso oltre lo 0,1%). Con lo scambio `tabella` controlla anche che il serbatoio della
   piana contenga l'acqua uscita e non rientrata dall'inizio. Nelle prove con sfioro e tabella l'errore è 0,0000%.
 
 ## Il metodo numerico
@@ -1192,9 +1193,15 @@ quando questo file è stato scritto (18/11/2026), da committare insieme a esso:
   `settings.txt`, nuovo `input/idrogrammi/vaia/affluenti.csv`, `strumenti/` (righe lette), `controllo_input.jl`,
   `calibrazione_scambio/esegui.jl` e commenti, `Resoconto_modello_1D.md`, PDF 02, 05, 06 e numeri di riga negli altri;
   in `CLAUDE.md` le istruzioni per inserire gli idrogrammi di un evento ("Idrogrammi di un evento");
+- `bilancio.txt` scritto come somma dei termini con il loro segno, che deve fare zero (`BILANCIO_DI_MASSA` in
+  `writing.jl`; i risultati del modello non cambiano), e commento della riga 15 nel solutore;
+- PDF 16 (derivazione completa dell'instabilità dello scambio dalla tabella) e PDF 17 (serbatoio della piana
+  approfondito: schema, serbatoio lineare, dimostrazioni dei limiti, passo con i numeri, simulazione 0-D sintetica);
 - `approfondimenti/`: PDF resi generali (tolti risultati e riferimenti alle prove sul Test_Brenta, esempi con dati
   sintetici di `tabella_sintetica` e `idrogramma_sintetico` in `genera/stile.py`), codice senza commenti e a capo dentro
-  il riquadro, titoli che non restano soli in fondo alla pagina, correzioni al testo dei PDF 1 e 3.
+  il riquadro, titoli che non restano soli in fondo alla pagina, correzioni al testo dei PDF 1 e 3, notazione delle
+  lunghezze come nel report del progetto Adige (Δx_i = distanza tra le sezioni i e i+1 = `dx_b[i]`, Δx_{i−1/2} =
+  lunghezza della cella i = `dx_int[i]`).
 
 Commit `d8966ad` (già descritto qui sopra): `Resoconto_modello_1D.md` con l'elenco dei PDF in testa e un link alla fine
 di ogni sezione, `approfondimenti/` con i 21 PDF e il generatore (la cache delle immagini non va nel repository,

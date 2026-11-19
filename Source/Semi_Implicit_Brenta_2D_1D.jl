@@ -263,7 +263,7 @@
         #     tau_piana ritardo di percorrenza: l'acqua uscita arriva al serbatoio dopo tau_piana;
         #     T_lento   rilascio lento della parte sotto la soglia, in T_lento, sulle sezioni di rientro
         #               (anche quando la tabella non chiede rientri, es. nel ramo calante; 0: nessun rilascio);
-        #   Riga 33, serbatoio attivo (piana_attiva): la parte oltre la soglia rientra comunque al ritmo Q_disp;
+        #   Riga 15, serbatoio attivo (piana_attiva): la parte oltre la soglia rientra comunque al ritmo Q_disp;
         #   quello che la tabella non chiede (ramo calante) va sulle sezioni di rientro con i pesi w_rientro.
         #   Senza, dopo il colmo la tabella smette di chiedere rientri e l'acqua oltre la soglia resta ferma;
         # - nessuno: nessuno scambio.
