@@ -111,6 +111,9 @@ ma il massimo cade di solito sul fronte 2D che arriva (prime 2,5 h) e non è sig
   S3650, S4400, S5200 e S5750. Erano le peggiori e le migliori del grafico 14 con le tabelle e i
   riferimenti vecchi: oggi delle peggiori resta solo S2400 (vedi "Errore del tirante a parità di portata").
 - Il tirante 2D è il livello 2D meno il talweg della geometria 1D; gli istanti 2D asciutti sono esclusi.
+- **Attenzione:** la scala di deflusso degli scalini 2D è letta da `calcolo_tabelle_daBM/input/S_0050_6000_q2` (o `_q5`),
+  che da `9a39823` non è più nel repository. Lo script non si ferma (`isfile`), ma senza quei file mancano la scala
+  degli scalini nel grafico 12 e lo scarto a parità di portata nei file di testo.
 - Nei file di testo c'è anche lo scarto **a parità di portata**: tirante meno quello degli scalini 2D
   alla stessa portata, per il 1D e per il 2D. È il confronto giusto per i livelli (vedi "Livelli 1D e 2D
   a parità di portata"): allo stesso istante pesano anche lo sfasamento e la portata diversa.
@@ -144,7 +147,7 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 |---|---|
 | `main.jl` | Avvia `RUN_SIMULATION.SEMI_IMPLICIT_BRENTA_2D_1D!()` |
 | `Resoconto_modello_1D.md` | Spiegazione di tutto il codice come flusso di lavoro, con i pezzi di codice (per chi lo vede la prima volta) |
-| `approfondimenti/` | 21 PDF di approfondimento collegati dal resoconto (teoria, equazioni, flowchart, codice senza commenti, esempi con dati sintetici), uno per passo o funzione, **generali**: niente risultati delle prove sul Test_Brenta, per chi prende il codice dal repository; si rigenerano con `python approfondimenti/genera/genera.py [numeri]` (Python con `reportlab` e `matplotlib`; gli estratti di codice sono presi dai sorgenti, quindi vanno rigenerati quando il codice cambia) |
+| `approfondimenti/` | 21 PDF di approfondimento collegati dal resoconto (teoria, equazioni, flowchart, codice senza commenti, esempi con dati sintetici), uno per passo o funzione, **generali**: niente risultati delle prove sul Test_Brenta, per chi prende il codice dal repository; si rigenerano con `python approfondimenti/genera/genera.py [numeri]` (Python con `reportlab` e `matplotlib`; gli estratti di codice sono presi dai sorgenti, quindi vanno rigenerati quando il codice cambia; il PDF 21 prende gli estratti da `calcolo_tabelle_daBM/src/main.jl`, che non è più nel repository, quindi oggi non si può rigenerare) |
 | `Source/Run_Simulation.jl` | Modulo che include gli altri file |
 | `Source/Semi_Implicit_Brenta_2D_1D.jl` | Il solutore: riempimento (condizioni iniziali) e simulazione |
 | `Source/subroutines.jl` | Lettura tabelle e geometria, `READ_VALUES`, `UNIFORM_LEVEL`, idrogrammi, Thomas, `CHECK_NAN` |
@@ -154,10 +157,10 @@ compilazione; con 120 sezioni (50 m) 2-3 s di calcolo per 24-39 h simulate.
 | `settings.txt` | Configurazione della simulazione (vedi sotto) |
 | `input/geometria/<caso>/` | Tabelle delle sezioni e geometria; per il Test_Brenta `Test_Brenta/S_200m/`, `Test_Brenta/S_50m/` (scalini a circa 5 m³/s, quella dei risultati salvati in `output/S_50m`), `Test_Brenta/S_50m_q2/` (scalini a 2 m³/s, con le colonne ΔQ: serve per lo scambio `tabella`) e `Test_Brenta/S_50m_beta/` (β dal 2D, tenuta da parte). Quelle a 50 m le scrive direttamente `calcolo_tabelle_daBM` |
 | `input/idrogrammi/<evento>/` | Tutti gli idrogrammi di un evento (`t [s], Q [m3/s]`): monte, affluenti e il loro elenco `affluenti.csv` (vedi "Idrogrammi di un evento" in "Formato degli input") |
-| `input/hq_relations/` | Scale di deflusso dei manufatti, `quota [m s.l.m.], portata [m³/s]` senza intestazione: `hq_P17_dtm.csv` (ponte P17). Usata solo dal prototipo del ponte, non dal modello (vedi "Ponte P17") |
+| `input/hq_relations/` | Scale di deflusso dei manufatti, `quota [m s.l.m.], portata [m³/s]` senza intestazione (vedi "Scale di deflusso dei manufatti"). Nessuna è usata dal modello; `hq_P17_dtm.csv` la usava il prototipo del ponte (vedi "Ponte P17") |
 | `output/<caso>/` | Risultati (`IC_*.csv`, `*.csv`) e grafici; i fittizi sono raggruppati per geometria in `output/S_200m/`, `output/S_50m/` e `output/S_50m_beta/` (prova con β dal 2D); `output/S_50m_hq/` contiene le prove del ponte P17 con il prototipo (descritte in `leggimi.txt`) |
 | `reference/` | Risultati del modello 2D usati come riferimento: portate (`ns_channel_piena_discharge.csv`, `ns_50_fittizio_N_discharge.csv`) e, per i fittizi, livelli (`ns_50_fittizio_N_wse.csv`, colonne `WSE_S0050 [m]` … `WSE_S6000 [m]`). Quelli dei fittizi vengono da `../Test_Brenta/results/inputs/ns_50_fittizio_N_results.h5` (mesh nuova, vedi "Scenari fittizi"); i livelli sono estratti con `strumenti/estrai_wse_2D.jl`. `ns_50_scalini_discharge.csv` e `ns_50_scalini_wse.csv` sono le portate e i livelli degli scalini a 2 m³/s (52 righe, ogni 10 h) |
-| `calcolo_tabelle_daBM/` | Script `src/main.jl` che costruisce le tabelle 1D dai risultati 2D (BASEMENT) a scalini di portata e le scrive anche negli input del modello (vedi "Costruzione delle tabelle") |
+| ~~`calcolo_tabelle_daBM/`~~ | **Non è più nel repository** (da `9a39823`): la costruzione delle tabelle 1D dai risultati 2D è diventata un processo indipendente, fuori da questa cartella. Le tabelle già costruite restano in `input/geometria/` (vedi "Costruzione delle tabelle") |
 | `calibrazione_scambio/` | Taratura del serbatoio della piana per lo scambio `tabella`: script, `risultati/taratura.csv`, riepiloghi e grafici, `leggimi.md`; le uscite delle simulazioni (`out/`) non sono nel repository |
 | `strumenti/` | Script di controllo, grafici e confronto |
 | `idromaker/main.jl` | Crea gli idrogrammi degli scenari fittizi in `input/idrogrammi/fittizio_*/piena.csv` (`Centa.csv` è solo un termine di paragone) |
@@ -761,8 +764,9 @@ portate di piena va in pressione. Nel 2D non è rappresentato con la sua geometr
   dipende dal livello secondo la scala di deflusso `../Test_Brenta/hq_relations/hq_P17_dtm.csv`, e la
   stessa portata rientra da `P17_valle` (`froude_downstream`);
 - scala: 1 m³/s → 424,30 m; 20 → 425,32; 40 → 425,93; 60 → 426,65; 80 → 426,95; 100 → 427,03 (13 punti,
-  fino a 150 m³/s). Nel file del 2D a 125 m³/s la quota, 426,885, è più bassa che a 100; nella copia del
-  progetto, `input/hq_relations/hq_P17_dtm.csv`, è 427,885. Le piene dei fittizi non arrivano a 100 m³/s;
+  fino a 150 m³/s). A 125 m³/s la quota, 426,885, è più bassa che a 100. Fino ad `a929a75` la copia del
+  progetto, `input/hq_relations/hq_P17_dtm.csv`, aveva 427,885 (le prove del prototipo in `output/S_50m_hq/` sono
+  fatte con quella); ora è uguale al file del 2D. Le piene dei fittizi non arrivano a 100 m³/s;
 - la scala vale per tutte le portate, non solo con il ponte in pressione;
 - le tabelle di S2400-S2950 vengono dagli scalini 2D, quindi contengono già il rigurgito del ponte, ma
   solo come relazione livello-portata **locale**: nel 1D il livello di una sezione dipende da quello a
@@ -804,6 +808,25 @@ Con la configurazione attuale (`riferimenti_nuovi/`, con il suo `14_confronto_po
 che restava tra S2600 e S2950 dipendeva soprattutto da altro (argine di S2950, mesh vecchia). Da capire
 perché peggiorano S2750 e S3050-S3500. Nel resto del Brenta ci saranno altri ponti e manufatti trattati così
 nel 2D: il formato del file delle strutture del prototipo serve a questo.
+
+### Scale di deflusso dei manufatti (`input/hq_relations/`)
+
+Da `a929a75` ci sono le scale di altri manufatti del Brenta, oltre al P17. Non le usa ancora nessun codice: servono
+per le condizioni al contorno interne (vedi il prototipo del ponte P17).
+
+| File | Contenuto | Note |
+|---|---|---|
+| `hq_P13_cervia_dtm.csv` | ponte P13 (Cervia), 431,61-435,01 m, 1-150 m³/s, 13 punti | a 150 m³/s quota più bassa che a 125 |
+| `hq_P17_dtm.csv` | ponte P17, 424,30-427,89 m, 1-150 m³/s, 13 punti | a 125 m³/s quota più bassa che a 100; la prima riga inizia con un BOM UTF-8 |
+| `hq_P20_dtm.csv` | ponte P20, 418,51-422,71 m, 1-150 m³/s, 13 punti | salto di quasi 2 m tra 30 e 40 m³/s |
+| `hq_P27_dtm.csv` | ponte P27, 410,83-414,73 m, 1-150 m³/s, 13 punti | salto di 1 m tra 60 e 70 m³/s |
+| `hq_P_bordignon_Press.csv` | ponte Bordignon (in pressione), 380,60-383,69 m, 1-150 m³/s, 14 punti | a 150 m³/s quota più bassa che a 125 |
+| `hq_Pfilippini.csv` | ponte Filippini, 238,79-244,22 m, 5-600 m³/s, 29 punti | salto di 1,5 m tra 350 e 375 m³/s |
+| `IN_PT_BORD.txt` | `quota, portata` separate da virgola e spazio, 380,96-385,07 m, 0-157 m³/s, 15 righe | righe non in ordine (la terza ha quota più bassa della seconda) e portata che cala tra 383,11 e 383,44 m; probabilmente l'ingresso del ponte Bordignon |
+| `SIFONE.txt` | `quota portata` separate da tabulazione, 385,5-389 m, 0-4,30 m³/s, 11 righe | portata costante a 4,30 m³/s oltre 386,9 m |
+
+Prima di usarle come condizione al contorno interna vanno sistemati: i tratti non monotoni (il prototipo del P17 vuole
+quote crescenti con la portata), il BOM del P17 e i due `.txt`, che hanno formato e ordine delle colonne diversi dai `.csv`.
 
 ### Livelli 1D e 2D a parità di portata (questione chiusa)
 
@@ -1001,6 +1024,11 @@ Scartata perché equivale ad alzare l'argine: una maschera che spegne lo sfioro 
 
 ## Costruzione delle tabelle (`calcolo_tabelle_daBM`)
 
+**Da `9a39823` lo script non è più nel repository**: la costruzione delle tabelle è diventata un processo
+indipendente, fuori da questa cartella, e sono stati tolti anche i suoi input (scalini 2D `S_0050_6000_q2`,
+`_q5`, `S_0200_6000`, mesh, `.h5`). Qui restano le tabelle che ha prodotto, in `input/geometria/Test_Brenta/`.
+La descrizione che segue è quella dello script com'era nel repository fino a `7aa0017`.
+
 `julia --project=. calcolo_tabelle_daBM/src/main.jl` dalla cartella del progetto. Lavora solo sul caso
 a 50 m (prefisso `ns_50_scalini_`, 120 sezioni S0050-S6000). Le costanti in testa al file scelgono gli
 scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
@@ -1176,6 +1204,11 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
   tabelle di `S_50m_beta/` vengono ancora dalla mesh vecchia.
 - **Livello oltre le tabelle in S2100-S2150** al colmo (fino a 3,5 cm, valori estrapolati): con le
   tabelle nuove succede in tutti i fittizi.
+- **Riferimenti a `calcolo_tabelle_daBM` rimasti nel repository** dopo che lo script è uscito (`9a39823`):
+  `strumenti/confronto_valle.jl` (scala degli scalini, ora assente), il generatore dei PDF (`pdf_15_21.py`: il PDF 21
+  non si rigenera; citazioni anche in `pdf_01_07.py` e `pdf_08_14.py`), un commento nel solutore,
+  `calibrazione_scambio/leggimi.md`, `Resoconto_modello_1D.md` (§3 e §14) e
+  `output/S_50m_hq/nuova_geometria/confronto_g14_nuova.jl`. Da decidere se puntarli alla nuova posizione o toglierli.
 - **Varie:**
   - Newton fa sempre 100 iterazioni (tolleranza 1e-14);
   - `THOMAS_ALGORITHM!` alloca due vettori a ogni chiamata;
@@ -1186,8 +1219,16 @@ scalini (`InputFolder`) e dove scrivere (`OutputFolder`, `ModelFolder`):
 
 ## Ultimo commit descritto
 
-`d8966ad` ("aggiunta resoconto.md e approfondimenti in pdf"), più le modifiche successive non ancora committate
-quando questo file è stato scritto (18/11/2026), da committare insieme a esso:
+`a929a75` ("aggiunte scale di deflusso ponti", 23/11/2026). Commit descritti in questo aggiornamento:
+- `a929a75`: scale di deflusso di P13, P20, P27, Bordignon e Filippini, `IN_PT_BORD.txt` e `SIFONE.txt` in
+  `input/hq_relations/`; in `hq_P17_dtm.csv` la quota a 125 m³/s torna 426,885 come nel 2D (vedi "Scale di deflusso
+  dei manufatti");
+- `9a39823`: `calcolo_tabelle_daBM/` (script e input) tolto dal repository, diventato un processo indipendente;
+- `f9e6507`: tolta la cartella `relazione_TIP/` (immagini e documenti aggiunti in `9d0d4c8`, mai descritti qui);
+- `9d0d4c8`, `53a13af` e `7aa0017`: le modifiche elencate qui sotto, che nell'aggiornamento precedente erano ancora
+  da committare (`7aa0017`: PDF controllati e `bilancio.txt` come somma dei termini).
+
+Commit `9d0d4c8`, `53a13af` e `7aa0017` (già descritti qui sopra):
 - affluenti da un file (`nome,idrogramma,sezione`) indicato in `settings.txt`, che passa da 33 a 15 righe e perde la
   riga del Ks: `Source/` (`struct.jl`, `module.jl` con `READ_TRIBUTARIES`, `subroutines.jl`, solutore),
   `settings.txt`, nuovo `input/idrogrammi/vaia/affluenti.csv`, `strumenti/` (righe lette), `controllo_input.jl`,
