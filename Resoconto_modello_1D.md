@@ -539,6 +539,49 @@ Gli affluenti entrano **solo nella continuità** (portano volume, non quantità 
 
 ---
 
+### Note sull'ingresso degli affluenti, posizione dei ponti e diversione.
+Caldonazzo 		--> most upstream (B00000)  
+Centa			-> B01950  
+eventualmente la quota del canale che si sdoppia va inserita in B02800  
+Levico			-> B02300  
+Brenta 1		-> B03600  
+Brenta 2		-> B07600  
+Brenta 3		-> B11750  
+
+Diversione:  
+B13200, B13250, V00000  
+tra B13200 e B13250 ci sarà sicuramente una \Delta Q positiva ma non è acqua esondata, deve fare da input per il brenta vecchio. Va trattato con attenzione.  
+
+Brenta vecchio 1	-> V00350  
+Brenta vecchio 4	-> V02750  
+
+Brenta nuovo		-> B15050  
+
+Brenta vecchio 2	-> B15150 (circa 20 minuti di ritardo)  
+Brenta vecchio 3	-> B15150 (circa 5 minuti di ritardo)  
+
+Brenat vecchio 		-> B16100 (ingresso del brenta vecchio nel brenta nuovo)
+
+Moggio			-> B17800 (circa 5 minuti di ritardo)  
+Ceggio			-> B17950 (circa 4 minuti di ritardo)  
+Maso			-> B21150 (circa 15 minuti di ritardo)  
+Chieppena		-> B21500 (circa 5 minuti di ritardo)  
+Brenta 4		-> B23050  
+Brenta 5		-> B26950  
+Brenta 6		-> B30400 (circa 10 minuti di ritardo)  
+grigno 			-> B32400  
+
+
+P13			-> B03850  
+P17			-> B07050  
+P20			-> B09800  
+P27			-> B11450  
+PBordignon	-> B16200  
+PFilippini	-> B33100  
+
+---
+
+
 ## 9. Passo 4: lo stato iniziale
 
 Prima della piena il fiume deve essere in uno stato di equilibrio con la portata iniziale. Si parte da una
