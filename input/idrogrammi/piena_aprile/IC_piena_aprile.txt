@@ -1,0 +1,20 @@
+IC da impostare per sottobacino [m3/s]: 
+Caldonazzo.csv: 1.439
+Levico.csv: 0.571
+Centa.csv: 0.791
+Brenta1.csv: 0.499
+Brenta2.csv: 0.429
+Brenta3.csv: 0.176
+BrentaVecchio1.csv: 0.41
+BrentaVecchio2.csv: 0.156
+BrentaVecchio3.csv: 0.11
+BrentaVecchio4.csv: 0.111
+BrentaNuovo.csv: 0.166
+Moggio.csv: 1.025
+Ceggio.csv: 1.178
+Maso.csv: 3.639
+Chieppena.csv: 0.866
+Brenta4.csv: 0.578
+Brenta5.csv: 0.45
+Brenta6.csv: 0.462
+Grigno.csv: 2.91
